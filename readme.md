@@ -6,7 +6,10 @@
     |- protocols/
     |- algorithms/
 - source/
-    |- realtimertfilters.sln
+    |- realtimertfilters/                   # Primary project work directory
+        |- realtimertfilters-app/           # Placeholder project
+        |- [...]
 ```
 * Additional Links
-[Repository Wiki](https://ops.hs-kempten.de/BerndDreier/spatialtempfilterrt/-/wikis/home)
+
+- [Repository Wiki](https://ops.hs-kempten.de/BerndDreier/spatialtempfilterrt/-/wikis/home)
