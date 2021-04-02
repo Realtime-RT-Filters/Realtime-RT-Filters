@@ -1,9 +1,31 @@
 ﻿# CMakeList.txt : CMake project for realtimertfilters-app, include source and define
-# project specific logic here.
-#
+# DISCLAIMER: This was heavily inspired by Sascha Willems cmakelists file for his examples
 cmake_minimum_required (VERSION 3.8)
 
-# Add source to this project's executable.
-add_executable (realtimertfilters-app "realtimertfilters-app.cpp" "realtimertfilters-app.h")
+# FILE Macros for all sources, main source and main headers
+file (GLOB ALL_SOURCES "*.cpp" "sources/*.cpp" "*.inl" "sources/*.inl" "*.h" "*.hpp" "headers/*.h" "headers/*.hpp")
+set(MAIN_SOURCE realtimertfliters-app.cpp)
+set(MAIN_HEADER realtimertfilters-app.h)
 
-# TODO: Add tests and install targets if needed.
+# find_package(OpenMP) # Multithreading API - used in some of Sascha Willems examples
+
+#include IMGUI
+file(GLOB ADD_SOURCE "../external/imgui/*.cpp")
+SET(ALL_SOURCES ${ALL_SOURCES} ${ADD_SOURCE})
+
+# wayland requires additional source files
+IF(USE_WAYLAND_WSI)
+	SET(ALL_SOURCES ${ALL_SOURCES} ${CMAKE_BINARY_DIR}/xdg-shell-client-protocol.h ${CMAKE_BINARY_DIR}/xdg-shell-protocol.c)
+ENDIF()
+
+set(SHADER_DIR "shaders/")
+file(GLOB SHADERS "${SHADER_DIR_GLSL}/*.vert" "${SHADER_DIR_GLSL}/*.frag" "${SHADER_DIR_GLSL}/*.comp" "${SHADER_DIR_GLSL}/*.geom" "${SHADER_DIR_GLSL}/*.tesc" "${SHADER_DIR_GLSL}/*.tese" "${SHADER_DIR_GLSL}/*.mesh" "${SHADER_DIR_GLSL}/*.task" "${SHADER_DIR_GLSL}/*.rgen" "${SHADER_DIR_GLSL}/*.rchit" "${SHADER_DIR_GLSL}/*.rmiss")
+source_group("Shaders" FILES ${SHADERS})
+
+if(WIN32)
+	add_executable(realtimertfilters-app WIN32 ${MAIN_CPP} ${ALL_SOURCES} ${MAIN_HEADER} ${SHADERS})
+	target_link_libraries(realtimertfilters-app base ${Vulkan_LIBRARY} ${WINLIBS})
+else(WIN32)
+	add_executable(realtimertfilters-app ${MAIN_CPP} ${ALL_SOURCES} ${MAIN_HEADER} ${SHADERS})
+	target_link_libraries(realtimertfilters-app base )
+endif(WIN32)
