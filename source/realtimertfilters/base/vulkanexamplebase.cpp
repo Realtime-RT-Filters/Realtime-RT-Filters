@@ -6,6 +6,10 @@
 * This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
 */
 
+#include <filesystem>
+#include <iostream>
+
+
 #include "vulkanexamplebase.h"
 
 #if (defined(VK_USE_PLATFORM_MACOS_MVK) && defined(VK_EXAMPLE_XCODE_GENERATED))
@@ -683,15 +687,26 @@ void VulkanExampleBase::submitFrame()
 	VK_CHECK_RESULT(vkQueueWaitIdle(queue));
 }
 
+std::string ExePath()
+{
+	TCHAR buffer[MAX_PATH] = { 0 };
+	GetModuleFileName(NULL, buffer, MAX_PATH);
+	std::string::size_type pos = std::string(buffer).find_last_of("\\/");
+	return std::string(buffer).substr(0, pos);
+}
+
 VulkanExampleBase::VulkanExampleBase(bool enableValidation)
 {
 #if !defined(VK_USE_PLATFORM_ANDROID_KHR)
 	// Check for a valid asset path
 	struct stat info;
-	if (stat(getAssetPath().c_str(), &info) != 0)
+	auto out = stat(getAssetPath().c_str(), &info);
+	if (out != 0)
 	{
 #if defined(_WIN32)
-		std::string msg = "Could not locate asset path in \"" + getAssetPath() + "\" !";
+
+
+		std::string msg = "Could not locate asset path in \"" + ExePath() + "/" + getAssetPath() + "\" ! Output " + std::to_string(out);
 		MessageBox(NULL, msg.c_str(), "Fatal error", MB_OK | MB_ICONERROR);
 #else
 		std::cerr << "Error: Could not find asset path in " << getAssetPath() << "\n";
