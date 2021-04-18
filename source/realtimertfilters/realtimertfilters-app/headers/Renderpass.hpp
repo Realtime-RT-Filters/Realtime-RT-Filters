@@ -12,43 +12,27 @@ namespace rtf
 	{
 	protected:
 		// Vulkan Environment
-		VkInstance Instance;
-		vks::VulkanDevice* Device;
+		VkInstance m_Instance;
+		vks::VulkanDevice* m_Device;
 
 		// Pipeline
-		VkPipeline Pipeline;
-		VkPipelineLayout PipelineLayout;
-		VkRenderPass RenderPass;
+		VkPipeline m_Pipeline;
+		VkPipelineLayout m_PipelineLayout;
+		VkRenderPass m_Renderpass;
 
 	public:
 		Renderpass(VkInstance instance, vks::VulkanDevice* device);
-		~Renderpass();
+		virtual ~Renderpass();
 
 		Renderpass(Renderpass& other) = delete;
 		Renderpass(Renderpass&& other) = delete;
 		void operator=(Renderpass& other) = delete;
 
 
-		virtual void Prepare() = 0;
-		virtual void Draw() = 0;
-		virtual void CleanUp();
+		virtual void prepare() = 0;
+		virtual void draw() = 0;
+		virtual void cleanUp();
 	};
-}
-
-enum UnscopedEnum
-{
-	E,
-	F
-};
-
-enum class ScopedEnum
-{
-	T, 
-	U
-};
-
-void Test()
-{
 }
 
 #endif Renderpass_h

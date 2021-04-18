@@ -1,13 +1,17 @@
 #include "..\headers\Renderpass.hpp"
 
-rtf::Renderpass::Renderpass(VkInstance instance, vks::VulkanDevice* device)
-	: Instance(instance), Device(device), Pipeline(nullptr), PipelineLayout(nullptr), RenderPass(nullptr)
-{}
-
-rtf::Renderpass::~Renderpass()
-{}
-
-void rtf::Renderpass::CleanUp()
+namespace rtf
 {
-	CleanUp();
+
+	Renderpass::Renderpass(VkInstance instance, vks::VulkanDevice* device)
+		: m_Instance(instance), m_Device(device), m_Pipeline(nullptr), m_PipelineLayout(nullptr), m_Renderpass(nullptr)
+	{}
+
+	Renderpass::~Renderpass()
+	{
+		cleanUp();
+	}
+
+	void Renderpass::cleanUp()
+	{}
 }

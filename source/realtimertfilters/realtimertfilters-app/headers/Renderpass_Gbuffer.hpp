@@ -1,6 +1,7 @@
 #ifndef Renderpass_Gbuffer_h
 #define Renderpass_Gbuffer_h
 
+#include "disable_warnings.h"
 #include "Renderpass.hpp"
 
 namespace rtf
@@ -13,29 +14,43 @@ namespace rtf
 		VkFormat format;
 	};
 
+	struct UBO_Offscreen
+	{
+		glm::mat4 projection;
+		glm::mat4 model;
+		glm::mat4 view;
+		glm::vec4 instancePos[3];
+	};
+
 	class RenderpassGbuffer : public Renderpass
 	{
 	public:
 		int32_t
-			Width = 0,
-			Height = 0;
-		VkFramebuffer FrameBuffer = nullptr;
+			m_Width,
+			m_Height;
+		VkFramebuffer m_FrameBuffer = nullptr;
 		FrameBufferAttachment
-			Position = {},
-			Normal = {},
-			Albedo = {},
-			Velocity = {},
-			ObjectId = {},
-			Depth = {};
+			m_Position = {},
+			m_Normal = {},
+			m_Albedo = {},
+			m_Velocity = {},
+			m_ObjectId = {},
+			m_Depth = {};
+		VkSampler m_ColorSampler = {};
 
+		vks::Buffer m_Buffer;
+		UBO_Offscreen m_UBO_Offscreen;
 
-		RenderpassGbuffer(VkInstance instance, vks::VulkanDevice* device);
+		RenderpassGbuffer(VkInstance instance, vks::VulkanDevice* device, int32_t width, int32_t height);
 
 		// Inherited via Renderpass
-		virtual void Prepare() override;
+		virtual void prepare() override;
+		void prepareRenderpass();
 		void prepareAttachments();
-		virtual void Draw() override;
-		virtual void CleanUp() override;
+		void prepareUBOs();
+		void updateUniformBuffer();
+		virtual void draw() override;
+		virtual void cleanUp() override;
 
 	protected:
 		void createAttachment(VkFormat format, VkImageUsageFlagBits usage, FrameBufferAttachment* attachment);
