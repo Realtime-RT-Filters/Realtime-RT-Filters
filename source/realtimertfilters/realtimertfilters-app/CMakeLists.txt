@@ -29,10 +29,3 @@ else(WIN32)
 	add_executable(realtimertfilters-app ${MAIN_CPP} ${ALL_SOURCES} ${MAIN_HEADER} ${SHADERS})
 	target_link_libraries(realtimertfilters-app base )
 endif(WIN32)
-
-
-message("${CMAKE_CURRENT_SOURCE_DIR}/data")
-message("${CMAKE_CURRENT_BINARY_DIR}")
-add_custom_command(TARGET realtimertfilters-app POST_BUILD
-                                       COMMAND ${CMAKE_COMMAND} -E copy_directory
-                                       "${CMAKE_CURRENT_SOURCE_DIR}/data" "${CMAKE_CURRENT_BINARY_DIR}/data")

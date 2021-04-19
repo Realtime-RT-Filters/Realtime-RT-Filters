@@ -23,6 +23,8 @@ option(USE_WAYLAND_WSI "Build the project using Wayland swapchain" OFF)
 
 set(RESOURCE_INSTALL_DIR "" CACHE PATH "Path to install resources to (leave empty for running uninstalled)")
 
+configure_file(${CMAKE_SOURCE_DIR}/base/DataPath.h.in ${CMAKE_SOURCE_DIR}/base/DataPath.h)
+
 # Use FindVulkan module added with CMAKE 3.7
 if (NOT CMAKE_VERSION VERSION_LESS 3.7.0)
 	message(STATUS "Using module to find Vulkan")

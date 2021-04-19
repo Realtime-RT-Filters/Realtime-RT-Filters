@@ -7,6 +7,7 @@
 */
 
 #include "VulkanTools.h"
+#include "DataPath.h"
 
 const std::string getAssetPath()
 {
