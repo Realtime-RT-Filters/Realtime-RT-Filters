@@ -1,6 +1,7 @@
 #ifndef RTFilterDemo_h
 #define RTFilterDemo_h
 
+#include "disable_warnings.h"
 #include <VulkanRaytracingSample.h>
 #include "VulkanglTFModel.h"
 

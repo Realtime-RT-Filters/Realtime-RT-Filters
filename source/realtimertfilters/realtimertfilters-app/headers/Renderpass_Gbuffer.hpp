@@ -2,6 +2,7 @@
 #define Renderpass_Gbuffer_h
 
 #include "disable_warnings.h"
+#include <vulkanexamplebase.h>
 #include "Renderpass.hpp"
 
 namespace rtf
@@ -39,7 +40,8 @@ namespace rtf
 		VkSampler m_ColorSampler = {};
 
 		vks::Buffer m_Buffer;
-		UBO_Offscreen m_UBO_Offscreen;
+		UBO_Offscreen m_UBO;
+
 
 		RenderpassGbuffer(VkInstance instance, vks::VulkanDevice* device, int32_t width, int32_t height);
 
@@ -48,8 +50,9 @@ namespace rtf
 		void prepareRenderpass();
 		void prepareAttachments();
 		void prepareUBOs();
-		void updateUniformBuffer();
-		virtual void draw() override;
+		void updateUniformBuffer(Camera& camera);
+		void setupDescriptorSetLayout();
+		virtual void draw(VkCommandBuffer& commandBuffer) override;
 		virtual void cleanUp() override;
 
 	protected:
