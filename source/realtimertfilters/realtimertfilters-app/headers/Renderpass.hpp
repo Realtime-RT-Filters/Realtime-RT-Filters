@@ -1,7 +1,8 @@
 #ifndef Renderpass_h
 #define Renderpass_h
 
-#include <VulkanRaytracingSample.h>
+#include "disable_warnings.h"
+#include <VulkanDevice.h>
 
 namespace rtf
 {
@@ -16,9 +17,11 @@ namespace rtf
 		vks::VulkanDevice* m_Device;
 
 		// Pipeline
-		VkPipeline m_Pipeline;
 		VkPipelineLayout m_PipelineLayout;
 		VkRenderPass m_Renderpass;
+		
+		VkPipeline m_Pipeline;
+		VkDescriptorSetLayout m_DescriptorSetLayout;
 
 	public:
 		Renderpass(VkInstance instance, vks::VulkanDevice* device);
@@ -30,7 +33,7 @@ namespace rtf
 
 
 		virtual void prepare() = 0;
-		virtual void draw() = 0;
+		virtual void draw(VkCommandBuffer& commandBuffer) = 0;
 		virtual void cleanUp();
 	};
 }

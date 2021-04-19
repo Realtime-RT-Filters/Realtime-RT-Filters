@@ -157,7 +157,7 @@ namespace rtf
 		VK_CHECK_RESULT(vkCreateSampler(m_Device->logicalDevice, &sampler, nullptr, &m_ColorSampler));
 	}
 
-	void RenderpassGbuffer::draw()
+	void RenderpassGbuffer::draw(VkCommandBuffer& commandBuffer)
 	{}
 
 	void RenderpassGbuffer::cleanUp()
@@ -227,24 +227,52 @@ namespace rtf
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			&m_Buffer,
-			sizeof(m_UBO_Offscreen)));
+			sizeof(m_UBO)));
 
 		// Map persistent
 		VK_CHECK_RESULT(m_Buffer.map());
 
 		// Setup instanced model positions
-		m_UBO_Offscreen.instancePos[0] = glm::vec4(0.0f);
-		m_UBO_Offscreen.instancePos[1] = glm::vec4(-4.0f, 0.0, -4.0f, 0.0f);
-		m_UBO_Offscreen.instancePos[2] = glm::vec4(4.0f, 0.0, -4.0f, 0.0f);
+		m_UBO.instancePos[0] = glm::vec4(0.0f);
+		m_UBO.instancePos[1] = glm::vec4(-4.0f, 0.0, -4.0f, 0.0f);
+		m_UBO.instancePos[2] = glm::vec4(4.0f, 0.0, -4.0f, 0.0f);
 
 		// Update
-		updateUniformBuffer();
+//		updateUniformBuffer();
 	}
-	void RenderpassGbuffer::updateUniformBuffer()
+	void RenderpassGbuffer::updateUniformBuffer(Camera& camera)
 	{
-		//m_UBO_Offscreen.projection = camera.matrices.perspective;
-		//m_UBO_Offscreen.view = camera.matrices.view;
-		//m_UBO_Offscreen.model = glm::mat4(1.0f);
-		//memcpy(uniformBuffers.offscreen.mapped, &uboOffscreenVS, sizeof(uboOffscreenVS));
+		m_UBO.projection = camera.matrices.perspective;
+		m_UBO.view = camera.matrices.view;
+		m_UBO.model = glm::mat4(1.0f);
+		memcpy(m_Buffer.mapped, &m_UBO, sizeof(m_UBO));
+	}
+
+	void RenderpassGbuffer::setupDescriptorSetLayout()
+	{
+		const uint32_t LAYOUTBINDINGS_COUNT = 7;
+		VkDescriptorSetLayoutBinding setLayoutBindings[LAYOUTBINDINGS_COUNT] = {
+			// Binding 0 : Vertex shader uniform buffer
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0),
+			// Binding 1 : Position texture target / Scene colormap
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+			// Binding 2 : Normals texture target
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+			// Binding 3 : Albedo texture target
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
+			// Binding 4 : Velocity texture target
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4),
+			// Binding 5 : ObjectId texture target
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5),
+			// Binding 6 : Depth texture target
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 6),
+		};
+
+		VkDescriptorSetLayoutCreateInfo descriptorLayout = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings, LAYOUTBINDINGS_COUNT);
+		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_Device->logicalDevice, &descriptorLayout, nullptr, &m_DescriptorSetLayout));
+
+		// Shared pipeline layout used by all pipelines
+		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo = vks::initializers::pipelineLayoutCreateInfo(&m_DescriptorSetLayout, 1);
+		VK_CHECK_RESULT(vkCreatePipelineLayout(m_Device->logicalDevice, &pPipelineLayoutCreateInfo, nullptr, &m_PipelineLayout));
 	}
 }
