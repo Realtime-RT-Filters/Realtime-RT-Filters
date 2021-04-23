@@ -5,6 +5,7 @@
 #include <VulkanRaytracingSample.h>
 #include "VulkanglTFModel.h"
 
+
 /*
 * Vulkan Example - Deferred shading with multiple render targets (aka G-Buffer) example
 *
@@ -174,6 +175,54 @@ namespace rtf
 		virtual void render();
 
 		virtual void OnUpdateUIOverlay(vks::UIOverlay* overlay);
+
+
+
+		//Ray tracing components
+
+
+
+
+		AccelerationStructure bottomLevelAS;
+		AccelerationStructure topLevelAS;
+
+		std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroups{};
+		struct ShaderBindingTables {
+			ShaderBindingTable raygen;
+			ShaderBindingTable miss;
+			ShaderBindingTable hit;
+		} shaderBindingTables;
+
+		struct UniformData {
+			glm::mat4 viewInverse;
+			glm::mat4 projInverse;
+			glm::vec4 lightPos;
+			int32_t vertexSize;
+		} uniformData;
+		vks::Buffer ubo;
+
+
+		VkPipeline rt_pipeline;
+		VkPipelineLayout rt_pipelineLayout;
+		VkDescriptorSet rt_descriptorSet;
+		VkDescriptorSetLayout rt_descriptorSetLayout;
+
+		vkglTF::Model scene;
+
+
+		void createBottomLevelAccelerationStructure();
+		void createTopLevelAccelerationStructure();
+		void createShaderBindingTables();
+		void createRayTracingPipeline();
+		void createDescriptorSets();
+		void createUniformBuffer();
+		void handleResize();
+		void rt_buildCommandBuffers();
+		void updateUniformBuffers();
+		void rt_draw();
+
+		bool rt_on = false;
+
 	};
 }
 

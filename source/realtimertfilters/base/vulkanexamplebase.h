@@ -407,6 +407,7 @@ public:
 
 	// Ray Tracing related components
 
+public:
 	// Function pointers for ray tracing related stuff
 	PFN_vkGetBufferDeviceAddressKHR vkGetBufferDeviceAddressKHR;
 	PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR;
