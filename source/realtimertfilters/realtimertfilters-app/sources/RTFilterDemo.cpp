@@ -351,12 +351,12 @@ namespace rtf
 
 		// Background
 		vkCmdBindDescriptorSets(offScreenCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets.floor, 0, nullptr);
-		models.floor.draw(offScreenCmdBuffer);
+		//models.floor.draw(offScreenCmdBuffer);
 
 		// Instanced object
 		vkCmdBindDescriptorSets(offScreenCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets.model, 0, nullptr);
 		models.model.bindBuffers(offScreenCmdBuffer);
-		vkCmdDrawIndexed(offScreenCmdBuffer, models.model.indices.count, 3, 0, 0, 0);
+		vkCmdDrawIndexed(offScreenCmdBuffer, models.model.indices.count, 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(offScreenCmdBuffer);
 
@@ -838,6 +838,9 @@ namespace rtf
 		if (camera.updated)
 		{
 			updateUniformBufferOffscreen();
+
+			//Ray tracing variant uses the other Uniform Buffers
+			updateUniformBuffers();
 		}
 	}
 	void RTFilterDemo::OnUpdateUIOverlay(vks::UIOverlay* overlay)
@@ -874,7 +877,7 @@ namespace rtf
 		// The shaders are accessing the vertex and index buffers of the scene, so the proper usage flag has to be set on the vertex and index buffers for the scene
 		vkglTF::memoryPropertyFlags = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		const uint32_t glTFLoadingFlags = vkglTF::FileLoadingFlags::PreTransformVertices | vkglTF::FileLoadingFlags::PreMultiplyVertexColors | vkglTF::FileLoadingFlags::FlipY;
-		scene.loadFromFile(getAssetPath() + "models/vulkanscene_shadow.gltf", vulkanDevice, queue, glTFLoadingFlags);
+		scene.loadFromFile(getAssetPath() + "models/armor/armor.gltf", vulkanDevice, queue, glTFLoadingFlags);
 
 		VkDeviceOrHostAddressConstKHR vertexBufferDeviceAddress{};
 		VkDeviceOrHostAddressConstKHR indexBufferDeviceAddress{};
