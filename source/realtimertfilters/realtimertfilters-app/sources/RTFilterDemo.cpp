@@ -839,9 +839,12 @@ namespace rtf
 		{
 			updateUniformBufferOffscreen();
 
-			//Ray tracing variant uses the other Uniform Buffers
-			updateUniformBuffers();
+
 		}
+
+		//Ray tracing variant uses the other Uniform Buffers
+		updateUniformBuffers();
+
 	}
 	void RTFilterDemo::OnUpdateUIOverlay(vks::UIOverlay* overlay)
 	{
