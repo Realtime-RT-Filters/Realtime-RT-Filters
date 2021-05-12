@@ -1,11 +1,3 @@
-#ifndef RTFilterDemo_h
-#define RTFilterDemo_h
-
-#include "disable_warnings.h"
-#include <VulkanRaytracingSample.h>
-#include "VulkanglTFModel.h"
-
-
 /*
 * Vulkan Example - Deferred shading with multiple render targets (aka G-Buffer) example
 *
@@ -14,9 +6,17 @@
 * This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
 */
 
+#ifndef RTFilterDemo_h
+#define RTFilterDemo_h
+
+#include "disable_warnings.h"
+#include <VulkanRaytracingSample.h>
+#include "VulkanglTFModel.h"
 #include "vulkanexamplebase.h"
 #include "VulkanglTFModel.h"
+
 #include "Renderpass_Gbuffer.hpp"
+#include "SpatioTemporalAccumulation.hpp"
 
 #define ENABLE_VALIDATION false
 
@@ -29,14 +29,13 @@
 
 namespace rtf
 {
-
 	class RTFilterDemo : public VulkanExampleBase
 	{
 	public:
 		int32_t debugDisplayTarget = 0;
 
 //		RenderpassGbuffer m_RP_GBuffer;
-
+		SpatioTemporalAccumulation m_spatioTemporalAccumulation;
 		
 
 		struct
