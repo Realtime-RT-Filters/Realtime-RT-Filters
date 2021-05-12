@@ -3,3 +3,6 @@
 
 # CMake output directory
 out/
+
+# local path to repository data
+base/DataPath.h
