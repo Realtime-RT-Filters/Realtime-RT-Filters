@@ -45,26 +45,6 @@ namespace rtf
 
 		struct
 		{
-			struct
-			{
-				vks::Texture2D colorMap;
-				vks::Texture2D normalMap;
-			} model;
-			struct
-			{
-				vks::Texture2D colorMap;
-				vks::Texture2D normalMap;
-			} floor;
-		} textures;
-
-		struct
-		{
-			vkglTF::Model model;
-			vkglTF::Model floor;
-		} models;
-
-		struct
-		{
 			glm::mat4 projection;
 			glm::mat4 model;
 			glm::mat4 view;
@@ -98,14 +78,16 @@ namespace rtf
 		} pipelines;
 		VkPipelineLayout pipelineLayout;
 
+
 		struct
 		{
 			VkDescriptorSet model;
-			VkDescriptorSet floor;
-		} descriptorSets;
-
-		VkDescriptorSet descriptorSet;
-		VkDescriptorSetLayout descriptorSetLayout;
+		} descriptorSetsGBufferScene;
+		VkDescriptorSet descriptorSetGBuffer;
+		VkDescriptorSetLayout descriptorSetLayoutGBuffer;
+		VkDescriptorSet rt_descriptorSet;
+		VkDescriptorSetLayout rt_descriptorSetLayout;
+		vkglTF::Model m_Scene;
 
 		/* Put into Attachment_Manager
 		// Framebuffer for offscreen rendering
@@ -210,10 +192,7 @@ namespace rtf
 
 		VkPipeline rt_pipeline;
 		VkPipelineLayout rt_pipelineLayout;
-		VkDescriptorSet rt_descriptorSet;
-		VkDescriptorSetLayout rt_descriptorSetLayout;
 
-		vkglTF::Model scene;
 
 
 		void createBottomLevelAccelerationStructure();
