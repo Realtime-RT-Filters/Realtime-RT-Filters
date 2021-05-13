@@ -1,7 +1,6 @@
 #include "../headers/RTFilterDemo.hpp"
 #include "VulkanglTFModel.h"
-
-#define MODEL_NAME "models/cornellBox.gltf"
+#include "../project_defines.hpp"
 
 namespace rtf
 {
