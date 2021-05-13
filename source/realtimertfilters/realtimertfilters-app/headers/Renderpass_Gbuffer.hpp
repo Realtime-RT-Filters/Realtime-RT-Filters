@@ -4,16 +4,10 @@
 #include "disable_warnings.h"
 #include <vulkanexamplebase.h>
 #include "Renderpass.hpp"
+#include "Attachment_Manager.hpp"
 
 namespace rtf
 {
-	struct FrameBufferAttachment
-	{
-		VkImage image;
-		VkDeviceMemory mem;
-		VkImageView view;
-		VkFormat format;
-	};
 
 	struct UBO_Offscreen
 	{

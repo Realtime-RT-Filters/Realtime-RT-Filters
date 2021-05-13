@@ -18,6 +18,7 @@
 #include "Renderpass_Gbuffer.hpp"
 #include "SpatioTemporalAccumulation.hpp"
 
+
 #define ENABLE_VALIDATION false
 
 // Texture properties
@@ -26,6 +27,8 @@
 
 // Offscreen frame buffer properties
 #define FB_DIM TEX_DIM
+
+#include "Attachment_Manager.hpp"
 
 namespace rtf
 {
@@ -37,6 +40,8 @@ namespace rtf
 //		RenderpassGbuffer m_RP_GBuffer;
 		SpatioTemporalAccumulation m_spatioTemporalAccumulation;
 		
+		//Attachment manager
+		Attachment_Manager* m_attachment_manager;
 
 		struct
 		{
@@ -102,6 +107,7 @@ namespace rtf
 		VkDescriptorSet descriptorSet;
 		VkDescriptorSetLayout descriptorSetLayout;
 
+		/* Put into Attachment_Manager
 		// Framebuffer for offscreen rendering
 		struct FrameBufferAttachment
 		{
@@ -110,6 +116,7 @@ namespace rtf
 			VkImageView view;
 			VkFormat format;
 		};
+		*/
 		struct FrameBuffer
 		{
 			int32_t width, height;

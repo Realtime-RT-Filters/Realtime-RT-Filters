@@ -15,6 +15,8 @@ namespace rtf
 		camera.setRotation(glm::vec3(-0.75f, 12.5f, 0.0f));
 		camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 256.0f);
 		settings.overlay = true;
+
+
 	}
 	RTFilterDemo::~RTFilterDemo()
 	{
@@ -170,11 +172,24 @@ namespace rtf
 
 		// Color attachments
 
+		//We create an Attachment manager
+		m_attachment_manager = new Attachment_Manager(device, vulkanDevice);
+		
+		// (World space) Positions
+		m_attachment_manager->createAttachment(
+			VK_FORMAT_R16G16B16A16_SFLOAT,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			&offScreenFrameBuf.position,
+			offScreenFrameBuf.width,
+			offScreenFrameBuf.height);
+		
+		
 		// (World space) Positions
 		createAttachment(
 			VK_FORMAT_R16G16B16A16_SFLOAT,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 			&offScreenFrameBuf.position);
+
 
 		// (World space) Normals
 		createAttachment(
