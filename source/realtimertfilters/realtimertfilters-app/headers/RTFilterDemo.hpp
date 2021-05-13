@@ -94,7 +94,7 @@ namespace rtf
 			int32_t width, height;
 			VkFramebuffer frameBuffer;
 			FrameBufferAttachment *position, *normal, *albedo;
-			FrameBufferAttachment depth;
+			FrameBufferAttachment* depth;
 			VkRenderPass renderPass;
 		} offScreenFrameBuf;
 

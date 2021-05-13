@@ -28,24 +28,7 @@ namespace rtf
 		vkDestroySampler(device, colorSampler, nullptr);
 
 		// Frame buffer
-
-		// Color attachments
-		vkDestroyImageView(device, offScreenFrameBuf.position->view, nullptr);
-		vkDestroyImage(device, offScreenFrameBuf.position->image, nullptr);
-		vkFreeMemory(device, offScreenFrameBuf.position->mem, nullptr);
-
-		vkDestroyImageView(device, offScreenFrameBuf.normal->view, nullptr);
-		vkDestroyImage(device, offScreenFrameBuf.normal->image, nullptr);
-		vkFreeMemory(device, offScreenFrameBuf.normal->mem, nullptr);
-
-		vkDestroyImageView(device, offScreenFrameBuf.albedo->view, nullptr);
-		vkDestroyImage(device, offScreenFrameBuf.albedo->image, nullptr);
-		vkFreeMemory(device, offScreenFrameBuf.albedo->mem, nullptr);
-
-		// Depth attachment
-		vkDestroyImageView(device, offScreenFrameBuf.depth.view, nullptr);
-		vkDestroyImage(device, offScreenFrameBuf.depth.image, nullptr);
-		vkFreeMemory(device, offScreenFrameBuf.depth.mem, nullptr);
+		delete m_attachment_manager;
 
 		vkDestroyFramebuffer(device, offScreenFrameBuf.frameBuffer, nullptr);
 
@@ -111,31 +94,14 @@ namespace rtf
 		offScreenFrameBuf.width = FB_DIM;
 		offScreenFrameBuf.height = FB_DIM;
 
-		// Color attachments
-
-		//We create an Attachment manager
-		m_attachment_manager = new Attachment_Manager(device, vulkanDevice, physicalDevice);
 		
 		//get attachments from attachment manager
 		offScreenFrameBuf.position = m_attachment_manager->getAttachment(position);
 		offScreenFrameBuf.normal = m_attachment_manager->getAttachment(normal);
 		offScreenFrameBuf.albedo = m_attachment_manager->getAttachment(albedo);
+		offScreenFrameBuf.depth = m_attachment_manager->getAttachment(depth);
 		
 
-
-		// Depth attachment
-
-		// Find a suitable depth format
-		VkFormat attDepthFormat;
-		VkBool32 validDepthFormat = vks::tools::getSupportedDepthFormat(physicalDevice, &attDepthFormat);
-		assert(validDepthFormat);
-
-		m_attachment_manager->createAttachment(
-			attDepthFormat,
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-			&offScreenFrameBuf.depth,
-			offScreenFrameBuf.width,
-			offScreenFrameBuf.height);
 
 		// Set up separate renderpass with references to the color and depth attachments
 		std::array<VkAttachmentDescription, 4> attachmentDescs = {};
@@ -164,7 +130,7 @@ namespace rtf
 		attachmentDescs[0].format = offScreenFrameBuf.position->format;
 		attachmentDescs[1].format = offScreenFrameBuf.normal->format;
 		attachmentDescs[2].format = offScreenFrameBuf.albedo->format;
-		attachmentDescs[3].format = offScreenFrameBuf.depth.format;
+		attachmentDescs[3].format = offScreenFrameBuf.depth->format;
 
 		std::vector<VkAttachmentReference> colorReferences;
 		colorReferences.push_back({ 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
@@ -215,7 +181,7 @@ namespace rtf
 		attachments[0] = offScreenFrameBuf.position->view;
 		attachments[1] = offScreenFrameBuf.normal->view;
 		attachments[2] = offScreenFrameBuf.albedo->view;
-		attachments[3] = offScreenFrameBuf.depth.view;
+		attachments[3] = offScreenFrameBuf.depth->view;
 
 		VkFramebufferCreateInfo fbufCreateInfo = {};
 		fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -728,6 +694,10 @@ namespace rtf
 	void RTFilterDemo::prepare()
 	{
 		VulkanExampleBase::prepare();
+
+		//We create the Attachment manager
+		m_attachment_manager = new Attachment_Manager(&device, vulkanDevice, &physicalDevice);
+
 		loadAssets();
 		prepareOffscreenFramebuffer();
 		prepareUniformBuffers();
@@ -749,6 +719,7 @@ namespace rtf
 		createDescriptorSets();
 
 
+		//General command buffers
 		buildCommandBuffers();
 		buildDeferredCommandBuffer();
 		rt_buildCommandBuffers();

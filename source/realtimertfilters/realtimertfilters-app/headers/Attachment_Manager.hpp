@@ -26,7 +26,7 @@ namespace rtf {
 	{
 
 	public:
-		Attachment_Manager(VkDevice device, vks::VulkanDevice* vulkanDevice, VkPhysicalDevice physicalDevice);
+		Attachment_Manager(VkDevice* device, vks::VulkanDevice* vulkanDevice, VkPhysicalDevice* physicalDevice);
 		~Attachment_Manager();
 
 
@@ -39,11 +39,11 @@ namespace rtf {
 		void createAllAttachments();
 
 		//Attachment Manager needs to be aware of certain Vulkan components
-		VkDevice device;
+		VkDevice* device;
 
 		//vks::Vkdevice is a combined logical/physical vulkan device
 		vks::VulkanDevice* vulkanDevice;
-		VkPhysicalDevice physicalDevice;
+		VkPhysicalDevice* physicalDevice;
 
 
 
@@ -51,6 +51,7 @@ namespace rtf {
 		FrameBufferAttachment m_position;
 		FrameBufferAttachment m_normal;
 		FrameBufferAttachment m_albedo;
+		FrameBufferAttachment m_depth;
 
 
 	};
