@@ -1,6 +1,8 @@
 #include "../headers/RTFilterDemo.hpp"
 #include "VulkanglTFModel.h"
 
+#define MODEL_NAME "models/cornellBox.gltf"
+
 namespace rtf
 {
 	RTFilterDemo::RTFilterDemo() : VulkanExampleBase(ENABLE_VALIDATION)
@@ -169,7 +171,7 @@ namespace rtf
 
 		//We create an Attachment manager
 		m_attachment_manager = new Attachment_Manager(device, vulkanDevice);
-		
+
 		// (World space) Positions
 		m_attachment_manager->createAttachment(
 			VK_FORMAT_R16G16B16A16_SFLOAT,
@@ -177,8 +179,8 @@ namespace rtf
 			&offScreenFrameBuf.position,
 			offScreenFrameBuf.width,
 			offScreenFrameBuf.height);
-		
-		
+
+
 		// (World space) Positions
 		createAttachment(
 			VK_FORMAT_R16G16B16A16_SFLOAT,
@@ -361,8 +363,9 @@ namespace rtf
 
 		// Instanced object
 		vkCmdBindDescriptorSets(offScreenCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSetsGBufferScene.model, 0, nullptr);
-		m_Scene.bindBuffers(offScreenCmdBuffer);
-		vkCmdDrawIndexed(offScreenCmdBuffer, m_Scene.indices.count, 1, 0, 0, 0);
+		m_Scene.draw(offScreenCmdBuffer, 0, pipelineLayout, 0);
+		//m_Scene.bindBuffers(offScreenCmdBuffer);
+		//vkCmdDrawIndexed(offScreenCmdBuffer, m_Scene.indices.count, 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(offScreenCmdBuffer);
 
@@ -371,14 +374,16 @@ namespace rtf
 	void RTFilterDemo::loadAssets()
 	{
 		const uint32_t glTFLoadingFlags = vkglTF::FileLoadingFlags::PreTransformVertices | vkglTF::FileLoadingFlags::PreMultiplyVertexColors | vkglTF::FileLoadingFlags::FlipY;
-		//models.model.loadFromFile(getAssetPath() + "models/cornellBox.gltf", vulkanDevice, queue, glTFLoadingFlags);
 
-		m_Scene.loadFromFile(getAssetPath() + "models/armor/armor.gltf", vulkanDevice, queue, glTFLoadingFlags);
+		//m_Scene.loadFromFile(getAssetPath() + "glTF-Sample-Models/2.0/Sponza/glTF/Sponza.gltf", vulkanDevice, queue, glTFLoadingFlags);
+		m_Scene.loadFromFile(getAssetPath() + MODEL_NAME, vulkanDevice, queue, glTFLoadingFlags);
+		//m_Scene.loadFromFile(getAssetPath() + "models/armor/armor.gltf", vulkanDevice, queue, glTFLoadingFlags);
 	}
 	void RTFilterDemo::buildCommandBuffers()
 	{
 		//when ray tracing is turned on, build different command buffer
-		if (rt_on) {
+		if (rt_on)
+		{
 
 			if (resized)
 			{
@@ -457,7 +462,8 @@ namespace rtf
 				VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
 			}
 		}
-		else {
+		else
+		{
 
 			VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
 
@@ -623,7 +629,20 @@ namespace rtf
 		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipelines.composition));
 
 		// Vertex input state from glTF model for pipeline rendering models
-		pipelineCI.pVertexInputState = vkglTF::Vertex::getPipelineVertexInputState({ vkglTF::VertexComponent::Position, vkglTF::VertexComponent::UV, vkglTF::VertexComponent::Color, vkglTF::VertexComponent::Normal, vkglTF::VertexComponent::Tangent });
+		pipelineCI.pVertexInputState = vkglTF::Vertex::getPipelineVertexInputState(
+			{
+				vkglTF::VertexComponent::Position,
+				vkglTF::VertexComponent::UV,
+				vkglTF::VertexComponent::Color,
+				vkglTF::VertexComponent::Normal,
+				vkglTF::VertexComponent::Tangent
+
+			//vks::initializers::vertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, pos)),	// Location 0: Position
+			//vks::initializers::vertexInputAttributeDescription(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, normal)),// Location 1: Normal
+			//vks::initializers::vertexInputAttributeDescription(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, uv)),	// Location 2: Texture coordinates
+			//vks::initializers::vertexInputAttributeDescription(0, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, color)),	// Location 3: Color
+			}
+		);
 		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
 
 		// Offscreen pipeline
@@ -815,14 +834,17 @@ namespace rtf
 		if (!prepared)
 			return;
 
-		if (debugDisplayTarget == 5) {
+		if (debugDisplayTarget == 5)
+		{
 			rt_on = true;
 		}
 
-		if (rt_on) {
+		if (rt_on)
+		{
 			rt_draw();
 		}
-		else {
+		else
+		{
 			draw();
 		}
 
@@ -1083,7 +1105,8 @@ namespace rtf
 			\-----------/
 
 	*/
-	void RTFilterDemo::createShaderBindingTables() {
+	void RTFilterDemo::createShaderBindingTables()
+	{
 		const uint32_t handleSize = rayTracingPipelineProperties.shaderGroupHandleSize;
 		const uint32_t handleSizeAligned = vks::tools::alignedSize(rayTracingPipelineProperties.shaderGroupHandleSize, rayTracingPipelineProperties.shaderGroupHandleAlignment);
 		const uint32_t groupCount = static_cast<uint32_t>(shaderGroups.size());
@@ -1267,7 +1290,7 @@ namespace rtf
 	/*
 		Command buffer generation
 	*/
-	
+
 	void RTFilterDemo::rt_buildCommandBuffers()
 	{
 		if (resized)
@@ -1347,7 +1370,7 @@ namespace rtf
 			VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
 		}
 	}
-	
+
 
 	void RTFilterDemo::updateUniformBuffers()
 	{
@@ -1359,7 +1382,7 @@ namespace rtf
 		memcpy(ubo.mapped, &uniformData, sizeof(uniformData));
 	}
 
-	
+
 
 
 

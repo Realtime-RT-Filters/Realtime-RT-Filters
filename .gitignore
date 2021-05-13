@@ -4,5 +4,8 @@
 # CMake output directory
 out/
 
+# CMakeSettings
+CMakeSettings.json
+
 # local path to repository data
 source/realtimertfilters/base/DataPath.h

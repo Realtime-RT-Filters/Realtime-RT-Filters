@@ -25,5 +25,10 @@ void main()
 	vec3 tnorm = TBN * normalize(texture(samplerNormalMap, inUV).xyz * 2.0 - vec3(1.0));
 	outNormal = vec4(tnorm, 1.0);
 
-	outAlbedo = texture(samplerColor, inUV);
+	vec4 textureColor = texture(samplerColor, inUV);
+	if (textureColor.xyz == vec3(0.f) && inColor != vec3(0.f))
+	{
+		textureColor = vec4(inColor, 1.f);
+	}
+	outAlbedo =	textureColor;
 }
