@@ -89,21 +89,11 @@ namespace rtf
 		VkDescriptorSetLayout rt_descriptorSetLayout;
 		vkglTF::Model m_Scene;
 
-		/* Put into Attachment_Manager
-		// Framebuffer for offscreen rendering
-		struct FrameBufferAttachment
-		{
-			VkImage image;
-			VkDeviceMemory mem;
-			VkImageView view;
-			VkFormat format;
-		};
-		*/
 		struct FrameBuffer
 		{
 			int32_t width, height;
 			VkFramebuffer frameBuffer;
-			FrameBufferAttachment position, normal, albedo;
+			FrameBufferAttachment *position, *normal, *albedo;
 			FrameBufferAttachment depth;
 			VkRenderPass renderPass;
 		} offScreenFrameBuf;
@@ -121,13 +111,7 @@ namespace rtf
 		~RTFilterDemo();
 
 		// Enable physical device features required for this example
-		virtual void getEnabledFeatures();;
-
-		// Create a frame buffer attachment
-		void createAttachment(
-			VkFormat format,
-			VkImageUsageFlagBits usage,
-			FrameBufferAttachment* attachment);
+		virtual void getEnabledFeatures();
 
 		// Prepare a new framebuffer and attachments for offscreen rendering (G-Buffer)
 		void prepareOffscreenFramebuffer();

@@ -2,10 +2,14 @@
 
 namespace rtf
 {
-	Attachment_Manager::Attachment_Manager(VkDevice device, vks::VulkanDevice* vulkanDevice)
+	Attachment_Manager::Attachment_Manager(VkDevice device, vks::VulkanDevice* vulkanDevice, VkPhysicalDevice physicalDevice)
 	{
 		this->device = device;
 		this->vulkanDevice = vulkanDevice;
+		this->physicalDevice = physicalDevice;
+
+		//create neccessary Attachments
+		createAllAttachments();
 	}
 
 
@@ -15,7 +19,6 @@ namespace rtf
 
 
 	// Create a frame buffer attachment
-
 	void Attachment_Manager::createAttachment(VkFormat format, VkImageUsageFlagBits usage, FrameBufferAttachment* attachment, int width, int height)
 	{
 		VkImageAspectFlags aspectMask = 0;
@@ -71,4 +74,81 @@ namespace rtf
 		VK_CHECK_RESULT(vkCreateImageView(device, &imageView, nullptr, &attachment->view));
 		
 	}
+
+
+	FrameBufferAttachment* Attachment_Manager::getAttachment(Attachment attachment)
+	{
+
+		//Return requested attachment depending on request
+		switch (attachment)
+		{
+		case rtf::position:
+			return &m_position;
+		case rtf::normal:
+			return &m_normal;
+		case rtf::albedo:
+			return &m_albedo;
+		case rtf::depth:
+			break;
+		case rtf::output_rt:
+			break;
+		case rtf::output_filter:
+			break;
+		default:
+			break;
+		}
+
+		return &FrameBufferAttachment();
+	}
+
+
+	void Attachment_Manager::createAllAttachments()
+	{
+
+		int width = 2048;
+		int height = 2048;
+
+
+		//create all the required attachments here
+
+		//Prepass Outputs
+		// (World space) Positions
+		this->createAttachment(
+			VK_FORMAT_R16G16B16A16_SFLOAT,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			&m_position,
+			width,
+			height);
+
+
+		// (World space) Normals
+		this->createAttachment(
+			VK_FORMAT_R16G16B16A16_SFLOAT,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			&m_normal,
+			width,
+			height);
+
+
+		// Albedo (color)
+		this->createAttachment(
+			VK_FORMAT_R8G8B8A8_UNORM,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			&m_albedo,
+			width,
+			height);
+
+
+		//Ray Tracing Outputs
+
+
+		// Find a suitable depth format
+		VkFormat attDepthFormat;
+		VkBool32 validDepthFormat = vks::tools::getSupportedDepthFormat(physicalDevice, &attDepthFormat);
+		assert(validDepthFormat);
+
+
+
+	}
+
 }

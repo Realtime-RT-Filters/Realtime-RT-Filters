@@ -8,7 +8,7 @@
 namespace rtf {
 
 	//These are global types needed by other classes
-	enum Attachment { position, normal, albedo, output_rt, output_filter };
+	enum Attachment { position, normal, albedo, depth, output_rt, output_filter };
 
 	// Framebuffer
 	struct FrameBufferAttachment
@@ -26,20 +26,32 @@ namespace rtf {
 	{
 
 	public:
-		Attachment_Manager(VkDevice device, vks::VulkanDevice* vulkanDevice);
+		Attachment_Manager(VkDevice device, vks::VulkanDevice* vulkanDevice, VkPhysicalDevice physicalDevice);
 		~Attachment_Manager();
 
+
 		void createAttachment(VkFormat format, VkImageUsageFlagBits usage, FrameBufferAttachment* attachment, int width, int height);
-		
+		FrameBufferAttachment* getAttachment(Attachment);
 
 
 	private:
 
+		void createAllAttachments();
+
 		//Attachment Manager needs to be aware of certain Vulkan components
-		//VkInstance* instance;
 		VkDevice device;
-		//This Vkdevice is a combined logical/physical vulkan device
+
+		//vks::Vkdevice is a combined logical/physical vulkan device
 		vks::VulkanDevice* vulkanDevice;
+		VkPhysicalDevice physicalDevice;
+
+
+
+		//List of managed Attachments
+		FrameBufferAttachment m_position;
+		FrameBufferAttachment m_normal;
+		FrameBufferAttachment m_albedo;
+
 
 	};
 }
