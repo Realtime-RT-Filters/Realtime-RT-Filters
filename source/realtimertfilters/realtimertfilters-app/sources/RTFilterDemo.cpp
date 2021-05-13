@@ -1,7 +1,6 @@
 #include "../headers/RTFilterDemo.hpp"
 #include "VulkanglTFModel.h"
-
-#define MODEL_NAME "models/cornellBox.gltf"
+#include "../project_defines.hpp"
 
 namespace rtf
 {
@@ -349,6 +348,8 @@ namespace rtf
 					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 					VK_IMAGE_LAYOUT_GENERAL,
 					subresourceRange);
+
+				drawUI(drawCmdBuffers[i]);
 
 				VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
 			}
@@ -733,6 +734,10 @@ namespace rtf
 		if (debugDisplayTarget == 5)
 		{
 			rt_on = true;
+		}
+		else
+		{
+			rt_on = false;
 		}
 
 		if (rt_on)

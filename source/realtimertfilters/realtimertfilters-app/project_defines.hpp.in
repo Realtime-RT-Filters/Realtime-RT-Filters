@@ -1,0 +1,5 @@
+#pragma once
+// ${CMAKE_PROJECT_DEFINE_HEADER}
+
+// the gltf scene to be loaded
+#define MODEL_NAME "models/cornellBox.gltf"
