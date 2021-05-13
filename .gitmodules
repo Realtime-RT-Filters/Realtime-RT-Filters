@@ -1,3 +1,6 @@
+#[submodule "Khronos GLTF Samples"]
+#	path = source/realtimertfilters/realtimertfilters-app/data/glTF-Sample-Models
+#	url = https://github.com/KhronosGroup/glTF-Sample-Models
 [submodule "Khronos GLTF Samples"]
 	path = source/realtimertfilters/realtimertfilters-app/data/glTF-Sample-Models
 	url = https://github.com/KhronosGroup/glTF-Sample-Models
