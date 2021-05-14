@@ -19,7 +19,7 @@
 #include "SpatioTemporalAccumulation.hpp"
 
 
-#define ENABLE_VALIDATION false
+#define ENABLE_VALIDATION true
 
 // Texture properties
 #define TEX_DIM 2048
