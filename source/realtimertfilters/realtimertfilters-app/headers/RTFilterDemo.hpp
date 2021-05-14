@@ -17,6 +17,7 @@
 
 #include "Renderpass_Gbuffer.hpp"
 #include "SpatioTemporalAccumulation.hpp"
+#include "RaytracingManager.hpp"
 
 
 #define ENABLE_VALIDATION true
@@ -39,10 +40,12 @@ namespace rtf
 
 //		RenderpassGbuffer m_RP_GBuffer;
 		SpatioTemporalAccumulation m_spatioTemporalAccumulation;
+		RaytracingManager m_rtManager;
 		
 		//Attachment manager
 		Attachment_Manager* m_attachment_manager;
 
+#pragma region helper_structs
 		struct
 		{
 			glm::mat4 projection;
@@ -85,8 +88,6 @@ namespace rtf
 		} descriptorSetsGBufferScene;
 		VkDescriptorSet descriptorSetGBuffer;
 		VkDescriptorSetLayout descriptorSetLayoutGBuffer;
-		VkDescriptorSet rt_descriptorSet;
-		VkDescriptorSetLayout rt_descriptorSetLayout;
 		vkglTF::Model m_Scene;
 
 		struct FrameBuffer
@@ -97,6 +98,7 @@ namespace rtf
 			FrameBufferAttachment* depth;
 			VkRenderPass renderPass;
 		} offScreenFrameBuf;
+#pragma endregion helper_structs
 
 		// One sampler for the frame buffer color attachments
 		VkSampler colorSampler;
@@ -142,53 +144,13 @@ namespace rtf
 
 		void draw();
 
-		void prepare();
+		virtual void prepare();
 
 		virtual void render();
 
 		virtual void OnUpdateUIOverlay(vks::UIOverlay* overlay);
 
-
-
-		//Ray tracing components
-
-
-
-
-		AccelerationStructure bottomLevelAS;
-		AccelerationStructure topLevelAS;
-
-		std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroups{};
-		struct ShaderBindingTables {
-			ShaderBindingTable raygen;
-			ShaderBindingTable miss;
-			ShaderBindingTable hit;
-		} shaderBindingTables;
-
-		struct UniformData {
-			glm::mat4 viewInverse;
-			glm::mat4 projInverse;
-			glm::vec4 lightPos;
-			int32_t vertexSize;
-		} uniformData;
-		vks::Buffer ubo;
-
-
-		VkPipeline rt_pipeline;
-		VkPipelineLayout rt_pipelineLayout;
-
-
-
-		void createBottomLevelAccelerationStructure();
-		void createTopLevelAccelerationStructure();
-		void createShaderBindingTables();
-		void createRayTracingPipeline();
-		void createDescriptorSets();
-		void createUniformBuffer();
-		void handleResize();
-		void rt_buildCommandBuffers();
-		void updateUniformBuffers();
-		void rt_draw();
+		std::string getShadersPath2();
 
 		bool rt_on = false;
 
