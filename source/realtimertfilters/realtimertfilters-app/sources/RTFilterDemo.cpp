@@ -230,8 +230,8 @@ namespace rtf
 		vkCmdBindPipeline(offScreenCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.offscreen);
 
 		// Instanced object
-		vkCmdBindDescriptorSets(offScreenCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSetsGBufferScene.model, 0, nullptr);
-		m_Scene.draw(offScreenCmdBuffer, 0, pipelineLayout, 0);
+		vkCmdBindDescriptorSets(offScreenCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayoutOffscreen, 0, 1, &descriptorSetsGBufferScene.model, 0, nullptr);
+		m_Scene.draw(offScreenCmdBuffer, vkglTF::RenderFlags::BindImages, pipelineLayoutOffscreen, 1); // vkglTF::RenderFlags::BindImages
 		//m_Scene.bindBuffers(offScreenCmdBuffer);
 		//vkCmdDrawIndexed(offScreenCmdBuffer, m_Scene.indices.count, 1, 0, 0, 0);
 
@@ -241,17 +241,16 @@ namespace rtf
 	}
 	void RTFilterDemo::loadAssets()
 	{
-		
 		const uint32_t glTFLoadingFlags = vkglTF::FileLoadingFlags::PreTransformVertices | vkglTF::FileLoadingFlags::PreMultiplyVertexColors | vkglTF::FileLoadingFlags::FlipY;
 		
 		// raytracing: we need to set additional buffer creation flags, before loading the scene:
-		// Instead of a simple triangle, we'll be loading a more complex scene for this example
 		// The shaders are accessing the vertex and index buffers of the scene, so the proper usage flag has to be set on the vertex and index buffers for the scene
 		vkglTF::memoryPropertyFlags = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		
-		//m_Scene.loadFromFile(getAssetPath() + "glTF-Sample-Models/2.0/Sponza/glTF/Sponza.gltf", vulkanDevice, queue, glTFLoadingFlags);
+		// specify we want the normal map in the descriptor set
+		vkglTF::descriptorBindingFlags |= vkglTF::DescriptorBindingFlags::ImageNormalMap;
+
 		m_Scene.loadFromFile(getAssetPath() + MODEL_NAME, vulkanDevice, queue, glTFLoadingFlags);
-		//m_Scene.loadFromFile(getAssetPath() + "models/armor/armor.gltf", vulkanDevice, queue, glTFLoadingFlags);
 		m_rtManager.setScene(&m_Scene);
 	}
 	void RTFilterDemo::buildCommandBuffers()
@@ -349,9 +348,14 @@ namespace rtf
 		VkDescriptorSetLayoutCreateInfo descriptorLayout = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings);
 		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorLayout, nullptr, &descriptorSetLayoutGBuffer));
 
-		// Shared pipeline layout used by all pipelines
+		// Pipeline layout for composition
 		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo = vks::initializers::pipelineLayoutCreateInfo(&descriptorSetLayoutGBuffer, 1);
 		VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pPipelineLayoutCreateInfo, nullptr, &pipelineLayout));
+
+		// Pipeline layout for Offscreen
+		std::vector<VkDescriptorSetLayout> gltfDescriptorSetLayouts = { vkglTF::descriptorSetLayoutUbo, vkglTF::descriptorSetLayoutImage };
+		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfoOffscreen = vks::initializers::pipelineLayoutCreateInfo(gltfDescriptorSetLayouts.data(), 2);
+		VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pPipelineLayoutCreateInfoOffscreen, nullptr, &pipelineLayoutOffscreen));
 	}
 	void RTFilterDemo::setupDescriptorSet()
 	{
@@ -394,7 +398,9 @@ namespace rtf
 		// Offscreen (scene)
 
 		// Model
-		VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSetsGBufferScene.model));
+		// use descriptor set layout delivered by gltf
+		VkDescriptorSetAllocateInfo allocInfoOffscreen = vks::initializers::descriptorSetAllocateInfo(descriptorPool, &vkglTF::descriptorSetLayoutUbo, 1);
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &allocInfoOffscreen, &descriptorSetsGBufferScene.model));
 		writeDescriptorSets = {
 			// Binding 0: Vertex shader uniform buffer
 			vks::initializers::writeDescriptorSet(descriptorSetsGBufferScene.model, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &uniformBuffers.offscreen.descriptor),
@@ -462,6 +468,9 @@ namespace rtf
 
 		// Separate render pass
 		pipelineCI.renderPass = offScreenFrameBuf.renderPass;
+
+		// Separate pipeline/descriptorset layout
+		pipelineCI.layout = pipelineLayoutOffscreen;
 
 		// Blend attachment states required for all color attachments
 		// This is important, as color write mask will otherwise be 0x0 and you

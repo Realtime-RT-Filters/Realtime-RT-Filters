@@ -80,6 +80,7 @@ namespace rtf
 			VkPipeline composition;
 		} pipelines;
 		VkPipelineLayout pipelineLayout;
+		VkPipelineLayout pipelineLayoutOffscreen;
 
 
 		struct
