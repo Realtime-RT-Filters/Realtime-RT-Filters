@@ -464,6 +464,17 @@ void vkglTF::Material::createDescriptorSet(VkDescriptorPool descriptorPool, VkDe
 		writeDescriptorSet.pImageInfo = &normalTexture->descriptor;
 		writeDescriptorSets.push_back(writeDescriptorSet);
 	}
+	if (metallicRoughnessTexture && descriptorBindingFlags & DescriptorBindingFlags::MetallicRoughnessMap) {
+		imageDescriptors.push_back(metallicRoughnessTexture->descriptor);
+		VkWriteDescriptorSet writeDescriptorSet{};
+		writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writeDescriptorSet.descriptorCount = 1;
+		writeDescriptorSet.dstSet = descriptorSet;
+		writeDescriptorSet.dstBinding = static_cast<uint32_t>(writeDescriptorSets.size());
+		writeDescriptorSet.pImageInfo = &metallicRoughnessTexture->descriptor;
+		writeDescriptorSets.push_back(writeDescriptorSet);
+	}
 	vkUpdateDescriptorSets(device->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
 }
 
@@ -1329,6 +1340,12 @@ void vkglTF::Model::loadFromFile(std::string filename, vks::VulkanDevice *device
 		if (material.baseColorTexture != nullptr) {
 			imageCount++;
 		}
+		if (material.normalTexture != nullptr) {
+			imageCount++;
+		}
+		if (material.metallicRoughnessTexture != nullptr) {
+			imageCount++;
+		}
 	}
 	std::vector<VkDescriptorPoolSize> poolSizes = {
 		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, uboCount },
@@ -1338,6 +1355,9 @@ void vkglTF::Model::loadFromFile(std::string filename, vks::VulkanDevice *device
 			poolSizes.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageCount });
 		}
 		if (descriptorBindingFlags & DescriptorBindingFlags::ImageNormalMap) {
+			poolSizes.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageCount });
+		}
+		if (descriptorBindingFlags & DescriptorBindingFlags::MetallicRoughnessMap) {
 			poolSizes.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageCount });
 		}
 	}
@@ -1375,6 +1395,9 @@ void vkglTF::Model::loadFromFile(std::string filename, vks::VulkanDevice *device
 				setLayoutBindings.push_back(vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, static_cast<uint32_t>(setLayoutBindings.size())));
 			}
 			if (descriptorBindingFlags & DescriptorBindingFlags::ImageNormalMap) {
+				setLayoutBindings.push_back(vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, static_cast<uint32_t>(setLayoutBindings.size())));
+			}
+			if (descriptorBindingFlags & DescriptorBindingFlags::MetallicRoughnessMap) {
 				setLayoutBindings.push_back(vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, static_cast<uint32_t>(setLayoutBindings.size())));
 			}
 			VkDescriptorSetLayoutCreateInfo descriptorLayoutCI{};
