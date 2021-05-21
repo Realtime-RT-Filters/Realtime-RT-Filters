@@ -8,7 +8,7 @@ out/
 CMakeSettings.json
 
 # personal project defines (which scene to load etc.)
-project_defines.hpp
+# project_defines.hpp
 
 # local path to repository data
 source/realtimertfilters/base/DataPath.h
