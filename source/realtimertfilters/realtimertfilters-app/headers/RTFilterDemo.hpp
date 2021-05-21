@@ -158,4 +158,4 @@ namespace rtf
 	};
 }
 
-#endif RTFilterDemo_h
+#endif //RTFilterDemo_h

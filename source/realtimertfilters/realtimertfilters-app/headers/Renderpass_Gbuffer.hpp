@@ -54,4 +54,4 @@ namespace rtf
 	};
 }
 
-#endif Renderpass_Gbuffer_h
+#endif //Renderpass_Gbuffer_h

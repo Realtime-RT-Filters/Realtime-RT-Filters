@@ -1,6 +1,6 @@
 
-#include "..\headers\RaytracingManager.hpp"
-#include "..\headers\RTFilterDemo.hpp"
+#include "../headers/RaytracingManager.hpp"
+#include "../headers/RTFilterDemo.hpp"
 
 namespace rtf
 {

@@ -1,4 +1,4 @@
-#include "..\headers\Attachment_Manager.hpp"
+#include "../headers/Attachment_Manager.hpp"
 
 namespace rtf
 {
@@ -35,7 +35,7 @@ namespace rtf
 			break;
 		}
 
-		return &FrameBufferAttachment();
+        return nullptr; // not allowed without fpermissive: won't work anyway: &FrameBufferAttachment();
 	}
 
 

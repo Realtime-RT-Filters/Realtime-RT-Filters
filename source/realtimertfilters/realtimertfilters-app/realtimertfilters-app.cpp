@@ -104,20 +104,20 @@ int main(const int argc, const char* argv[])
 #elif defined(VK_USE_PLATFORM_XCB_KHR)
 static void handleEvent(const xcb_generic_event_t* event)
 {
-	if (vulkanExample != NULL)
+    if (rtFilterDemoInstance != NULL)
 	{
-		vulkanExample->handleEvent(event);
+        rtFilterDemoInstance->handleEvent(event);
 	}
 }
 int main(const int argc, const char* argv[])
 {
-	for (size_t i = 0; i < argc; i++) { VulkanExample::args.push_back(argv[i]); };
-	vulkanExample = new VulkanExample();
-	vulkanExample->initVulkan();
-	vulkanExample->setupWindow();
-	vulkanExample->prepare();
-	vulkanExample->renderLoop();
-	delete(vulkanExample);
+    for (size_t i = 0; i < argc; i++) { rtf::RTFilterDemo::args.push_back(argv[i]); };
+    rtFilterDemoInstance = new rtf::RTFilterDemo();
+    rtFilterDemoInstance->initVulkan();
+    rtFilterDemoInstance->setupWindow();
+    rtFilterDemoInstance->prepare();
+    rtFilterDemoInstance->renderLoop();
+    delete(rtFilterDemoInstance);
 	return 0;
 }
 #elif (defined(VK_USE_PLATFORM_IOS_MVK) || defined(VK_USE_PLATFORM_MACOS_MVK))
