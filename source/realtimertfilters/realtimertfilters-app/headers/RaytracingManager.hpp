@@ -51,7 +51,7 @@ namespace rtf
 			VkDescriptorPool descriptorPool,
 			Camera* camera
 		);
-		void cleanup();
+		virtual void cleanup();
 		virtual void buildCommandBuffer(VkCommandBuffer commandBuffer, VkImage swapchainImage, uint32_t width, uint32_t height);
 		VkPhysicalDeviceAccelerationStructureFeaturesKHR* getEnabledFeatures();
 		
@@ -63,17 +63,17 @@ namespace rtf
 
 		StorageImage storageImage;
 
-		void enableExtensions(std::vector<const char*>& enabledDeviceExtensions);
-		void prepare(uint32_t width, uint32_t height);
-		ScratchBuffer createScratchBuffer(VkDeviceSize size);
-		void deleteScratchBuffer(ScratchBuffer& scratchBuffer);
-		void createAccelerationStructure(AccelerationStructure& accelerationStructure, VkAccelerationStructureTypeKHR type, VkAccelerationStructureBuildSizesInfoKHR buildSizeInfo);
-		void deleteAccelerationStructure(AccelerationStructure& accelerationStructure);
-		uint64_t getBufferDeviceAddress(VkBuffer buffer);
-		void createStorageImage(VkFormat format, VkExtent3D extent);
-		void deleteStorageImage();
+		virtual void enableExtensions(std::vector<const char*>& enabledDeviceExtensions);
+		virtual void prepare(uint32_t width, uint32_t height);
+		virtual ScratchBuffer createScratchBuffer(VkDeviceSize size);
+		virtual void deleteScratchBuffer(ScratchBuffer& scratchBuffer);
+		virtual void createAccelerationStructure(AccelerationStructure& accelerationStructure, VkAccelerationStructureTypeKHR type, VkAccelerationStructureBuildSizesInfoKHR buildSizeInfo);
+		virtual void deleteAccelerationStructure(AccelerationStructure& accelerationStructure);
+		virtual uint64_t getBufferDeviceAddress(VkBuffer buffer);
+		virtual void createStorageImage(VkFormat format, VkExtent3D extent);
+		virtual void deleteStorageImage();
 		VkStridedDeviceAddressRegionKHR getSbtEntryStridedDeviceAddressRegion(VkBuffer buffer, uint32_t handleCount);
-		void createShaderBindingTable(ShaderBindingTable& shaderBindingTable, uint32_t handleCount);
+		virtual void createShaderBindingTable(ShaderBindingTable& shaderBindingTable, uint32_t handleCount);
 
 #pragma region vulkan_function_pointers
 		// Function pointers for ray tracing related stuff
@@ -122,16 +122,16 @@ namespace rtf
 		VkPipeline rt_pipeline;
 		VkPipelineLayout rt_pipelineLayout;
 
-		void createBottomLevelAccelerationStructure();
-		void createTopLevelAccelerationStructure();
-		void createShaderBindingTables();
+		virtual void createBottomLevelAccelerationStructure();
+		virtual void createTopLevelAccelerationStructure();
+		virtual void createShaderBindingTables();
 		virtual void createRayTracingPipeline();
-		void createDescriptorSets();
-		void createUniformBuffer();
-		void handleResize(uint32_t width, uint32_t height);
-		void updateUniformBuffers(float timer, Camera* camera);
+		virtual void createDescriptorSets();
+		virtual void createUniformBuffer();
+		virtual void handleResize(uint32_t width, uint32_t height);
+		virtual void updateUniformBuffers(float timer, Camera* camera);
 
-		void setScene(vkglTF::Model* scene) { m_Scene = scene; }
+		virtual void setScene(vkglTF::Model* scene) { m_Scene = scene; }
 
 	protected:
 		// properties that need to be passed by the vulkanexamplebase class:

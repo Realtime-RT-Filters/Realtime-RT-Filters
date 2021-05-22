@@ -88,18 +88,9 @@ namespace rtf
 			&m_depth,
 			width,
 			height);
-
-
-
 		//Ray Tracing Outputs
 
-
-
-
-
 	}
-
-
 
 	// Create a frame buffer attachment
 	void Attachment_Manager::createAttachment(VkFormat format, VkImageUsageFlagBits usage, FrameBufferAttachment* attachment, int width, int height)

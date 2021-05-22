@@ -650,8 +650,6 @@ namespace rtf
 		//Ray tracing
 		m_rtManager.setup(this, physicalDevice, vulkanDevice, device, queue, &swapChain, descriptorPool, &camera);
 		m_rtManager.prepare(width, height);
-		buildCommandBuffers();
-		buildDeferredCommandBuffer();
 
 		m_pathTracerManager.setup(this, physicalDevice, vulkanDevice, device, queue, &swapChain, descriptorPool, &camera);
 		m_pathTracerManager.prepare(width, height);
@@ -679,7 +677,7 @@ namespace rtf
 			VulkanExampleBase::submitFrame();
 		}else if (path_tracer_on)
 		{
-			// command buffers are built differently for rt.
+			// command buffers are built differently for pt.
 			VulkanExampleBase::prepareFrame();
 			submitInfo.commandBufferCount = 1;
 			submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];

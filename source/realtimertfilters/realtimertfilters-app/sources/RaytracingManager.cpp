@@ -352,11 +352,7 @@ namespace rtf
 		shaderBindingTable.map();
 	}
 
-
 	//Ray tracing related functions start here
-
-
-
 
 	/*
 		Create the bottom level acceleration structure contains the scene's actual geometry (vertices, triangles)
@@ -503,6 +499,7 @@ namespace rtf
 			&accelerationStructureBuildSizesInfo);
 
 		// @todo: as return value?
+
 		createAccelerationStructure(topLevelAS, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR, accelerationStructureBuildSizesInfo);
 
 		// Create a small scratch buffer used during build of the top level acceleration structure
