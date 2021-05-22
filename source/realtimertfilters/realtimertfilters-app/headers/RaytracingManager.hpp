@@ -41,7 +41,7 @@ namespace rtf
 		RaytracingManager() = default;
 		~RaytracingManager();
 
-		void setup(
+		virtual void setup(
 			RTFilterDemo* rtFilterDemo,
 			VkPhysicalDevice physicalDevice,
 			vks::VulkanDevice* vulkanDevice,
@@ -52,7 +52,7 @@ namespace rtf
 			Camera* camera
 		);
 		void cleanup();
-		void buildCommandBuffer(VkCommandBuffer commandBuffer, VkImage swapchainImage, uint32_t width, uint32_t height);
+		virtual void buildCommandBuffer(VkCommandBuffer commandBuffer, VkImage swapchainImage, uint32_t width, uint32_t height);
 		VkPhysicalDeviceAccelerationStructureFeaturesKHR* getEnabledFeatures();
 		
 		// Extends the buffer class and holds information for a shader binding table
@@ -125,7 +125,7 @@ namespace rtf
 		void createBottomLevelAccelerationStructure();
 		void createTopLevelAccelerationStructure();
 		void createShaderBindingTables();
-		void createRayTracingPipeline();
+		virtual void createRayTracingPipeline();
 		void createDescriptorSets();
 		void createUniformBuffer();
 		void handleResize(uint32_t width, uint32_t height);

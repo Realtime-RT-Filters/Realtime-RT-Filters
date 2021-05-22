@@ -4,9 +4,8 @@
 
 namespace rtf
 {
-	RaytracingManager::~RaytracingManager()
+	RaytracingManager::~RaytracingManager() 
 	{
-
 	}
 
 	void RaytracingManager::setup(
@@ -66,6 +65,9 @@ namespace rtf
 		/*
 			Copy ray tracing output to swap chain image
 		*/
+		VkPresentInfoKHR presentInfo{};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.waitSemaphoreCount = 1;
 
 		// Prepare current swap chain image as transfer destination
 		VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };

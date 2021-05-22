@@ -5,8 +5,6 @@
 #include <VulkanRaytracingSample.h>
 #include "headers/RTFilterDemo.hpp"
 
-
-
 rtf::RTFilterDemo* rtFilterDemoInstance;
 
 rtf::RTFilterDemo* GetRTDemoInstance()

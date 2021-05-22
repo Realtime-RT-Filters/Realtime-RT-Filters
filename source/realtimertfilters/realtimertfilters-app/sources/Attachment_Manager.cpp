@@ -4,14 +4,13 @@ namespace rtf
 {
 	Attachment_Manager::Attachment_Manager(VkDevice* device, vks::VulkanDevice* vulkanDevice, VkPhysicalDevice* physicalDevice)
 	{
-		this->device = device;
-		this->vulkanDevice = vulkanDevice;
-		this->physicalDevice = physicalDevice;
+		this->m_device = device;
+		this->m_vulkanDevice = vulkanDevice;
+		this->m_physicalDevice = physicalDevice;
 
 		//create neccessary Attachments
 		createAllAttachments();
 	}
-
 
 	FrameBufferAttachment* Attachment_Manager::getAttachment(Attachment attachment)
 	{
@@ -80,7 +79,7 @@ namespace rtf
 
 		// Find a suitable depth format
 		VkFormat attDepthFormat;
-		VkBool32 validDepthFormat = vks::tools::getSupportedDepthFormat(*physicalDevice, &attDepthFormat);
+		VkBool32 validDepthFormat = vks::tools::getSupportedDepthFormat(*m_physicalDevice, &attDepthFormat);
 		assert(validDepthFormat);
 
 		this->createAttachment(
@@ -138,12 +137,12 @@ namespace rtf
 		VkMemoryAllocateInfo memAlloc = vks::initializers::memoryAllocateInfo();
 		VkMemoryRequirements memReqs;
 
-		VK_CHECK_RESULT(vkCreateImage(*device, &image, nullptr, &attachment->image));
-		vkGetImageMemoryRequirements(*device, attachment->image, &memReqs);
+		VK_CHECK_RESULT(vkCreateImage(*m_device, &image, nullptr, &attachment->image));
+		vkGetImageMemoryRequirements(*m_device, attachment->image, &memReqs);
 		memAlloc.allocationSize = memReqs.size;
-		memAlloc.memoryTypeIndex = vulkanDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-		VK_CHECK_RESULT(vkAllocateMemory(*device, &memAlloc, nullptr, &attachment->mem));
-		VK_CHECK_RESULT(vkBindImageMemory(*device, attachment->image, attachment->mem, 0));
+		memAlloc.memoryTypeIndex = m_vulkanDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		VK_CHECK_RESULT(vkAllocateMemory(*m_device, &memAlloc, nullptr, &attachment->mem));
+		VK_CHECK_RESULT(vkBindImageMemory(*m_device, attachment->image, attachment->mem, 0));
 
 		VkImageViewCreateInfo imageView = vks::initializers::imageViewCreateInfo();
 		imageView.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -155,7 +154,7 @@ namespace rtf
 		imageView.subresourceRange.baseArrayLayer = 0;
 		imageView.subresourceRange.layerCount = 1;
 		imageView.image = attachment->image;
-		VK_CHECK_RESULT(vkCreateImageView(*device, &imageView, nullptr, &attachment->view));
+		VK_CHECK_RESULT(vkCreateImageView(*m_device, &imageView, nullptr, &attachment->view));
 
 	}
 	
@@ -163,21 +162,21 @@ namespace rtf
 	{
 		//Destroy & free all attachments
 
-		vkDestroyImageView(*device, m_position.view, nullptr);
-		vkDestroyImage(*device, m_position.image, nullptr);
-		vkFreeMemory(*device, m_position.mem, nullptr);
+		vkDestroyImageView(*m_device, m_position.view, nullptr);
+		vkDestroyImage(*m_device, m_position.image, nullptr);
+		vkFreeMemory(*m_device, m_position.mem, nullptr);
 
-		vkDestroyImageView(*device, m_normal.view, nullptr);
-		vkDestroyImage(*device, m_normal.image, nullptr);
-		vkFreeMemory(*device, m_normal.mem, nullptr);
+		vkDestroyImageView(*m_device, m_normal.view, nullptr);
+		vkDestroyImage(*m_device, m_normal.image, nullptr);
+		vkFreeMemory(*m_device, m_normal.mem, nullptr);
 
-		vkDestroyImageView(*device, m_albedo.view, nullptr);
-		vkDestroyImage(*device, m_albedo.image, nullptr);
-		vkFreeMemory(*device, m_albedo.mem, nullptr);
+		vkDestroyImageView(*m_device, m_albedo.view, nullptr);
+		vkDestroyImage(*m_device, m_albedo.image, nullptr);
+		vkFreeMemory(*m_device, m_albedo.mem, nullptr);
 
-		vkDestroyImageView(*device, m_depth.view, nullptr);
-		vkDestroyImage(*device, m_depth.image, nullptr);
-		vkFreeMemory(*device, m_depth.mem, nullptr);
+		vkDestroyImageView(*m_device, m_depth.view, nullptr);
+		vkDestroyImage(*m_device, m_depth.image, nullptr);
+		vkFreeMemory(*m_device, m_depth.mem, nullptr);
 
 
 	}

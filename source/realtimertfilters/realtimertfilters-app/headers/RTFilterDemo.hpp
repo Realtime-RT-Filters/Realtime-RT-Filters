@@ -18,6 +18,7 @@
 #include "Renderpass_Gbuffer.hpp"
 #include "SpatioTemporalAccumulation.hpp"
 #include "RaytracingManager.hpp"
+#include "PathTracerManager.hpp"
 
 
 #define ENABLE_VALIDATION true
@@ -41,6 +42,7 @@ namespace rtf
 //		RenderpassGbuffer m_RP_GBuffer;
 		SpatioTemporalAccumulation m_spatioTemporalAccumulation;
 		RaytracingManager m_rtManager;
+		PathTracerManager m_pathTracerManager;
 		
 		//Attachment manager
 		Attachment_Manager* m_attachment_manager;
@@ -80,7 +82,6 @@ namespace rtf
 			VkPipeline composition;
 		} pipelines;
 		VkPipelineLayout pipelineLayout;
-		VkPipelineLayout pipelineLayoutOffscreen;
 
 
 		struct
@@ -154,6 +155,7 @@ namespace rtf
 		std::string getShadersPath2();
 
 		bool rt_on = false;
+		bool path_tracer_on = false;
 
 	};
 }

@@ -18,6 +18,8 @@ namespace rtf
 		settings.overlay = true;
 
 		m_rtManager.enableExtensions(enabledDeviceExtensions);
+
+		m_pathTracerManager.enableExtensions(enabledDeviceExtensions);
 	}
 	RTFilterDemo::~RTFilterDemo()
 	{
@@ -60,6 +62,7 @@ namespace rtf
 			enabledFeatures.samplerAnisotropy = VK_TRUE;
 		}
 
+		 m_pathTracerManager.getEnabledFeatures();
 		deviceCreatepNextChain = m_rtManager.getEnabledFeatures();
 	}
 
@@ -71,13 +74,13 @@ namespace rtf
 		offScreenFrameBuf.width = FB_DIM;
 		offScreenFrameBuf.height = FB_DIM;
 
-		
+
 		//get attachments from attachment manager
 		offScreenFrameBuf.position = m_attachment_manager->getAttachment(position);
 		offScreenFrameBuf.normal = m_attachment_manager->getAttachment(normal);
 		offScreenFrameBuf.albedo = m_attachment_manager->getAttachment(albedo);
 		offScreenFrameBuf.depth = m_attachment_manager->getAttachment(depth);
-		
+
 
 
 		// Set up separate renderpass with references to the color and depth attachments
@@ -230,8 +233,8 @@ namespace rtf
 		vkCmdBindPipeline(offScreenCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.offscreen);
 
 		// Instanced object
-		vkCmdBindDescriptorSets(offScreenCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayoutOffscreen, 0, 1, &descriptorSetsGBufferScene.model, 0, nullptr);
-		m_Scene.draw(offScreenCmdBuffer, vkglTF::RenderFlags::BindImages, pipelineLayoutOffscreen, 1); // vkglTF::RenderFlags::BindImages
+		vkCmdBindDescriptorSets(offScreenCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSetsGBufferScene.model, 0, nullptr);
+		m_Scene.draw(offScreenCmdBuffer, 0, pipelineLayout, 0);
 		//m_Scene.bindBuffers(offScreenCmdBuffer);
 		//vkCmdDrawIndexed(offScreenCmdBuffer, m_Scene.indices.count, 1, 0, 0, 0);
 
@@ -241,17 +244,19 @@ namespace rtf
 	}
 	void RTFilterDemo::loadAssets()
 	{
+
 		const uint32_t glTFLoadingFlags = vkglTF::FileLoadingFlags::PreTransformVertices | vkglTF::FileLoadingFlags::PreMultiplyVertexColors | vkglTF::FileLoadingFlags::FlipY;
-		
+
 		// raytracing: we need to set additional buffer creation flags, before loading the scene:
+		// Instead of a simple triangle, we'll be loading a more complex scene for this example
 		// The shaders are accessing the vertex and index buffers of the scene, so the proper usage flag has to be set on the vertex and index buffers for the scene
 		vkglTF::memoryPropertyFlags = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-		
-		// specify we want the normal map in the descriptor set
-		vkglTF::descriptorBindingFlags |= vkglTF::DescriptorBindingFlags::ImageNormalMap;
 
+		//m_Scene.loadFromFile(getAssetPath() + "glTF-Sample-Models/2.0/Sponza/glTF/Sponza.gltf", vulkanDevice, queue, glTFLoadingFlags);
 		m_Scene.loadFromFile(getAssetPath() + MODEL_NAME, vulkanDevice, queue, glTFLoadingFlags);
+		//m_Scene.loadFromFile(getAssetPath() + "models/armor/armor.gltf", vulkanDevice, queue, glTFLoadingFlags);
 		m_rtManager.setScene(&m_Scene);
+		m_pathTracerManager.setScene(&m_Scene);
 	}
 	void RTFilterDemo::buildCommandBuffers()
 	{
@@ -267,8 +272,23 @@ namespace rtf
 			for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
 			{
 				VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
-					m_rtManager.buildCommandBuffer(drawCmdBuffers[i], swapChain.images[i], width, height);
-					drawUI(drawCmdBuffers[i]);
+				m_rtManager.buildCommandBuffer(drawCmdBuffers[i], swapChain.images[i], width, height);
+				drawUI(drawCmdBuffers[i]);
+				VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+			}
+		}
+		else if (path_tracer_on) {
+			if (resized)
+			{
+				m_pathTracerManager.handleResize(width, height);
+			}
+
+			VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
+			for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
+			{
+				VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
+				m_pathTracerManager.buildCommandBuffer(drawCmdBuffers[i], swapChain.images[i], width, height);
+				drawUI(drawCmdBuffers[i]);
 				VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
 			}
 		}
@@ -348,17 +368,14 @@ namespace rtf
 		VkDescriptorSetLayoutCreateInfo descriptorLayout = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings);
 		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorLayout, nullptr, &descriptorSetLayoutGBuffer));
 
-		// Pipeline layout for composition
+		// Shared pipeline layout used by all pipelines
 		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo = vks::initializers::pipelineLayoutCreateInfo(&descriptorSetLayoutGBuffer, 1);
 		VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pPipelineLayoutCreateInfo, nullptr, &pipelineLayout));
-
-		// Pipeline layout for Offscreen
-		std::vector<VkDescriptorSetLayout> gltfDescriptorSetLayouts = { vkglTF::descriptorSetLayoutUbo, vkglTF::descriptorSetLayoutImage };
-		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfoOffscreen = vks::initializers::pipelineLayoutCreateInfo(gltfDescriptorSetLayouts.data(), 2);
-		VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pPipelineLayoutCreateInfoOffscreen, nullptr, &pipelineLayoutOffscreen));
 	}
+
 	void RTFilterDemo::setupDescriptorSet()
 	{
+
 		std::vector<VkWriteDescriptorSet> writeDescriptorSets;
 		VkDescriptorSetAllocateInfo allocInfo = vks::initializers::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayoutGBuffer, 1);
 
@@ -398,9 +415,7 @@ namespace rtf
 		// Offscreen (scene)
 
 		// Model
-		// use descriptor set layout delivered by gltf
-		VkDescriptorSetAllocateInfo allocInfoOffscreen = vks::initializers::descriptorSetAllocateInfo(descriptorPool, &vkglTF::descriptorSetLayoutUbo, 1);
-		VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &allocInfoOffscreen, &descriptorSetsGBufferScene.model));
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSetsGBufferScene.model));
 		writeDescriptorSets = {
 			// Binding 0: Vertex shader uniform buffer
 			vks::initializers::writeDescriptorSet(descriptorSetsGBufferScene.model, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &uniformBuffers.offscreen.descriptor),
@@ -454,10 +469,10 @@ namespace rtf
 				vkglTF::VertexComponent::Normal,
 				vkglTF::VertexComponent::Tangent
 
-			//vks::initializers::vertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, pos)),	// Location 0: Position
-			//vks::initializers::vertexInputAttributeDescription(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, normal)),// Location 1: Normal
-			//vks::initializers::vertexInputAttributeDescription(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, uv)),	// Location 2: Texture coordinates
-			//vks::initializers::vertexInputAttributeDescription(0, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, color)),	// Location 3: Color
+				//vks::initializers::vertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, pos)),	// Location 0: Position
+				//vks::initializers::vertexInputAttributeDescription(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, normal)),// Location 1: Normal
+				//vks::initializers::vertexInputAttributeDescription(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, uv)),	// Location 2: Texture coordinates
+				//vks::initializers::vertexInputAttributeDescription(0, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, color)),	// Location 3: Color
 			}
 		);
 		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
@@ -468,9 +483,6 @@ namespace rtf
 
 		// Separate render pass
 		pipelineCI.renderPass = offScreenFrameBuf.renderPass;
-
-		// Separate pipeline/descriptorset layout
-		pipelineCI.layout = pipelineLayoutOffscreen;
 
 		// Blend attachment states required for all color attachments
 		// This is important, as color write mask will otherwise be 0x0 and you
@@ -641,6 +653,11 @@ namespace rtf
 		buildCommandBuffers();
 		buildDeferredCommandBuffer();
 
+		m_pathTracerManager.setup(this, physicalDevice, vulkanDevice, device, queue, &swapChain, descriptorPool, &camera);
+		m_pathTracerManager.prepare(width, height);
+		buildCommandBuffers();
+		buildDeferredCommandBuffer();
+
 		prepared = true;
 	}
 
@@ -650,8 +667,17 @@ namespace rtf
 			return;
 
 		rt_on = debugDisplayTarget == 5;
+		path_tracer_on = debugDisplayTarget == 6;
 
 		if (rt_on)
+		{
+			// command buffers are built differently for rt.
+			VulkanExampleBase::prepareFrame();
+			submitInfo.commandBufferCount = 1;
+			submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
+			VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+			VulkanExampleBase::submitFrame();
+		}else if (path_tracer_on)
 		{
 			// command buffers are built differently for rt.
 			VulkanExampleBase::prepareFrame();
@@ -677,13 +703,14 @@ namespace rtf
 
 		//Ray tracing variant uses the other Uniform Buffers
 		m_rtManager.updateUniformBuffers(timer, &camera);
+		m_pathTracerManager.updateUniformBuffers(timer, &camera);
 
 	}
 	void RTFilterDemo::OnUpdateUIOverlay(vks::UIOverlay* overlay)
 	{
 		if (overlay->header("Settings"))
 		{
-			if (overlay->comboBox("Display", &debugDisplayTarget, { "Final composition", "Position", "Normals", "Albedo", "Specular", "Ray Tracing" }))
+			if (overlay->comboBox("Display", &debugDisplayTarget, { "Final composition", "Position", "Normals", "Albedo", "Specular", "Ray Tracing", "Path Tracing" }))
 			{
 				updateUniformBufferComposition();
 			}
