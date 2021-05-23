@@ -52,4 +52,4 @@ namespace rtf {
 	};
 }
 
-#endif Attachment_Manager_h
+#endif //Attachment_Manager_h

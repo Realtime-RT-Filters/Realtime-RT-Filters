@@ -38,8 +38,9 @@
 namespace vkglTF
 {
 	enum DescriptorBindingFlags {
-		ImageBaseColor = 0x00000001,
-		ImageNormalMap = 0x00000002
+		ImageBaseColor =		0x01,
+		ImageNormalMap =		0x02,
+		MetallicRoughnessMap =	0x04,
 	};
 
 	extern VkDescriptorSetLayout descriptorSetLayoutImage;

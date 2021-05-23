@@ -9,6 +9,11 @@
 #include <filesystem>
 #include <iostream>
 
+#ifndef _MSC_VER
+#include <unistd.h>
+#include <limits.h>
+#define MAX_PATH PATH_MAX
+#endif
 
 #include "vulkanexamplebase.h"
 
@@ -663,8 +668,12 @@ void VulkanExampleBase::submitFrame()
 
 std::string ExePath()
 {
-	TCHAR buffer[MAX_PATH] = { 0 };
+    char buffer[MAX_PATH] = { 0 };
+#ifdef _MSC_VER
 	GetModuleFileName(NULL, buffer, MAX_PATH);
+#else
+    readlink("/proc/self/exe", buffer, PATH_MAX);
+#endif
 	std::string::size_type pos = std::string(buffer).find_last_of("\\/");
 	return std::string(buffer).substr(0, pos);
 }

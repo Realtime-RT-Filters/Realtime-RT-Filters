@@ -9,7 +9,7 @@ namespace rtf
 	/// <summary>
 	/// Abstract class to serve as a base for all renderpasses
 	/// </summary>
-	class Renderpass abstract
+        class Renderpass // abstract is MS specific
 	{
 	protected:
 		// Vulkan Environment
@@ -38,4 +38,4 @@ namespace rtf
 	};
 }
 
-#endif Renderpass_h
+#endif //Renderpass_h
