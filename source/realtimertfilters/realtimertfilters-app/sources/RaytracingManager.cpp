@@ -51,6 +51,9 @@ namespace rtf
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rt_pipeline);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rt_pipelineLayout, 0, 1, &rt_descriptorSet, 0, 0);
 
+		//upload the matrix to the GPU via pushconstants
+		//vkCmdPushConstants(commandBuffer, rt_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstant), &m_pushConstants);
+
 		VkStridedDeviceAddressRegionKHR emptySbtEntry = {};
 		vkCmdTraceRaysKHR(
 			commandBuffer,
@@ -114,8 +117,13 @@ namespace rtf
 	VkPhysicalDeviceAccelerationStructureFeaturesKHR* RaytracingManager::getEnabledFeatures()
 	{
 		// Enable features required for ray tracing using feature chaining via pNext		
+		enabledPhysicalDeviceVulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+		enabledPhysicalDeviceVulkan12Features.runtimeDescriptorArray = VK_TRUE;
+		enabledPhysicalDeviceVulkan12Features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+		
 		enabledBufferDeviceAddresFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
 		enabledBufferDeviceAddresFeatures.bufferDeviceAddress = VK_TRUE;
+		//enabledBufferDeviceAddresFeatures.pNext = &enabledPhysicalDeviceVulkan12Features;
 
 		enabledRayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
 		enabledRayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
@@ -124,6 +132,7 @@ namespace rtf
 		enabledAccelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
 		enabledAccelerationStructureFeatures.accelerationStructure = VK_TRUE;
 		enabledAccelerationStructureFeatures.pNext = &enabledRayTracingPipelineFeatures;
+
 		return &enabledAccelerationStructureFeatures;
 	}
 
@@ -143,6 +152,7 @@ namespace rtf
 
 		// Required by VK_KHR_spirv_1_4
 		enabledDeviceExtensions.push_back(VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME);
+		
 	}
 
 	void RaytracingManager::prepare(uint32_t width, uint32_t height)

@@ -65,9 +65,7 @@ namespace rtf
 		{
 			enabledFeatures.samplerAnisotropy = VK_TRUE;
 		}
-
-		 m_pathTracerManager.getEnabledFeatures();
-		deviceCreatepNextChain = m_rtManager.getEnabledFeatures();
+		deviceCreatepNextChain = m_pathTracerManager.getEnabledFeatures();
 	}
 
 
@@ -736,3 +734,4 @@ namespace rtf
 		return getShadersPath();
 	}
 }
+

@@ -12,10 +12,20 @@ void rtf::PathTracerManager::prepare(uint32_t width, uint32_t height)
 	vkGetPhysicalDeviceProperties2(physicalDevice, &deviceProperties2);
 
 	accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+	
+	physicalDeviceVulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+	accelerationStructureFeatures.pNext = &physicalDeviceVulkan12Features;
+
 	VkPhysicalDeviceFeatures2 deviceFeatures2{};
 	deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	deviceFeatures2.pNext = &accelerationStructureFeatures;
 	vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
+	if (physicalDeviceVulkan12Features.runtimeDescriptorArray != VK_TRUE) {
+		throw std::runtime_error("PathTracerManager::prepare: missing runtimeDescriptorArray feature");
+	}
+	if (physicalDeviceVulkan12Features.shaderSampledImageArrayNonUniformIndexing != VK_TRUE) {
+		throw std::runtime_error("PathTracerManager::prepare: missing shaderSampledImageArrayNonUniformIndexing feature");
+	}
 
 	// Get the function pointers required for ray tracing
 	vkGetBufferDeviceAddressKHR = reinterpret_cast<PFN_vkGetBufferDeviceAddressKHR>(vkGetDeviceProcAddr(device, "vkGetBufferDeviceAddressKHR"));

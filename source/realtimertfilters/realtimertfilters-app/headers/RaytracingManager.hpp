@@ -51,6 +51,7 @@ namespace rtf
 			VkDescriptorPool descriptorPool,
 			Camera* camera
 		);
+
 		virtual void cleanup();
 		virtual void buildCommandBuffer(VkCommandBuffer commandBuffer, VkImage swapchainImage, uint32_t width, uint32_t height);
 		VkPhysicalDeviceAccelerationStructureFeaturesKHR* getEnabledFeatures();
@@ -91,11 +92,13 @@ namespace rtf
 		// Available features and properties
 		VkPhysicalDeviceRayTracingPipelinePropertiesKHR  rayTracingPipelineProperties{};
 		VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{};
-
+		VkPhysicalDeviceVulkan12Features physicalDeviceVulkan12Features;
+		
 		// Enabled features and properties
 		VkPhysicalDeviceBufferDeviceAddressFeatures enabledBufferDeviceAddresFeatures{};
 		VkPhysicalDeviceRayTracingPipelineFeaturesKHR enabledRayTracingPipelineFeatures{};
 		VkPhysicalDeviceAccelerationStructureFeaturesKHR enabledAccelerationStructureFeatures{};
+		VkPhysicalDeviceVulkan12Features enabledPhysicalDeviceVulkan12Features;
 #pragma endregion vulkan_function_pointers
 
 		//Ray tracing components
@@ -116,6 +119,19 @@ namespace rtf
 			int32_t vertexSize;
 		} uniformData;
 		vks::Buffer ubo;
+
+		struct PushConstant
+		{
+			glm::vec4	clearColor{ 0.0f, 0.0f, 0.0f, 0.0f };
+			glm::vec3	lightPosition{ 0.f, 4.5f, 0.f };
+			float         lightIntensity{ 10.f };
+			int           lightType{ -1 }; // -1: off, 0: point, 1: infinite
+			int           frame{ 0 };
+			int           samples{ 2 };
+			int           bounces{ 2 };
+			int           bounceSamples{ 2 };
+			float         temporalAlpha{ 0.1f };
+		} m_pushConstants;
 
 		VkDescriptorSet rt_descriptorSet;
 		VkDescriptorSetLayout rt_descriptorSetLayout;

@@ -152,7 +152,7 @@ namespace rtf
 		virtual void render();
 
 		virtual void OnUpdateUIOverlay(vks::UIOverlay* overlay);
-
+		
 		std::string getShadersPath2();
 
 		bool rt_on = false;
