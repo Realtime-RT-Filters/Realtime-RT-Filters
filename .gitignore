@@ -12,3 +12,4 @@ CMakeSettings.json
 
 # local path to repository data
 source/realtimertfilters/base/DataPath.h
+source/realtimertfilters/realtimertfilters-app/data/shaders/glsl/compile_all_shaders.bat

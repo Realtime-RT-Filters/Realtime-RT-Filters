@@ -16,7 +16,13 @@ namespace rtf
 
 	void Renderpass_Gui::prepare()
 	{
-		//Create the Framebuffer with all needed attachments
+		//Get all the needed attachments from the attachment manager
+		m_position = m_attachment_manager->getAttachment(Attachment::position);
+		m_normal = m_attachment_manager->getAttachment(Attachment::normal);
+		m_albedo = m_attachment_manager->getAttachment(Attachment::albedo);
+		m_motionvector = m_attachment_manager->getAttachment(Attachment::motionvector);
+		m_rtouput = m_attachment_manager->getAttachment(Attachment::rtoutput);
+		m_filteroutput = m_attachment_manager->getAttachment(Attachment::filteroutput);
 
 
 		// Set up separate renderpass with references to the color and depth attachments

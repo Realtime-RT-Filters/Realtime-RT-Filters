@@ -77,10 +77,10 @@ namespace rtf
 
 		
 		//get attachments from attachment manager
-		offScreenFrameBuf.position = m_attachment_manager->getAttachment(position);
-		offScreenFrameBuf.normal = m_attachment_manager->getAttachment(normal);
-		offScreenFrameBuf.albedo = m_attachment_manager->getAttachment(albedo);
-		offScreenFrameBuf.depth = m_attachment_manager->getAttachment(depth);
+		offScreenFrameBuf.position = m_attachment_manager->getAttachment(Attachment::position);
+		offScreenFrameBuf.normal = m_attachment_manager->getAttachment(Attachment::normal);
+		offScreenFrameBuf.albedo = m_attachment_manager->getAttachment(Attachment::albedo);
+		offScreenFrameBuf.depth = m_attachment_manager->getAttachment(Attachment::depth);
 		
 
 

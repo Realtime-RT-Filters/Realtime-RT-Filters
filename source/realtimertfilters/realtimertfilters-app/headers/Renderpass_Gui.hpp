@@ -14,27 +14,26 @@ namespace rtf
 	{
 	protected:
 		// Vulkan Environment
-		VkInstance* m_Instance;
 		vks::VulkanDevice* m_Device;
-
-
-		// Pipeline
-		VkPipelineLayout m_PipelineLayout;
-		VkRenderPass m_Renderpass;
-		
-		VkPipeline m_Pipeline;
-		VkDescriptorSetLayout m_DescriptorSetLayout;
 
 		Attachment_Manager* m_attachment_manager;
 
 
-		struct FrameBuffer
-		{
-			int32_t width, height;
-			VkFramebuffer frameBuffer;
-			FrameBufferAttachment* position, * normal, * albedo;
-			VkRenderPass renderPass;
-		} offScreenFrameBuf;
+		// Pipeline
+		VkPipelineLayout m_PipelineLayout;
+		
+		VkPipeline m_Pipeline;
+		VkDescriptorSetLayout m_DescriptorSetLayout;
+
+		VkRenderPass m_renderPass;
+
+		VkFramebuffer m_frameBuffer;
+		
+		FrameBufferAttachment* m_position, * m_normal, * m_albedo, * m_motionvector, * m_rtouput, * m_filteroutput;
+		
+		// One sampler for the frame buffer color attachments
+		VkSampler colorSampler;
+
 
 		void prepare();
 

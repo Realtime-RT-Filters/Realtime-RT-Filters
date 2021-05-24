@@ -19,21 +19,21 @@ namespace rtf
 		//Return requested attachment depending on request
 		switch (attachment)
 		{
-		case rtf::position:
+		case Attachment::position:
 			return &m_position;
-		case rtf::normal:
+		case Attachment::normal:
 			return &m_normal;
-		case rtf::albedo:
+		case Attachment::albedo:
 			return &m_albedo;
-		case rtf::depth:
+		case Attachment::depth:
 			return &m_depth;
-		case rtf::meshid:
+		case Attachment::meshid:
 			return &m_meshid;
-		case rtf::motionvector:
+		case Attachment::motionvector:
 			return &m_motionvector;
-		case rtf::rtoutput:
+		case Attachment::rtoutput:
 			return &m_rtoutput;
-		case rtf::filteroutput:
+		case Attachment::filteroutput:
 			return &m_filteroutput;
 		default:
 			break;

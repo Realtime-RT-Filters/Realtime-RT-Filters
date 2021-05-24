@@ -23,7 +23,7 @@
 #include "Renderpass_Gui.hpp"
 
 //All Filter render passes here
-#include "Renderpass_Filter.hpp"
+#include "Renderpass_Filter.hpp" //Example Renderpass
 
 
 #define ENABLE_VALIDATION true

@@ -8,7 +8,7 @@
 namespace rtf
 {
 	/// <summary>
-	/// Class which acts as final render pass, showing output with UI
+	/// Class which acts as a example filter pass
 	/// </summary>
     class Renderpass_Filter
 	{
