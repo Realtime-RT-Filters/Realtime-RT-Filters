@@ -3,14 +3,14 @@
 layout (set=1, binding = 0) uniform sampler2D samplerColor;
 layout (set=1, binding = 1) uniform sampler2D samplerNormalMap;
 
-layout (location = 0) out vec3 inWorldPos;			// Vertex position in world space
-layout (location = 1) out vec4 inDevicePos;			// Vertex position in normalized device space (current frame)
-layout (location = 2) out vec4 inOldDevicePos;		// Vertex position in normalized device space (previous frame)
-layout (location = 3) out vec3 inNormal; 			// Normal in world space
-layout (location = 4) out vec3 inTangent;			// Tangent in world space
-layout (location = 5) out vec2 inUV;				// UV coordinates
-layout (location = 6) out vec3 inColor;				// Passthrough for vertex color
-//layout (location = 7) out uint inMeshId;			// Mesh id. Currently not supported.
+layout (location = 0) in vec3 inWorldPos;			// Vertex position in world space
+layout (location = 1) in vec4 inDevicePos;			// Vertex position in normalized device space (current frame)
+layout (location = 2) in vec4 inOldDevicePos;		// Vertex position in normalized device space (previous frame)
+layout (location = 3) in vec3 inNormal; 			// Normal in world space
+layout (location = 4) in vec3 inTangent;			// Tangent in world space
+layout (location = 5) in vec2 inUV;				// UV coordinates
+layout (location = 6) in vec3 inColor;				// Passthrough for vertex color
+//layout (location = 7) in uint inMeshId;			// Mesh id. Currently not supported.
 
 layout (location = 0) out vec4 outPosition;			// Fragment position in world spcae
 layout (location = 1) out vec4 outNormal;			// Fragment normal in world space

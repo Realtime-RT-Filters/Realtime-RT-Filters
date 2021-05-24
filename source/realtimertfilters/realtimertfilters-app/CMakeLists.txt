@@ -29,6 +29,8 @@ if(NOT EXISTS "${CMAKE_SOURCE_DIR}/realtimertfilters-app/project_defines.hpp")
 	configure_file("${CMAKE_SOURCE_DIR}/realtimertfilters-app/project_defines.hpp.in" "${CMAKE_SOURCE_DIR}/realtimertfilters-app/project_defines.hpp")
 endif()
 
+execute_process(WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/realtimertfilters-app/data/shaders/glsl" COMMAND "${CMAKE_SOURCE_DIR}/realtimertfilters-app/data/shaders/glsl/compile_all_shaders.bat")
+
 if(WIN32)
 	add_executable(realtimertfilters-app WIN32 ${MAIN_CPP} ${ALL_SOURCES} ${MAIN_HEADER} ${SHADERS})
 	target_link_libraries(realtimertfilters-app base ${Vulkan_LIBRARY} ${WINLIBS})
