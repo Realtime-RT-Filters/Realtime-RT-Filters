@@ -2,14 +2,14 @@
 
 namespace rtf
 {
-	Attachment_Manager::Attachment_Manager(VkDevice* device, vks::VulkanDevice* vulkanDevice, VkPhysicalDevice* physicalDevice)
+	Attachment_Manager::Attachment_Manager(VkDevice* device, vks::VulkanDevice* vulkanDevice, VkPhysicalDevice* physicalDevice, int width, int height)
 	{
 		this->device = device;
 		this->vulkanDevice = vulkanDevice;
 		this->physicalDevice = physicalDevice;
 
 		//create neccessary Attachments
-		createAllAttachments();
+		CreateAllAttachments(width, height);
 	}
 
 
@@ -43,12 +43,8 @@ namespace rtf
 	}
 
 
-	void Attachment_Manager::createAllAttachments()
+	void Attachment_Manager::CreateAllAttachments(int width, int height)
 	{
-
-		int width = 2048;
-		int height = 2048;
-
 
 		//create all the required attachments here
 
@@ -97,7 +93,7 @@ namespace rtf
 
 		//Mesh ID
 		this->createAttachment(
-			VK_FORMAT_R8G8B8A8_UNORM,
+			VK_FORMAT_R32_UINT,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 			&m_meshid,
 			width,
@@ -106,7 +102,7 @@ namespace rtf
 
 		//Motion Vector
 		this->createAttachment(
-			VK_FORMAT_R8G8B8A8_UNORM,
+			VK_FORMAT_R32G32_SFLOAT,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 			&m_motionvector,
 			width,
@@ -133,6 +129,19 @@ namespace rtf
 
 
 
+	}
+
+	void Attachment_Manager::DestroyAllAttachments()
+	{
+		//Destroy & free all attachments
+		destroyAttachment(&m_position);
+		destroyAttachment(&m_normal);
+		destroyAttachment(&m_albedo);
+		destroyAttachment(&m_depth);
+		destroyAttachment(&m_meshid);
+		destroyAttachment(&m_motionvector);
+		destroyAttachment(&m_rtoutput);
+		destroyAttachment(&m_filteroutput);
 	}
 
 
@@ -196,39 +205,13 @@ namespace rtf
 	
 	Attachment_Manager::~Attachment_Manager()
 	{
-		//Destroy & free all attachments
-
-		vkDestroyImageView(*device, m_position.view, nullptr);
-		vkDestroyImage(*device, m_position.image, nullptr);
-		vkFreeMemory(*device, m_position.mem, nullptr);
-
-		vkDestroyImageView(*device, m_normal.view, nullptr);
-		vkDestroyImage(*device, m_normal.image, nullptr);
-		vkFreeMemory(*device, m_normal.mem, nullptr);
-
-		vkDestroyImageView(*device, m_albedo.view, nullptr);
-		vkDestroyImage(*device, m_albedo.image, nullptr);
-		vkFreeMemory(*device, m_albedo.mem, nullptr);
-
-		vkDestroyImageView(*device, m_depth.view, nullptr);
-		vkDestroyImage(*device, m_depth.image, nullptr);
-		vkFreeMemory(*device, m_depth.mem, nullptr);
-
-		vkDestroyImageView(*device, m_meshid.view, nullptr);
-		vkDestroyImage(*device, m_meshid.image, nullptr);
-		vkFreeMemory(*device, m_meshid.mem, nullptr);
-
-		vkDestroyImageView(*device, m_motionvector.view, nullptr);
-		vkDestroyImage(*device, m_motionvector.image, nullptr);
-		vkFreeMemory(*device, m_motionvector.mem, nullptr);
-
-		vkDestroyImageView(*device, m_rtoutput.view, nullptr);
-		vkDestroyImage(*device, m_rtoutput.image, nullptr);
-		vkFreeMemory(*device, m_rtoutput.mem, nullptr);
-
-		vkDestroyImageView(*device, m_filteroutput.view, nullptr);
-		vkDestroyImage(*device, m_filteroutput.image, nullptr);
-		vkFreeMemory(*device, m_filteroutput.mem, nullptr);
+		DestroyAllAttachments();
 	}
 
+	void Attachment_Manager::destroyAttachment(FrameBufferAttachment* attachment)
+	{
+		vkDestroyImageView(*device, attachment->view, nullptr);
+		vkDestroyImage(*device, attachment->image, nullptr);
+		vkFreeMemory(*device, attachment->mem, nullptr);
+	}
 }

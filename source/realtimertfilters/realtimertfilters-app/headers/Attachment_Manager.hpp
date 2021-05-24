@@ -26,17 +26,21 @@ namespace rtf {
 	{
 
 	public:
-		Attachment_Manager(VkDevice* device, vks::VulkanDevice* vulkanDevice, VkPhysicalDevice* physicalDevice);
+		static const int DEFAULT_WIDTH = 2048, DEFAULT_HEIGHT = 2048;
+
+		Attachment_Manager(VkDevice* device, vks::VulkanDevice* vulkanDevice, VkPhysicalDevice* physicalDevice, int width = DEFAULT_WIDTH, int height = DEFAULT_HEIGHT);
 		~Attachment_Manager();
 
 
 		void createAttachment(VkFormat format, VkImageUsageFlagBits usage, FrameBufferAttachment* attachment, int width, int height);
 		FrameBufferAttachment* getAttachment(Attachment);
 
+		void CreateAllAttachments(int width, int height);
+		void DestroyAllAttachments();
 
 	private:
 
-		void createAllAttachments();
+		void destroyAttachment(FrameBufferAttachment* attachment);
 
 		//Attachment Manager needs to be aware of certain Vulkan components
 		VkDevice* device;
