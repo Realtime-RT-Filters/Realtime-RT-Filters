@@ -8,7 +8,7 @@
 namespace rtf {
 
 	//These are global types needed by other classes
-	enum Attachment { position, normal, albedo, depth, output_rt, output_filter };
+	enum Attachment { position, normal, albedo, depth, meshid, motionvector, rtoutput, filteroutput};
 
 	// Framebuffer
 	struct FrameBufferAttachment
@@ -52,6 +52,10 @@ namespace rtf {
 		FrameBufferAttachment m_normal;
 		FrameBufferAttachment m_albedo;
 		FrameBufferAttachment m_depth;
+		FrameBufferAttachment m_meshid;
+		FrameBufferAttachment m_motionvector;
+		FrameBufferAttachment m_rtoutput;
+		FrameBufferAttachment m_filteroutput;
 
 
 	};

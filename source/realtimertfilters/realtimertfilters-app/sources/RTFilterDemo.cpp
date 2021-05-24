@@ -645,6 +645,9 @@ namespace rtf
 		buildCommandBuffers();
 		buildDeferredCommandBuffer();
 
+		//GUI Renderpass
+		m_renderpass_gui = new Renderpass_Gui(&device, m_attachment_manager);
+
 		prepared = true;
 	}
 

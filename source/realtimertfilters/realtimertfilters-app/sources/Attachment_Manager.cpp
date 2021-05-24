@@ -27,10 +27,14 @@ namespace rtf
 			return &m_albedo;
 		case rtf::depth:
 			return &m_depth;
-		case rtf::output_rt:
-			break;
-		case rtf::output_filter:
-			break;
+		case rtf::meshid:
+			return &m_meshid;
+		case rtf::motionvector:
+			return &m_motionvector;
+		case rtf::rtoutput:
+			return &m_rtoutput;
+		case rtf::filteroutput:
+			return &m_filteroutput;
 		default:
 			break;
 		}
@@ -91,10 +95,41 @@ namespace rtf
 			height);
 
 
+		//Mesh ID
+		this->createAttachment(
+			VK_FORMAT_R8G8B8A8_UNORM,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			&m_meshid,
+			width,
+			height);
 
-		//Ray Tracing Outputs
+
+		//Motion Vector
+		this->createAttachment(
+			VK_FORMAT_R8G8B8A8_UNORM,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			&m_motionvector,
+			width,
+			height);
 
 
+		//Ray Tracing Output
+		this->createAttachment(
+			VK_FORMAT_R8G8B8A8_UNORM,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			&m_rtoutput,
+			width,
+			height);
+
+
+
+		//Filter Output
+		this->createAttachment(
+			VK_FORMAT_R8G8B8A8_UNORM,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			&m_filteroutput,
+			width,
+			height);
 
 
 
@@ -179,7 +214,21 @@ namespace rtf
 		vkDestroyImage(*device, m_depth.image, nullptr);
 		vkFreeMemory(*device, m_depth.mem, nullptr);
 
+		vkDestroyImageView(*device, m_meshid.view, nullptr);
+		vkDestroyImage(*device, m_meshid.image, nullptr);
+		vkFreeMemory(*device, m_meshid.mem, nullptr);
 
+		vkDestroyImageView(*device, m_motionvector.view, nullptr);
+		vkDestroyImage(*device, m_motionvector.image, nullptr);
+		vkFreeMemory(*device, m_motionvector.mem, nullptr);
+
+		vkDestroyImageView(*device, m_rtoutput.view, nullptr);
+		vkDestroyImage(*device, m_rtoutput.image, nullptr);
+		vkFreeMemory(*device, m_rtoutput.mem, nullptr);
+
+		vkDestroyImageView(*device, m_filteroutput.view, nullptr);
+		vkDestroyImage(*device, m_filteroutput.image, nullptr);
+		vkFreeMemory(*device, m_filteroutput.mem, nullptr);
 	}
 
 }
