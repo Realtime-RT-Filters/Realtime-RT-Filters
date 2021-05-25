@@ -8,7 +8,7 @@
 namespace rtf {
 
 	//These are global types needed by other classes
-	enum Attachment { position, normal, albedo, depth, output_rt, output_filter };
+	enum class Attachment { position, normal, albedo, depth, meshid, motionvector, rtoutput, filteroutput};
 
 	// Framebuffer
 	struct FrameBufferAttachment
@@ -26,28 +26,43 @@ namespace rtf {
 	{
 
 	public:
-		Attachment_Manager(VkDevice* device, vks::VulkanDevice* vulkanDevice, VkPhysicalDevice* physicalDevice);
+		static const uint32_t DEFAULT_WIDTH = 2048, DEFAULT_HEIGHT = 2048;
+
+
+		Attachment_Manager(VkDevice* device, vks::VulkanDevice* vulkanDevice, VkPhysicalDevice* physicalDevice, uint32_t width = DEFAULT_WIDTH, uint32_t height = DEFAULT_HEIGHT);
 		~Attachment_Manager();
+
+		inline VkExtent2D GetSize() const { return m_size; }
 
 		void createAttachment(VkFormat format, VkImageUsageFlagBits usage, FrameBufferAttachment* attachment, int width, int height);
 		FrameBufferAttachment* getAttachment(Attachment);
 
+		void CreateAllAttachments(int width, int height);
+		void DestroyAllAttachments();
+
 	private:
 
-		void createAllAttachments();
+		void destroyAttachment(FrameBufferAttachment* attachment);
 
 		//Attachment Manager needs to be aware of certain Vulkan components
 		VkDevice* m_device;
 
 		//vks::Vkdevice is a combined logical/physical vulkan device
-		vks::VulkanDevice* m_vulkanDevice;
-		VkPhysicalDevice* m_physicalDevice;
+		vks::VulkanDevice* vulkanDevice;
+		VkPhysicalDevice* physicalDevice;
+
+		// Keeping track of current attachment size
+		VkExtent2D m_size;
 
 		//List of managed Attachments
 		FrameBufferAttachment m_position;
 		FrameBufferAttachment m_normal;
 		FrameBufferAttachment m_albedo;
 		FrameBufferAttachment m_depth;
+		FrameBufferAttachment m_meshid;
+		FrameBufferAttachment m_motionvector;
+		FrameBufferAttachment m_rtoutput;
+		FrameBufferAttachment m_filteroutput;
 
 	};
 }

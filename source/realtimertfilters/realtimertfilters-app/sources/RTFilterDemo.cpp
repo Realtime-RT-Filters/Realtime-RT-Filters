@@ -76,14 +76,11 @@ namespace rtf
 		offScreenFrameBuf.width = FB_DIM;
 		offScreenFrameBuf.height = FB_DIM;
 
-
 		//get attachments from attachment manager
-		offScreenFrameBuf.position = m_attachment_manager->getAttachment(position);
-		offScreenFrameBuf.normal = m_attachment_manager->getAttachment(normal);
-		offScreenFrameBuf.albedo = m_attachment_manager->getAttachment(albedo);
-		offScreenFrameBuf.depth = m_attachment_manager->getAttachment(depth);
-
-
+		offScreenFrameBuf.position = m_attachment_manager->getAttachment(Attachment::position);
+		offScreenFrameBuf.normal = m_attachment_manager->getAttachment(Attachment::normal);
+		offScreenFrameBuf.albedo = m_attachment_manager->getAttachment(Attachment::albedo);
+		offScreenFrameBuf.depth = m_attachment_manager->getAttachment(Attachment::depth);
 
 		// Set up separate renderpass with references to the color and depth attachments
 		std::array<VkAttachmentDescription, 4> attachmentDescs = {};
@@ -669,6 +666,9 @@ namespace rtf
 		m_pathTracerManager.prepare(width, height);
 		buildCommandBuffers();
 		buildDeferredCommandBuffer();
+
+		//GUI Renderpass
+		m_renderpass_gui = new Renderpass_Gui(&device, m_attachment_manager);
 
 		prepared = true;
 	}

@@ -15,10 +15,16 @@
 #include "vulkanexamplebase.h"
 #include "VulkanglTFModel.h"
 
+
+#include "Attachment_Manager.hpp"
 #include "Renderpass_Gbuffer.hpp"
 #include "SpatioTemporalAccumulation.hpp"
 #include "RaytracingManager.hpp"
 #include "PathTracerManager.hpp"
+#include "Renderpass_Gui.hpp"
+
+//All Filter render passes here
+#include "Renderpass_Filter.hpp" //Example Renderpass
 
 
 #define ENABLE_VALIDATION true
@@ -30,7 +36,6 @@
 // Offscreen frame buffer properties
 #define FB_DIM TEX_DIM
 
-#include "Attachment_Manager.hpp"
 
 namespace rtf
 {
@@ -46,6 +51,10 @@ namespace rtf
 		
 		//Attachment manager
 		Attachment_Manager* m_attachment_manager;
+
+
+		//Renderpass
+		Renderpass_Gui* m_renderpass_gui;
 
 #pragma region helper_structs
 		struct

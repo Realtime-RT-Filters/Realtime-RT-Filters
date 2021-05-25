@@ -2,14 +2,15 @@
 
 namespace rtf
 {
-	Attachment_Manager::Attachment_Manager(VkDevice* device, vks::VulkanDevice* vulkanDevice, VkPhysicalDevice* physicalDevice)
+	Attachment_Manager::Attachment_Manager(VkDevice* device, vks::VulkanDevice* vulkanDevice, VkPhysicalDevice* physicalDevice, uint32_t width, uint32_t height)
+		: m_size{ width, height }
 	{
 		this->m_device = device;
 		this->m_vulkanDevice = vulkanDevice;
 		this->m_physicalDevice = physicalDevice;
 
 		//create neccessary Attachments
-		createAllAttachments();
+		CreateAllAttachments(width, height);
 	}
 
 	FrameBufferAttachment* Attachment_Manager::getAttachment(Attachment attachment)
@@ -18,18 +19,22 @@ namespace rtf
 		//Return requested attachment depending on request
 		switch (attachment)
 		{
-		case rtf::position:
+		case Attachment::position:
 			return &m_position;
-		case rtf::normal:
+		case Attachment::normal:
 			return &m_normal;
-		case rtf::albedo:
+		case Attachment::albedo:
 			return &m_albedo;
-		case rtf::depth:
+		case Attachment::depth:
 			return &m_depth;
-		case rtf::output_rt:
-			break;
-		case rtf::output_filter:
-			break;
+		case Attachment::meshid:
+			return &m_meshid;
+		case Attachment::motionvector:
+			return &m_motionvector;
+		case Attachment::rtoutput:
+			return &m_rtoutput;
+		case Attachment::filteroutput:
+			return &m_filteroutput;
 		default:
 			break;
 		}
@@ -38,12 +43,8 @@ namespace rtf
 	}
 
 
-	void Attachment_Manager::createAllAttachments()
+	void Attachment_Manager::CreateAllAttachments(int width, int height)
 	{
-
-		int width = 2048;
-		int height = 2048;
-
 
 		//create all the required attachments here
 
@@ -90,6 +91,58 @@ namespace rtf
 			height);
 		//Ray Tracing Outputs
 
+
+		//Mesh ID
+		this->createAttachment(
+			VK_FORMAT_R32_UINT,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			&m_meshid,
+			width,
+			height);
+
+
+		//Motion Vector
+		this->createAttachment(
+			VK_FORMAT_R32G32_SFLOAT,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			&m_motionvector,
+			width,
+			height);
+
+
+		//Ray Tracing Output
+		this->createAttachment(
+			VK_FORMAT_R8G8B8A8_UNORM,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			&m_rtoutput,
+			width,
+			height);
+
+
+
+		//Filter Output
+		this->createAttachment(
+			VK_FORMAT_R8G8B8A8_UNORM,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			&m_filteroutput,
+			width,
+			height);
+
+
+
+	}
+
+	void Attachment_Manager::DestroyAllAttachments()
+	{
+		//Destroy & free all attachments
+		destroyAttachment(&m_position);
+		destroyAttachment(&m_normal);
+		destroyAttachment(&m_albedo);
+		destroyAttachment(&m_depth);
+		destroyAttachment(&m_meshid);
+		destroyAttachment(&m_motionvector);
+		destroyAttachment(&m_rtoutput);
+		destroyAttachment(&m_filteroutput);
 	}
 
 	// Create a frame buffer attachment
@@ -151,25 +204,13 @@ namespace rtf
 	
 	Attachment_Manager::~Attachment_Manager()
 	{
-		//Destroy & free all attachments
-
-		vkDestroyImageView(*m_device, m_position.view, nullptr);
-		vkDestroyImage(*m_device, m_position.image, nullptr);
-		vkFreeMemory(*m_device, m_position.mem, nullptr);
-
-		vkDestroyImageView(*m_device, m_normal.view, nullptr);
-		vkDestroyImage(*m_device, m_normal.image, nullptr);
-		vkFreeMemory(*m_device, m_normal.mem, nullptr);
-
-		vkDestroyImageView(*m_device, m_albedo.view, nullptr);
-		vkDestroyImage(*m_device, m_albedo.image, nullptr);
-		vkFreeMemory(*m_device, m_albedo.mem, nullptr);
-
-		vkDestroyImageView(*m_device, m_depth.view, nullptr);
-		vkDestroyImage(*m_device, m_depth.image, nullptr);
-		vkFreeMemory(*m_device, m_depth.mem, nullptr);
-
-
+		DestroyAllAttachments();
 	}
 
+	void Attachment_Manager::destroyAttachment(FrameBufferAttachment* attachment)
+	{
+		vkDestroyImageView(*device, attachment->view, nullptr);
+		vkDestroyImage(*device, attachment->image, nullptr);
+		vkFreeMemory(*device, attachment->mem, nullptr);
+	}
 }

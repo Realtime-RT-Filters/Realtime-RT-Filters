@@ -1,6 +1,9 @@
 # Visual Studio 2019 cache/options directory
 .vs/
 
+# Shader compilation batch script (built by cmake instead)
+compile_all_shaders.bat
+
 # CMake output directory
 out/
 
@@ -12,3 +15,4 @@ CMakeSettings.json
 
 # local path to repository data
 source/realtimertfilters/base/DataPath.h
+source/realtimertfilters/realtimertfilters-app/data/shaders/glsl/compile_all_shaders.bat
