@@ -1,12 +1,14 @@
 #include "../headers/Renderpass_Gbuffer.hpp"
+#include "../headers/RTFilterDemo.hpp"
+#include <VulkanTools.cpp>
 
 namespace rtf
 {
 
-	RenderpassGbuffer::RenderpassGbuffer(VkInstance instance, vks::VulkanDevice* device, int32_t width, int32_t height)
-		: Renderpass(instance, device), m_Width(width), m_Height(height)
+	RenderpassGbuffer::RenderpassGbuffer(VkInstance instance, vks::VulkanDevice* device, Attachment_Manager* attachment_manager, RTFilterDemo* demo)
+		: Renderpass(instance, device, attachment_manager, demo)
 	{
-
+		m_Scene = &(demo->m_Scene);
 	}
 
 	// Heavily inspired from Sascha Willems' "deferred" vulkan example
@@ -14,60 +16,38 @@ namespace rtf
 	{
 		prepareAttachments();
 		prepareRenderpass();
+		prepareUBOs();
+		setupDescriptorSetLayout();
+		preparePipeline();
+		setupDescriptorPool();
+		setupDescriptorSet();
+		buildCommandBuffer();
 	}
 
 	void RenderpassGbuffer::prepareAttachments()
 	{
-		// (World space) Positions
-		createAttachment(
-			VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT,
-			VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-			&m_Position);
-
-		// (World space) Normals
-		createAttachment(
-			VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT,
-			VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-			&m_Normal);
-
-		// Albedo (color)
-		createAttachment(
-			VkFormat::VK_FORMAT_R8G8B8A8_UNORM,
-			VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-			&m_Albedo);
-
-		// Depth
-		createAttachment(
-			VkFormat::VK_FORMAT_R32_SFLOAT,
-			VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-			&m_Depth
-		);
-
-		// Velocity
-		createAttachment(
-			VkFormat::VK_FORMAT_R32G32_SFLOAT,
-			VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-			&m_Velocity
-		);
-
-		// ObjectId
-		createAttachment(
-			VkFormat::VK_FORMAT_R32_UINT,
-			VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-			&m_ObjectId
-		);
+		m_PositionAttachment = m_AttachmentManager->getAttachment(Attachment::position);
+		m_NormalAttachment = m_AttachmentManager->getAttachment(Attachment::normal);
+		m_AlbedoAttachment = m_AttachmentManager->getAttachment(Attachment::albedo);
+		m_MotionAttachment = m_AttachmentManager->getAttachment(Attachment::motionvector);
+		m_DepthAttachment = m_AttachmentManager->getAttachment(Attachment::depth);
+		assert(m_PositionAttachment != nullptr);
+		assert(m_NormalAttachment != nullptr);
+		assert(m_AlbedoAttachment != nullptr);
+		assert(m_MotionAttachment != nullptr);
+		assert(m_DepthAttachment != nullptr);
 	}
 
 	void RenderpassGbuffer::prepareRenderpass()
 	{
 		// Formatting attachment data into VkAttachmentDescription structs
-		const uint32_t ATTACHMENT_COUNT_COLOR = 5;
+		const uint32_t ATTACHMENT_COUNT_COLOR = 4;
 		const uint32_t ATTACHMENT_COUNT_DEPTH = 1;
 		const uint32_t ATTACHMENT_COUNT = ATTACHMENT_COUNT_COLOR + ATTACHMENT_COUNT_DEPTH;
 		VkAttachmentDescription attachmentDescriptions[ATTACHMENT_COUNT] = {};
 		FrameBufferAttachment* attachments[] =
 		{
-			&m_Position, &m_Normal, &m_Albedo, &m_Velocity, &m_ObjectId, &m_Depth
+			m_PositionAttachment, m_NormalAttachment, m_AlbedoAttachment, m_MotionAttachment, m_DepthAttachment
 		};
 
 		for (uint32_t i = 0; i < ATTACHMENT_COUNT; i++)
@@ -81,7 +61,7 @@ namespace rtf
 			attachmentDescriptions[i].finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			attachmentDescriptions[i].format = attachments[i]->format;
 		}
-		attachmentDescriptions[5].finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // The depth attachment needs a different layout
+		attachmentDescriptions[ATTACHMENT_COUNT_COLOR].finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // The depth attachment needs a different layout
 
 																												 // Preparing attachment reference structs
 		VkAttachmentReference attachmentReferences_Color[ATTACHMENT_COUNT_COLOR] = {};
@@ -128,7 +108,11 @@ namespace rtf
 
 		VK_CHECK_RESULT(vkCreateRenderPass(m_Device->logicalDevice, &renderPassInfo, nullptr, &m_Renderpass));
 
-		VkImageView attachmentViews[6] = { m_Position.view, m_Normal.view, m_Albedo.view, m_Velocity.view, m_ObjectId.view, m_Depth.view };
+		VkImageView attachmentViews[ATTACHMENT_COUNT] = {
+			m_PositionAttachment->view, m_NormalAttachment->view, m_AlbedoAttachment->view, m_MotionAttachment->view, m_DepthAttachment->view
+		};
+
+		VkExtent2D size = m_AttachmentManager->GetSize();
 
 		VkFramebufferCreateInfo fbufCreateInfo = {};
 		fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -136,8 +120,8 @@ namespace rtf
 		fbufCreateInfo.renderPass = m_Renderpass;
 		fbufCreateInfo.pAttachments = attachmentViews;
 		fbufCreateInfo.attachmentCount = static_cast<uint32_t>(ATTACHMENT_COUNT);
-		fbufCreateInfo.width = m_Width;
-		fbufCreateInfo.height = m_Height;
+		fbufCreateInfo.width = size.width;
+		fbufCreateInfo.height = size.height;
 		fbufCreateInfo.layers = 1;
 		VK_CHECK_RESULT(vkCreateFramebuffer(m_Device->logicalDevice, &fbufCreateInfo, nullptr, &m_FrameBuffer));
 
@@ -157,68 +141,29 @@ namespace rtf
 		VK_CHECK_RESULT(vkCreateSampler(m_Device->logicalDevice, &sampler, nullptr, &m_ColorSampler));
 	}
 
-	void RenderpassGbuffer::draw(VkCommandBuffer& commandBuffer)
-	{}
+	void RenderpassGbuffer::draw(VkQueue queue)
+	{
+
+	}
+
+	void RenderpassGbuffer::draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount)
+	{
+		out_commandBufferCount = 1;
+		out_commandBuffers = &m_CmdBuffer;
+	}
 
 	void RenderpassGbuffer::cleanUp()
-	{}
-
-
-	// Pretty much copied from Sascha Willems' "deferred" vulkan example
-	void RenderpassGbuffer::createAttachment(VkFormat format, VkImageUsageFlagBits usage, FrameBufferAttachment* attachment)
 	{
-		VkImageAspectFlags aspectMask = 0;
-		VkImageLayout imageLayout;
-
-		attachment->format = format;
-
-		if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
-		{
-			aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		}
-		if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-		{
-			aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-			imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		}
-
-		assert(aspectMask > 0);
-
-		VkImageCreateInfo image = vks::initializers::imageCreateInfo();
-		image.imageType = VK_IMAGE_TYPE_2D;
-		image.format = format;
-		image.extent.width = m_Width;
-		image.extent.height = m_Height;
-		image.extent.depth = 1;
-		image.mipLevels = 1;
-		image.arrayLayers = 1;
-		image.samples = VK_SAMPLE_COUNT_1_BIT;
-		image.tiling = VK_IMAGE_TILING_OPTIMAL;
-		image.usage = usage | VK_IMAGE_USAGE_SAMPLED_BIT;
-
-		VkMemoryAllocateInfo memAlloc = vks::initializers::memoryAllocateInfo();
-		VkMemoryRequirements memReqs;
-
-		VK_CHECK_RESULT(vkCreateImage(m_Device->logicalDevice, &image, nullptr, &attachment->image));
-		vkGetImageMemoryRequirements(m_Device->logicalDevice, attachment->image, &memReqs);
-		memAlloc.allocationSize = memReqs.size;
-		memAlloc.memoryTypeIndex = m_Device->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-		VK_CHECK_RESULT(vkAllocateMemory(m_Device->logicalDevice, &memAlloc, nullptr, &attachment->mem));
-		VK_CHECK_RESULT(vkBindImageMemory(m_Device->logicalDevice, attachment->image, attachment->mem, 0));
-
-		VkImageViewCreateInfo imageView = vks::initializers::imageViewCreateInfo();
-		imageView.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageView.format = format;
-		imageView.subresourceRange = {};
-		imageView.subresourceRange.aspectMask = aspectMask;
-		imageView.subresourceRange.baseMipLevel = 0;
-		imageView.subresourceRange.levelCount = 1;
-		imageView.subresourceRange.baseArrayLayer = 0;
-		imageView.subresourceRange.layerCount = 1;
-		imageView.image = attachment->image;
-		VK_CHECK_RESULT(vkCreateImageView(m_Device->logicalDevice, &imageView, nullptr, &attachment->view));
+		vkDestroySampler(m_Device->logicalDevice, m_ColorSampler, nullptr);
+		vkDestroyFramebuffer(m_Device->logicalDevice, m_FrameBuffer, nullptr);
+		vkDestroyPipeline(m_Device->logicalDevice, m_Pipeline, nullptr);
+		vkDestroyPipelineLayout(m_Device->logicalDevice, m_PipelineLayout, nullptr);
+		vkDestroyDescriptorSetLayout(m_Device->logicalDevice, m_DescriptorSetLayout, nullptr);
+		m_Buffer.destroy();
+		vkDestroyRenderPass(m_Device->logicalDevice, m_Renderpass, nullptr);
+		vkDestroyPipelineCache(m_Device->logicalDevice, m_PipelineCache, nullptr);
 	}
+
 
 	void RenderpassGbuffer::prepareUBOs()
 	{
@@ -232,47 +177,191 @@ namespace rtf
 		// Map persistent
 		VK_CHECK_RESULT(m_Buffer.map());
 
-		// Setup instanced model positions
-		m_UBO.instancePos[0] = glm::vec4(0.0f);
-		m_UBO.instancePos[1] = glm::vec4(-4.0f, 0.0, -4.0f, 0.0f);
-		m_UBO.instancePos[2] = glm::vec4(4.0f, 0.0, -4.0f, 0.0f);
-
 		// Update
 //		updateUniformBuffer();
 	}
 	void RenderpassGbuffer::updateUniformBuffer(Camera& camera)
 	{
-		m_UBO.projection = camera.matrices.perspective;
-		m_UBO.view = camera.matrices.view;
-		m_UBO.model = glm::mat4(1.0f);
+		UBO_GBuffer_PushCamera(m_UBO, camera);
 		memcpy(m_Buffer.mapped, &m_UBO, sizeof(m_UBO));
+	}
+
+	void RenderpassGbuffer::setupDescriptorPool()
+	{
+		std::vector<VkDescriptorPoolSize> poolSizes = {
+		vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8),
+		vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 9)
+		};
+
+		VkDescriptorPoolCreateInfo descriptorPoolInfo = vks::initializers::descriptorPoolCreateInfo(poolSizes, 3);
+		VK_CHECK_RESULT(vkCreateDescriptorPool(m_Device->logicalDevice, &descriptorPoolInfo, nullptr, &m_DescriptorPool));
 	}
 
 	void RenderpassGbuffer::setupDescriptorSetLayout()
 	{
-		const uint32_t LAYOUTBINDINGS_COUNT = 7;
-		VkDescriptorSetLayoutBinding setLayoutBindings[LAYOUTBINDINGS_COUNT] = {
-			// Binding 0 : Vertex shader uniform buffer
-			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0),
-			// Binding 1 : Position texture target / Scene colormap
-			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-			// Binding 2 : Normals texture target
-			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
-			// Binding 3 : Albedo texture target
-			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
-			// Binding 4 : Velocity texture target
-			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4),
-			// Binding 5 : ObjectId texture target
-			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5),
-			// Binding 6 : Depth texture target
-			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 6),
+
+		//// Deferred shading layout
+		//std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
+		//	// Binding 0 : Vertex shader uniform buffer
+		//	vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0),
+		//	// Binding 1 : Position texture target / Scene colormap
+		//	vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+		//	// Binding 2 : Normals texture target
+		//	vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+		//	// Binding 3 : Albedo texture target
+		//	vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
+		//	// Binding 4 : Fragment shader uniform buffer
+		//	vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 4),
+		//};
+
+		//VkDescriptorSetLayoutCreateInfo descriptorLayout = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings);
+		//VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorLayout, nullptr, &descriptorSetLayoutGBuffer));
+
+		//// Shared pipeline layout used by composition
+		//VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo = vks::initializers::pipelineLayoutCreateInfo(&descriptorSetLayoutGBuffer, 1);
+		//VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pPipelineLayoutCreateInfo, nullptr, &pipelineLayout));
+
+		std::vector<VkDescriptorSetLayout> gltfDescriptorSetLayouts = { vkglTF::descriptorSetLayoutUbo, vkglTF::descriptorSetLayoutImage };
+		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfoOffscreen = vks::initializers::pipelineLayoutCreateInfo(gltfDescriptorSetLayouts.data(), 2);
+		VK_CHECK_RESULT(vkCreatePipelineLayout(m_Device->logicalDevice, &pPipelineLayoutCreateInfoOffscreen, nullptr, &m_PipelineLayout));
+	}
+	void RenderpassGbuffer::setupDescriptorSet()
+	{
+		std::vector<VkWriteDescriptorSet> writeDescriptorSets;
+
+		// Model
+		// use descriptor set layout delivered by gltf
+		VkDescriptorSetAllocateInfo allocInfoOffscreen = vks::initializers::descriptorSetAllocateInfo(m_DescriptorPool, &vkglTF::descriptorSetLayoutUbo, 1);
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(m_Device->logicalDevice, &allocInfoOffscreen, &m_DescriptorSetScene));
+		writeDescriptorSets = {
+			// Binding 0: Vertex shader uniform buffer
+			vks::initializers::writeDescriptorSet(m_DescriptorSetScene, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &m_Buffer.descriptor),
+			// Binding 1: Color map
+			//vks::initializers::writeDescriptorSet(descriptorSetsGBufferScene.model, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &textures.model.colorMap.descriptor),
+			// Binding 2: Normal map
+			//vks::initializers::writeDescriptorSet(descriptorSetsGBufferScene.model, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &textures.model.normalMap.descriptor)
+		};
+		vkUpdateDescriptorSets(m_Device->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
+	}
+
+	void RenderpassGbuffer::buildCommandBuffer()
+	{
+		if (m_CmdBuffer == nullptr)
+		{
+			m_CmdBuffer = m_Device->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, false);
+		}
+
+		VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
+
+		// Clear values for all attachments written in the fragment shader
+		std::array<VkClearValue, 5> clearValues;
+		clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+		clearValues[1].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+		clearValues[2].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+		clearValues[3].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+		clearValues[4].depthStencil = { 1.0f, 0 };
+
+		VkExtent2D size = m_AttachmentManager->GetSize();
+
+		VkRenderPassBeginInfo renderPassBeginInfo = vks::initializers::renderPassBeginInfo();
+		renderPassBeginInfo.renderPass = m_Renderpass;
+		renderPassBeginInfo.framebuffer = m_FrameBuffer;
+		renderPassBeginInfo.renderArea.extent = size;
+		renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+		renderPassBeginInfo.pClearValues = clearValues.data();
+
+		VK_CHECK_RESULT(vkBeginCommandBuffer(m_CmdBuffer, &cmdBufInfo));
+
+		vkCmdBeginRenderPass(m_CmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		VkViewport viewport = vks::initializers::viewport((float)size.width, (float)size.height, 0.0f, 1.0f);
+		vkCmdSetViewport(m_CmdBuffer, 0, 1, &viewport);
+
+		VkRect2D scissor = vks::initializers::rect2D(size.width, size.height, 0, 0);
+		vkCmdSetScissor(m_CmdBuffer, 0, 1, &scissor);
+
+		vkCmdBindPipeline(m_CmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
+
+		// Instanced object
+		vkCmdBindDescriptorSets(m_CmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSetScene, 0, nullptr);
+		m_Scene->draw(m_CmdBuffer, vkglTF::RenderFlags::BindImages, m_PipelineLayout, 1); // vkglTF::RenderFlags::BindImages
+
+		vkCmdEndRenderPass(m_CmdBuffer);
+
+		VK_CHECK_RESULT(vkEndCommandBuffer(m_CmdBuffer));
+	}
+
+	void RenderpassGbuffer::preparePipeline()
+	{
+		VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
+		pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+		VK_CHECK_RESULT(vkCreatePipelineCache(m_Device->logicalDevice, &pipelineCacheCreateInfo, nullptr, &m_PipelineCache));
+
+		VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = vks::initializers::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
+		VkPipelineRasterizationStateCreateInfo rasterizationState = vks::initializers::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
+		VkPipelineColorBlendAttachmentState blendAttachmentState = vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE);
+		VkPipelineColorBlendStateCreateInfo colorBlendState = vks::initializers::pipelineColorBlendStateCreateInfo(1, &blendAttachmentState);
+		VkPipelineDepthStencilStateCreateInfo depthStencilState = vks::initializers::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
+		VkPipelineViewportStateCreateInfo viewportState = vks::initializers::pipelineViewportStateCreateInfo(1, 1, 0);
+		VkPipelineMultisampleStateCreateInfo multisampleState = vks::initializers::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT, 0);
+		std::vector<VkDynamicState> dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+		VkPipelineDynamicStateCreateInfo dynamicState = vks::initializers::pipelineDynamicStateCreateInfo(dynamicStateEnables);
+		VkPipelineVertexInputStateCreateInfo vertexInputState = vks::initializers::pipelineVertexInputStateCreateInfo();
+		VkPipelineShaderStageCreateInfo shaderStages[2]
+		{
+			m_Main->LoadShader("prepass/rasterprepass.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
+			m_Main->LoadShader("prepass/rasterprepass.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
 		};
 
-		VkDescriptorSetLayoutCreateInfo descriptorLayout = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings, LAYOUTBINDINGS_COUNT);
-		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_Device->logicalDevice, &descriptorLayout, nullptr, &m_DescriptorSetLayout));
+		VkGraphicsPipelineCreateInfo pipelineCI = vks::initializers::pipelineCreateInfo(m_PipelineLayout, m_Renderpass);
+		pipelineCI.pInputAssemblyState = &inputAssemblyState;
+		pipelineCI.pRasterizationState = &rasterizationState;
+		pipelineCI.pColorBlendState = &colorBlendState;
+		pipelineCI.pMultisampleState = &multisampleState;
+		pipelineCI.pViewportState = &viewportState;
+		pipelineCI.pDepthStencilState = &depthStencilState;
+		pipelineCI.pDynamicState = &dynamicState;
+		pipelineCI.stageCount = 2;
+		pipelineCI.pStages = shaderStages;
 
-		// Shared pipeline layout used by all pipelines
-		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo = vks::initializers::pipelineLayoutCreateInfo(&m_DescriptorSetLayout, 1);
-		VK_CHECK_RESULT(vkCreatePipelineLayout(m_Device->logicalDevice, &pPipelineLayoutCreateInfo, nullptr, &m_PipelineLayout));
+		pipelineCI.pVertexInputState = vkglTF::Vertex::getPipelineVertexInputState(
+			{
+				vkglTF::VertexComponent::Position,
+				vkglTF::VertexComponent::UV,
+				vkglTF::VertexComponent::Color,
+				vkglTF::VertexComponent::Normal,
+				vkglTF::VertexComponent::Tangent
+
+				//vks::initializers::vertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, pos)),	// Location 0: Position
+				//vks::initializers::vertexInputAttributeDescription(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, normal)),// Location 1: Normal
+				//vks::initializers::vertexInputAttributeDescription(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, uv)),	// Location 2: Texture coordinates
+				//vks::initializers::vertexInputAttributeDescription(0, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, color)),	// Location 3: Color
+			}
+		);
+		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+		// Blend attachment states required for all color attachments
+		// This is important, as color write mask will otherwise be 0x0 and you
+		// won't see anything rendered to the attachment
+		std::array<VkPipelineColorBlendAttachmentState, 4> blendAttachmentStates = {
+			vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+			vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+			vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+			vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE)
+		};
+
+		colorBlendState.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
+		colorBlendState.pAttachments = blendAttachmentStates.data();
+
+		VK_CHECK_RESULT(vkCreateGraphicsPipelines(m_Device->logicalDevice, m_PipelineCache, 1, &pipelineCI, nullptr, &m_Pipeline));
+	}
+
+	void UBO_GBuffer_PushCamera(UBO_GBuffer& ubo, Camera& camera)
+	{
+		ubo.old_projection = ubo.projection;
+		ubo.old_view = ubo.view;
+		ubo.old_model = ubo.model;
+		ubo.projection = camera.matrices.perspective;
+		ubo.view = camera.matrices.view;
+		ubo.model = glm::mat4(1.0f);
 	}
 }

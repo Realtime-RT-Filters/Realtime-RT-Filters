@@ -3,41 +3,49 @@
 
 #include "disable_warnings.h"
 #include <vulkanexamplebase.h>
+#include <VulkanglTFModel.h>
 #include "Renderpass.hpp"
 #include "Attachment_Manager.hpp"
 
 namespace rtf
 {
 
-	struct UBO_Offscreen
+	struct UBO_GBuffer
 	{
 		glm::mat4 projection;
 		glm::mat4 model;
 		glm::mat4 view;
-		glm::vec4 instancePos[3];
+		glm::mat4 old_projection;
+		glm::mat4 old_model;
+		glm::mat4 old_view;
 	};
+
+	void UBO_GBuffer_PushCamera(UBO_GBuffer& ubo,Camera& camera);
 
 	class RenderpassGbuffer : public Renderpass
 	{
 	public:
-		int32_t
-			m_Width,
-			m_Height;
 		VkFramebuffer m_FrameBuffer = nullptr;
-		FrameBufferAttachment
-			m_Position = {},
-			m_Normal = {},
-			m_Albedo = {},
-			m_Velocity = {},
-			m_ObjectId = {},
-			m_Depth = {};
 		VkSampler m_ColorSampler = {};
 
-		vks::Buffer m_Buffer;
-		UBO_Offscreen m_UBO;
+		FrameBufferAttachment* m_PositionAttachment = nullptr;
+		FrameBufferAttachment* m_NormalAttachment = nullptr;
+		FrameBufferAttachment* m_AlbedoAttachment = nullptr;
+		FrameBufferAttachment* m_MotionAttachment = nullptr;
+		FrameBufferAttachment* m_DepthAttachment = nullptr;
+
+		vks::Buffer m_Buffer = {};
+		VkDescriptorPool m_DescriptorPool = nullptr;
+		UBO_GBuffer m_UBO = {};
+		VkDescriptorSet m_DescriptorSetAttachments = nullptr;
+		VkDescriptorSet m_DescriptorSetScene = nullptr;
+		VkCommandBuffer m_CmdBuffer = nullptr;
+		VkPipelineCache m_PipelineCache;
+
+		vkglTF::Model* m_Scene = nullptr;
 
 
-		RenderpassGbuffer(VkInstance instance, vks::VulkanDevice* device, int32_t width, int32_t height);
+		RenderpassGbuffer(VkInstance instance, vks::VulkanDevice* device, Attachment_Manager* attachmentManager, RTFilterDemo* demo);
 
 		// Inherited via Renderpass
 		virtual void prepare() override;
@@ -45,12 +53,16 @@ namespace rtf
 		void prepareAttachments();
 		void prepareUBOs();
 		void updateUniformBuffer(Camera& camera);
+		void setupDescriptorPool();
 		void setupDescriptorSetLayout();
-		virtual void draw(VkCommandBuffer& commandBuffer) override;
-		virtual void cleanUp() override;
+		void setupDescriptorSet();
+		void buildCommandBuffer();
+		void preparePipeline();
 
-	protected:
-		void createAttachment(VkFormat format, VkImageUsageFlagBits usage, FrameBufferAttachment* attachment);
+		virtual void draw(VkQueue queue) override;
+		virtual void draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount) override;
+
+		virtual void cleanUp() override;
 	};
 }
 

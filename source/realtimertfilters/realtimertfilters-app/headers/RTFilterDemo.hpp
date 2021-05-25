@@ -20,7 +20,6 @@
 #include "Renderpass_Gbuffer.hpp"
 #include "SpatioTemporalAccumulation.hpp"
 #include "RaytracingManager.hpp"
-#include "PathTracerManager.hpp"
 #include "Renderpass_Gui.hpp"
 
 //All Filter render passes here
@@ -39,15 +38,17 @@
 
 namespace rtf
 {
+	class PathTracerManager;
+
 	class RTFilterDemo : public VulkanExampleBase
 	{
 	public:
 		int32_t debugDisplayTarget = 0;
 
-//		RenderpassGbuffer m_RP_GBuffer;
+		RenderpassGbuffer* m_RP_GBuffer;
 		SpatioTemporalAccumulation m_spatioTemporalAccumulation;
 		RaytracingManager m_rtManager;
-		PathTracerManager m_pathTracerManager;
+		PathTracerManager* m_pathTracerManager;
 		
 		//Attachment manager
 		Attachment_Manager* m_attachment_manager;
@@ -57,13 +58,13 @@ namespace rtf
 		Renderpass_Gui* m_renderpass_gui;
 
 #pragma region helper_structs
-		struct
-		{
-			glm::mat4 projection;
-			glm::mat4 model;
-			glm::mat4 view;
-			glm::vec4 instancePos[3];
-		} uboOffscreenVS;
+		//struct
+		//{
+		//	glm::mat4 projection;
+		//	glm::mat4 model;
+		//	glm::mat4 view;
+		//	glm::vec4 instancePos[3];
+		//} uboOffscreenVS;
 
 		struct Light
 		{
@@ -81,35 +82,35 @@ namespace rtf
 
 		struct
 		{
-			vks::Buffer offscreen;
+//			vks::Buffer offscreen;
 			vks::Buffer composition;
 		} uniformBuffers;
 
 		struct
 		{
-			VkPipeline offscreen;
+			////VkPipeline offscreen;
 			VkPipeline composition;
 		} pipelines;
 		VkPipelineLayout pipelineLayout;
-		VkPipelineLayout pipelineLayoutOffscreen;
+		////VkPipelineLayout pipelineLayoutOffscreen;
 
 
-		struct
-		{
-			VkDescriptorSet model;
-		} descriptorSetsGBufferScene;
+		//struct
+		//{
+		//	VkDescriptorSet model;
+		//} descriptorSetsGBufferScene;
 		VkDescriptorSet descriptorSetGBuffer;
 		VkDescriptorSetLayout descriptorSetLayoutGBuffer;
 		vkglTF::Model m_Scene;
 
-		struct FrameBuffer
-		{
-			int32_t width, height;
-			VkFramebuffer frameBuffer;
-			FrameBufferAttachment *position, *normal, *albedo;
-			FrameBufferAttachment* depth;
-			VkRenderPass renderPass;
-		} offScreenFrameBuf;
+		//struct FrameBuffer
+		//{
+		//	int32_t width, height;
+		//	VkFramebuffer frameBuffer;
+		//	FrameBufferAttachment *position, *normal, *albedo;
+		//	FrameBufferAttachment* depth;
+		//	VkRenderPass renderPass;
+		//} offScreenFrameBuf;
 #pragma endregion helper_structs
 
 		// One sampler for the frame buffer color attachments
@@ -128,10 +129,12 @@ namespace rtf
 		virtual void getEnabledFeatures();
 
 		// Prepare a new framebuffer and attachments for offscreen rendering (G-Buffer)
-		void prepareOffscreenFramebuffer();
+		//void prepareOffscreenFramebuffer();
+		void setupSampler();
 
 		// Build command buffer for rendering the scene to the offscreen frame buffer attachments
-		void buildDeferredCommandBuffer();
+		//void buildDeferredCommandBuffer();
+		void setupGBufferSemaphore();
 
 		void loadAssets();
 
@@ -166,6 +169,8 @@ namespace rtf
 
 		bool rt_on = false;
 		bool path_tracer_on = false;
+
+		VkPipelineShaderStageCreateInfo LoadShader(std::string shadername, VkShaderStageFlagBits stage);
 
 	};
 }
