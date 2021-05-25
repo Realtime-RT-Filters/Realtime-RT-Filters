@@ -26,11 +26,13 @@ namespace rtf {
 	{
 
 	public:
-		static const int DEFAULT_WIDTH = 2048, DEFAULT_HEIGHT = 2048;
+		static const uint32_t DEFAULT_WIDTH = 2048, DEFAULT_HEIGHT = 2048;
 
-		Attachment_Manager(VkDevice* device, vks::VulkanDevice* vulkanDevice, VkPhysicalDevice* physicalDevice, int width = DEFAULT_WIDTH, int height = DEFAULT_HEIGHT);
+
+		Attachment_Manager(VkDevice* device, vks::VulkanDevice* vulkanDevice, VkPhysicalDevice* physicalDevice, uint32_t width = DEFAULT_WIDTH, uint32_t height = DEFAULT_HEIGHT);
 		~Attachment_Manager();
 
+		inline VkExtent2D GetSize() const { return m_size; }
 
 		void createAttachment(VkFormat format, VkImageUsageFlagBits usage, FrameBufferAttachment* attachment, int width, int height);
 		FrameBufferAttachment* getAttachment(Attachment);
@@ -49,7 +51,8 @@ namespace rtf {
 		vks::VulkanDevice* vulkanDevice;
 		VkPhysicalDevice* physicalDevice;
 
-
+		// Keeping track of current attachment size
+		VkExtent2D m_size;
 
 		//List of managed Attachments
 		FrameBufferAttachment m_position;

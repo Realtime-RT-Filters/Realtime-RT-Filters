@@ -2,7 +2,8 @@
 
 namespace rtf
 {
-	Attachment_Manager::Attachment_Manager(VkDevice* device, vks::VulkanDevice* vulkanDevice, VkPhysicalDevice* physicalDevice, int width, int height)
+	Attachment_Manager::Attachment_Manager(VkDevice* device, vks::VulkanDevice* vulkanDevice, VkPhysicalDevice* physicalDevice, uint32_t width, uint32_t height)
+		: m_size{ width, height }
 	{
 		this->device = device;
 		this->vulkanDevice = vulkanDevice;
