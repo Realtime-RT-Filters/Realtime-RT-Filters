@@ -6,8 +6,8 @@ namespace rtf
 		: m_size{ width, height }
 	{
 		this->m_device = device;
-		this->m_vulkanDevice = vulkanDevice;
-		this->m_physicalDevice = physicalDevice;
+		this->vulkanDevice = vulkanDevice;
+		this->physicalDevice = physicalDevice;
 
 		//create neccessary Attachments
 		CreateAllAttachments(width, height);
@@ -80,7 +80,7 @@ namespace rtf
 
 		// Find a suitable depth format
 		VkFormat attDepthFormat;
-		VkBool32 validDepthFormat = vks::tools::getSupportedDepthFormat(*m_physicalDevice, &attDepthFormat);
+		VkBool32 validDepthFormat = vks::tools::getSupportedDepthFormat(*physicalDevice, &attDepthFormat);
 		assert(validDepthFormat);
 
 		this->createAttachment(
@@ -184,7 +184,7 @@ namespace rtf
 		VK_CHECK_RESULT(vkCreateImage(*m_device, &image, nullptr, &attachment->image));
 		vkGetImageMemoryRequirements(*m_device, attachment->image, &memReqs);
 		memAlloc.allocationSize = memReqs.size;
-		memAlloc.memoryTypeIndex = m_vulkanDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		memAlloc.memoryTypeIndex = vulkanDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 		VK_CHECK_RESULT(vkAllocateMemory(*m_device, &memAlloc, nullptr, &attachment->mem));
 		VK_CHECK_RESULT(vkBindImageMemory(*m_device, attachment->image, attachment->mem, 0));
 
@@ -209,8 +209,8 @@ namespace rtf
 
 	void Attachment_Manager::destroyAttachment(FrameBufferAttachment* attachment)
 	{
-		vkDestroyImageView(*device, attachment->view, nullptr);
-		vkDestroyImage(*device, attachment->image, nullptr);
-		vkFreeMemory(*device, attachment->mem, nullptr);
+		vkDestroyImageView(*m_device, attachment->view, nullptr);
+		vkDestroyImage(*m_device, attachment->image, nullptr);
+		vkFreeMemory(*m_device, attachment->mem, nullptr);
 	}
 }
