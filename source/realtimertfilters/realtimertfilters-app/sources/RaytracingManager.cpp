@@ -119,15 +119,13 @@ namespace rtf
 		// Enable features required for ray tracing using feature chaining via pNext		
 		enabledPhysicalDeviceVulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 		enabledPhysicalDeviceVulkan12Features.runtimeDescriptorArray = VK_TRUE;
+		enabledPhysicalDeviceVulkan12Features.bufferDeviceAddress = VK_TRUE;
+		enabledPhysicalDeviceVulkan12Features.descriptorIndexing = VK_TRUE;
 		enabledPhysicalDeviceVulkan12Features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-		
-		enabledBufferDeviceAddresFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
-		enabledBufferDeviceAddresFeatures.bufferDeviceAddress = VK_TRUE;
-		//enabledBufferDeviceAddresFeatures.pNext = &enabledPhysicalDeviceVulkan12Features;
 
 		enabledRayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
 		enabledRayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
-		enabledRayTracingPipelineFeatures.pNext = &enabledBufferDeviceAddresFeatures;
+		enabledRayTracingPipelineFeatures.pNext = &enabledPhysicalDeviceVulkan12Features;
 
 		enabledAccelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
 		enabledAccelerationStructureFeatures.accelerationStructure = VK_TRUE;

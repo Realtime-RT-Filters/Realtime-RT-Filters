@@ -95,7 +95,6 @@ namespace rtf
 		VkPhysicalDeviceVulkan12Features physicalDeviceVulkan12Features;
 		
 		// Enabled features and properties
-		VkPhysicalDeviceBufferDeviceAddressFeatures enabledBufferDeviceAddresFeatures{};
 		VkPhysicalDeviceRayTracingPipelineFeaturesKHR enabledRayTracingPipelineFeatures{};
 		VkPhysicalDeviceAccelerationStructureFeaturesKHR enabledAccelerationStructureFeatures{};
 		VkPhysicalDeviceVulkan12Features enabledPhysicalDeviceVulkan12Features;
