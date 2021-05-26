@@ -28,7 +28,10 @@ namespace rtf {
 		void prepare(uint32_t width, uint32_t height);
 		void createUniformBuffer() override;
 		void updateUniformBuffers(float timer, Camera* camera) override;
+		void buildCommandBuffer(VkCommandBuffer, VkImage, uint32_t, uint32_t);
 
+	protected:
+		VkDescriptorSetLayout pt_pushConstantDescriptorSetLayout;
 	};
 
 }
