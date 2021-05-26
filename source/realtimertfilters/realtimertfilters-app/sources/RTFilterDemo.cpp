@@ -1,5 +1,5 @@
 #include "../headers/RTFilterDemo.hpp"
-#include "VulkanglTFModel.h"
+#include "../headers/VulkanglTFModel.h"
 #include "../project_defines.hpp"
 #include "../headers/PathTracerManager.hpp"
 

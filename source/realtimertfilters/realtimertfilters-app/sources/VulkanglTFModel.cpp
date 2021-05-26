@@ -11,7 +11,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 
-#include "VulkanglTFModel.h"
+#include "../headers/VulkanglTFModel.h"
 
 VkDescriptorSetLayout vkglTF::descriptorSetLayoutImage = VK_NULL_HANDLE;
 VkDescriptorSetLayout vkglTF::descriptorSetLayoutUbo = VK_NULL_HANDLE;

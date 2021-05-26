@@ -1,5 +1,5 @@
-#include "..\headers\PathTracerManager.hpp"
-#include "..\headers\RTFilterDemo.hpp"
+#include "../headers/PathTracerManager.hpp"
+#include "../headers/RTFilterDemo.hpp"
 
 void rtf::PathTracerManager::prepare(uint32_t width, uint32_t height)
 {
