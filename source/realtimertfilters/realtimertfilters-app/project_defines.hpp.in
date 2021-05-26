@@ -2,4 +2,8 @@
 // ${CMAKE_PROJECT_DEFINE_HEADER}
 
 // the gltf scene to be loaded
-#define MODEL_NAME "models/cornellBox.gltf"
+//#define MODEL_NAME "models/cornellBox.gltf"
+#define MODEL_NAME "models/Sponza/glTF/Sponza.gltf"
+
+// whether to use shaderc to compile spirv shaders
+#define RT_USE_SHADERC_SPIRV_GENERATION ${RT_USE_SHADERC_SPIRV_GENERATION}

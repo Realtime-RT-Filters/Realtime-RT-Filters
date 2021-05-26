@@ -2,10 +2,14 @@
 
 # REGION: Copied from Sascha Willems Project main cmakefile. Minor edits
 
-cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
-cmake_policy(VERSION 2.8)
+cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
+#cmake_policy(VERSION 2.8)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
+# set to true if the shaderc library should be used to compile the shaders
+# disable this if you have any issues with the compilation of the project
+# regarding the library
+set(RT_USE_SHADERC_SPIRV_GENERATION true)
 
 project(${NAME})
 
@@ -16,6 +20,11 @@ include_directories(external/tinygltf) # GLTF Scene/Model loader
 include_directories(external/ktx/include) # Texture loader
 include_directories(external/ktx/other_include) # ^
 include_directories(base)
+
+if(RT_USE_SHADERC_SPIRV_GENERATION)
+	message("use shaderc library to generate spirv")
+	include_directories(external/shaderc/libshaderc/include)
+endif()
 
 option(USE_D2D_WSI "Build the project using Direct to Display swapchain" OFF)
 option(USE_DIRECTFB_WSI "Build the project using DirectFB swapchain" OFF)
@@ -110,7 +119,7 @@ endif()
 
 
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # END-REGION Sascha Willems
@@ -119,3 +128,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory ("base")
 add_subdirectory ("realtimertfilters-app")
 add_subdirectory ("realtimertfilters-app/data/shaders/glsl")
+
+#build shaderc
+if(RT_USE_SHADERC_SPIRV_GENERATION)
+	#set(SHADERC_SKIP_TESTS true)
+	add_subdirectory ("external/shaderc")
+endif()
