@@ -433,7 +433,7 @@ namespace rtf
 		setupGBufferSemaphore();
 
 		//GUI Renderpass
-		m_renderpass_gui = new Renderpass_Gui(&device, m_attachment_manager);
+		m_renderpass_gui = new Renderpass_Gui(instance, vulkanDevice, m_attachment_manager, this);
 
 		prepared = true;
 	}

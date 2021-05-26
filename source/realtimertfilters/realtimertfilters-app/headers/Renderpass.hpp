@@ -29,6 +29,9 @@ namespace rtf
 
 		VkRenderPass m_Renderpass;
 
+
+		//DescriptorSet
+		VkDescriptorPool m_DescriptorPool = nullptr;
 		VkDescriptorSetLayout m_DescriptorSetLayout;
 
 	public:

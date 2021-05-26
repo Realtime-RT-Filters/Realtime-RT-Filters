@@ -35,7 +35,6 @@ namespace rtf
 		FrameBufferAttachment* m_DepthAttachment = nullptr;
 
 		vks::Buffer m_Buffer = {};
-		VkDescriptorPool m_DescriptorPool = nullptr;
 		UBO_GBuffer m_UBO = {};
 		VkDescriptorSet m_DescriptorSetAttachments = nullptr;
 		VkDescriptorSet m_DescriptorSetScene = nullptr;

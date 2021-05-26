@@ -4,46 +4,44 @@
 #include "disable_warnings.h"
 #include <VulkanDevice.h>
 #include "Attachment_Manager.hpp"
+#include "Renderpass.hpp"
+
+#include "vulkanexamplebase.h"
 
 namespace rtf
 {
 	/// <summary>
 	/// Class which acts as final render pass, showing output with UI
 	/// </summary>
-    class Renderpass_Gui
+    class Renderpass_Gui : public Renderpass
 	{
 	protected:
-		// Vulkan Environment
-		vks::VulkanDevice* m_Device;
 
-		Attachment_Manager* m_attachment_manager;
-
-
-		// Pipeline
-		VkPipelineLayout m_PipelineLayout;
 		
-		VkPipeline m_Pipeline;
-		VkDescriptorSetLayout m_DescriptorSetLayout;
-
-		VkRenderPass m_renderPass;
-
-		VkFramebuffer m_frameBuffer;
+		FrameBufferAttachment* m_position, * m_normal, * m_albedo, * m_motionvector, * m_rtoutput, * m_filteroutput;
 		
-		FrameBufferAttachment* m_position, * m_normal, * m_albedo, * m_motionvector, * m_rtouput, * m_filteroutput;
-		
+		VkDescriptorSet descriptorSetInputAttachments;
+
+
 		// One sampler for the frame buffer color attachments
 		VkSampler colorSampler;
 
+		VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+
 
 		void prepare();
+		void setupDescriptorSetLayout();
+		void setupDescriptorPool();
+		void setupDescriptorSet();
 
 	public:
-		Renderpass_Gui(VkDevice* device, Attachment_Manager* attachment_manager);
-		virtual ~Renderpass_Gui();
+		Renderpass_Gui(VkInstance instance, vks::VulkanDevice* device, Attachment_Manager* attachmentManager, RTFilterDemo* demo);
+		~Renderpass_Gui();
+
+		void buildCommandBuffer();
 
 
-
-
+		virtual void draw(VkQueue queue) override;
 	};
 }
 

@@ -4,28 +4,16 @@
 #include "disable_warnings.h"
 #include <VulkanDevice.h>
 #include "Attachment_Manager.hpp"
+#include "Renderpass.hpp"
 
 namespace rtf
 {
 	/// <summary>
 	/// Class which acts as a example filter pass
 	/// </summary>
-    class Renderpass_Filter
+    class Renderpass_Filter : public Renderpass
 	{
 	protected:
-		// Vulkan Environment
-		VkInstance* m_Instance;
-		vks::VulkanDevice* m_Device;
-
-
-		// Pipeline
-		VkPipelineLayout m_PipelineLayout;
-		VkRenderPass m_Renderpass;
-		
-		VkPipeline m_Pipeline;
-		VkDescriptorSetLayout m_DescriptorSetLayout;
-
-		Attachment_Manager* m_attachment_manager;
 
 
 		struct FrameBuffer
@@ -39,13 +27,11 @@ namespace rtf
 		void prepare();
 
 	public:
-		Renderpass_Filter(VkDevice* device, Attachment_Manager* attachment_manager);
+		Renderpass_Filter(VkInstance instance, vks::VulkanDevice* device, Attachment_Manager* attachmentManager, RTFilterDemo* demo);
 		virtual ~Renderpass_Filter();
-
-
 
 
 	};
 }
 
-#endif //Renderpass_Gui_h
+#endif //Renderpass_Filter_h

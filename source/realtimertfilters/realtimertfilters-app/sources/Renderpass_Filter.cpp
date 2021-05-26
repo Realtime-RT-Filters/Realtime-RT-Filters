@@ -3,11 +3,9 @@
 namespace rtf
 {
 
-	Renderpass_Filter::Renderpass_Filter(VkDevice* device, Attachment_Manager* attachment_manager)
+	Renderpass_Filter::Renderpass_Filter(VkInstance instance, vks::VulkanDevice* device, Attachment_Manager* attachment_manager, RTFilterDemo* demo)
+		: Renderpass(instance, device, attachment_manager, demo)
 	{
-
-		m_attachment_manager = attachment_manager;
-
 	}
 
 	Renderpass_Filter::~Renderpass_Filter()
