@@ -17,10 +17,10 @@ namespace rtf
 		prepareAttachments();
 		prepareRenderpass();
 		prepareUBOs();
-		Comp_SetupDescriptorSetLayout();
+		setupDescriptorSetLayout();
 		preparePipeline();
-		Comp_SetupDescriptorPool();
-		Comp_SetupDescriptorSet();
+		setupDescriptorPool();
+		setupDescriptorSet();
 		buildCommandBuffer();
 	}
 
@@ -176,9 +176,6 @@ namespace rtf
 
 		// Map persistent
 		VK_CHECK_RESULT(m_Buffer.map());
-
-		// Update
-//		updateUniformBuffer();
 	}
 	void RenderpassGbuffer::updateUniformBuffer(Camera& camera)
 	{
@@ -186,7 +183,7 @@ namespace rtf
 		memcpy(m_Buffer.mapped, &m_UBO, sizeof(m_UBO));
 	}
 
-	void RenderpassGbuffer::Comp_SetupDescriptorPool()
+	void RenderpassGbuffer::setupDescriptorPool()
 	{
 		std::vector<VkDescriptorPoolSize> poolSizes = {
 		vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8),
@@ -197,35 +194,14 @@ namespace rtf
 		VK_CHECK_RESULT(vkCreateDescriptorPool(m_Device->logicalDevice, &descriptorPoolInfo, nullptr, &m_DescriptorPool));
 	}
 
-	void RenderpassGbuffer::Comp_SetupDescriptorSetLayout()
+	void RenderpassGbuffer::setupDescriptorSetLayout()
 	{
-
-		//// Deferred shading layout
-		//std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
-		//	// Binding 0 : Vertex shader uniform buffer
-		//	vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0),
-		//	// Binding 1 : Position texture target / Scene colormap
-		//	vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-		//	// Binding 2 : Normals texture target
-		//	vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
-		//	// Binding 3 : Albedo texture target
-		//	vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
-		//	// Binding 4 : Fragment shader uniform buffer
-		//	vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 4),
-		//};
-
-		//VkDescriptorSetLayoutCreateInfo descriptorLayout = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings);
-		//VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorLayout, nullptr, &descriptorSetLayoutGBuffer));
-
-		//// Shared pipeline layout used by composition
-		//VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo = vks::initializers::pipelineLayoutCreateInfo(&descriptorSetLayoutGBuffer, 1);
-		//VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pPipelineLayoutCreateInfo, nullptr, &pipelineLayout));
-
 		std::vector<VkDescriptorSetLayout> gltfDescriptorSetLayouts = { vkglTF::descriptorSetLayoutUbo, vkglTF::descriptorSetLayoutImage };
 		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfoOffscreen = vks::initializers::pipelineLayoutCreateInfo(gltfDescriptorSetLayouts.data(), 2);
 		VK_CHECK_RESULT(vkCreatePipelineLayout(m_Device->logicalDevice, &pPipelineLayoutCreateInfoOffscreen, nullptr, &m_PipelineLayout));
 	}
-	void RenderpassGbuffer::Comp_SetupDescriptorSet()
+
+	void RenderpassGbuffer::setupDescriptorSet()
 	{
 		std::vector<VkWriteDescriptorSet> writeDescriptorSets;
 
@@ -236,10 +212,6 @@ namespace rtf
 		writeDescriptorSets = {
 			// Binding 0: Vertex shader uniform buffer
 			vks::initializers::writeDescriptorSet(m_DescriptorSetScene, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &m_Buffer.descriptor),
-			// Binding 1: Color map
-			//vks::initializers::writeDescriptorSet(descriptorSetsGBufferScene.model, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &textures.model.colorMap.descriptor),
-			// Binding 2: Normal map
-			//vks::initializers::writeDescriptorSet(descriptorSetsGBufferScene.model, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &textures.model.normalMap.descriptor)
 		};
 		vkUpdateDescriptorSets(m_Device->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
 	}
@@ -331,14 +303,10 @@ namespace rtf
 				vkglTF::VertexComponent::Color,
 				vkglTF::VertexComponent::Normal,
 				vkglTF::VertexComponent::Tangent
-
-				//vks::initializers::vertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, pos)),	// Location 0: Position
-				//vks::initializers::vertexInputAttributeDescription(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, normal)),// Location 1: Normal
-				//vks::initializers::vertexInputAttributeDescription(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, uv)),	// Location 2: Texture coordinates
-				//vks::initializers::vertexInputAttributeDescription(0, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFModel::Vertex, color)),	// Location 3: Color
 			}
 		);
 		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+
 		// Blend attachment states required for all color attachments
 		// This is important, as color write mask will otherwise be 0x0 and you
 		// won't see anything rendered to the attachment
