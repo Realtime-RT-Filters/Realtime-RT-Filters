@@ -58,68 +58,44 @@ namespace rtf
 		Renderpass_Gui* m_renderpass_gui;
 
 #pragma region helper_structs
-		//struct
-		//{
-		//	glm::mat4 projection;
-		//	glm::mat4 model;
-		//	glm::mat4 view;
-		//	glm::vec4 instancePos[3];
-		//} uboOffscreenVS;
 
 		struct Light
 		{
-			glm::vec4 position;
-			glm::vec3 color;
-			float radius;
+			glm::vec4 position{};
+			glm::vec3 color{};
+			float radius = 0.f;
 		};
 
 		struct
 		{
-			Light lights[6];
-			glm::vec4 viewPos;
+			Light lights[6]{};
+			glm::vec4 viewPos{};
 			int debugDisplayTarget = 0;
-		} uboComposition;
-
-		struct
-		{
-//			vks::Buffer offscreen;
-			vks::Buffer composition;
-		} uniformBuffers;
-
-		struct
-		{
-			////VkPipeline offscreen;
-			VkPipeline composition;
-		} pipelines;
-		VkPipelineLayout pipelineLayout;
-		////VkPipelineLayout pipelineLayoutOffscreen;
-
+		} m_Comp_UBO;
 
 		//struct
 		//{
-		//	VkDescriptorSet model;
-		//} descriptorSetsGBufferScene;
-		VkDescriptorSet descriptorSetGBuffer;
-		VkDescriptorSetLayout descriptorSetLayoutGBuffer;
+		//	vks::Buffer composition;
+		//} m_Comp_UnformBuffer;
+		vks::Buffer m_Comp_UnformBuffer;
+
+		//struct
+		//{
+		//	VkPipeline composition;
+		//} m_Comp_Pipeline;
+		VkPipeline m_Comp_Pipeline;
+		VkPipelineLayout m_Comp_PipelineLayout;
+		VkDescriptorSet m_Comp_DescriptorSet;
+		VkDescriptorSetLayout m_Comp_DescriptorSetLayout;
 		vkglTF::Model m_Scene;
 
-		//struct FrameBuffer
-		//{
-		//	int32_t width, height;
-		//	VkFramebuffer frameBuffer;
-		//	FrameBufferAttachment *position, *normal, *albedo;
-		//	FrameBufferAttachment* depth;
-		//	VkRenderPass renderPass;
-		//} offScreenFrameBuf;
 #pragma endregion helper_structs
 
 		// One sampler for the frame buffer color attachments
-		VkSampler colorSampler;
-
-		VkCommandBuffer offScreenCmdBuffer = VK_NULL_HANDLE;
+		VkSampler m_DefaultColorSampler;
 
 		// Semaphore used to synchronize between offscreen and final scene rendering
-		VkSemaphore offscreenSemaphore = VK_NULL_HANDLE;
+		VkSemaphore m_GBufferSemaphore = VK_NULL_HANDLE;
 
 		RTFilterDemo();
 
@@ -129,33 +105,28 @@ namespace rtf
 		virtual void getEnabledFeatures();
 
 		// Prepare a new framebuffer and attachments for offscreen rendering (G-Buffer)
-		//void prepareOffscreenFramebuffer();
-		void setupSampler();
+		void setupDefaultSampler();
 
 		// Build command buffer for rendering the scene to the offscreen frame buffer attachments
-		//void buildDeferredCommandBuffer();
 		void setupGBufferSemaphore();
 
 		void loadAssets();
 
 		void buildCommandBuffers();
 
-		void setupDescriptorPool();
+		void Comp_SetupDescriptorPool();
 
-		void setupDescriptorSetLayout();
+		void Comp_SetupDescriptorSetLayout();
 
-		void setupDescriptorSet();
+		void Comp_SetupDescriptorSet();
 
-		void preparePipelines();
+		void Comp_PreparePipelines();
 
 		// Prepare and initialize uniform buffer containing shader uniforms
-		void prepareUniformBuffers();
-
-		// Update matrices used for the offscreen rendering of the scene
-		void updateUniformBufferOffscreen();
+		void Comp_PrepareUniformBuffers();
 
 		// Update lights and parameters passed to the composition shaders
-		void updateUniformBufferComposition();
+		void Comp_UpdateUniformBuffer();
 
 		void draw();
 

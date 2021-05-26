@@ -17,10 +17,10 @@ namespace rtf
 		prepareAttachments();
 		prepareRenderpass();
 		prepareUBOs();
-		setupDescriptorSetLayout();
+		Comp_SetupDescriptorSetLayout();
 		preparePipeline();
-		setupDescriptorPool();
-		setupDescriptorSet();
+		Comp_SetupDescriptorPool();
+		Comp_SetupDescriptorSet();
 		buildCommandBuffer();
 	}
 
@@ -186,7 +186,7 @@ namespace rtf
 		memcpy(m_Buffer.mapped, &m_UBO, sizeof(m_UBO));
 	}
 
-	void RenderpassGbuffer::setupDescriptorPool()
+	void RenderpassGbuffer::Comp_SetupDescriptorPool()
 	{
 		std::vector<VkDescriptorPoolSize> poolSizes = {
 		vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8),
@@ -197,7 +197,7 @@ namespace rtf
 		VK_CHECK_RESULT(vkCreateDescriptorPool(m_Device->logicalDevice, &descriptorPoolInfo, nullptr, &m_DescriptorPool));
 	}
 
-	void RenderpassGbuffer::setupDescriptorSetLayout()
+	void RenderpassGbuffer::Comp_SetupDescriptorSetLayout()
 	{
 
 		//// Deferred shading layout
@@ -225,7 +225,7 @@ namespace rtf
 		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfoOffscreen = vks::initializers::pipelineLayoutCreateInfo(gltfDescriptorSetLayouts.data(), 2);
 		VK_CHECK_RESULT(vkCreatePipelineLayout(m_Device->logicalDevice, &pPipelineLayoutCreateInfoOffscreen, nullptr, &m_PipelineLayout));
 	}
-	void RenderpassGbuffer::setupDescriptorSet()
+	void RenderpassGbuffer::Comp_SetupDescriptorSet()
 	{
 		std::vector<VkWriteDescriptorSet> writeDescriptorSets;
 

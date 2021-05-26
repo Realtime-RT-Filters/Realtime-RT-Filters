@@ -53,9 +53,9 @@ namespace rtf
 		void prepareAttachments();
 		void prepareUBOs();
 		void updateUniformBuffer(Camera& camera);
-		void setupDescriptorPool();
-		void setupDescriptorSetLayout();
-		void setupDescriptorSet();
+		void Comp_SetupDescriptorPool();
+		void Comp_SetupDescriptorSetLayout();
+		void Comp_SetupDescriptorSet();
 		void buildCommandBuffer();
 		void preparePipeline();
 
