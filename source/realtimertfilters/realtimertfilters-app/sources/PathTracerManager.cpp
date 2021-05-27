@@ -1,11 +1,11 @@
 #include "..\headers\PathTracerManager.hpp"
 #include "..\headers\RTFilterDemo.hpp"
+#include "..\data\shaders\glsl\pathTracerShader\binding.glsl"
 
 void rtf::PathTracerManager::prepare(uint32_t width, uint32_t height)
 {
 	// Get properties and features
 	rayTracingPipelineProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
-	// Was ist der sinn hinter der 2 am ende?
 	VkPhysicalDeviceProperties2 deviceProperties2{};
 	deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 	deviceProperties2.pNext = &rayTracingPipelineProperties;
@@ -51,35 +51,25 @@ void rtf::PathTracerManager::prepare(uint32_t width, uint32_t height)
 }
 
 void rtf::PathTracerManager::createRayTracingPipeline() {
-
 	//Descripor Set = 0
-	std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
+	std::vector<VkDescriptorSetLayoutBinding> layoutBindingSet = {
 		// Binding 0: Acceleration structure
-		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_ALL_GRAPHICS, 0),
+		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR , 0),
 		// Binding 1: Storage image
 		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR, 1),
 		// Binding 2: Uniform buffer
 		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR, 2),
 		// Binding 3: Vertex buffer 
-		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 3),
+		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_VERTICES),
 		// Binding 4: Index buffer
-		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 4),
+		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_INDICES),
 	};
 
-	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings);
+	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI = vks::initializers::descriptorSetLayoutCreateInfo(layoutBindingSet);
 	VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &rt_descriptorSetLayout));
 
-	// Descripor Set = 1
-	std::vector<VkDescriptorSetLayoutBinding> setLayoutBindingsPushConstante = {
-		// TODO FILL INFO
-	};
-
-	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI1 = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindingsPushConstante);
-	VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI1, nullptr, &pt_pushConstantDescriptorSetLayout));
-
 	// Create Pipelinelayout
-	std::vector<VkDescriptorSetLayout> descriptorSetLayouts = { rt_descriptorSetLayout, pt_pushConstantDescriptorSetLayout };
-	VkPipelineLayoutCreateInfo pPipelineLayoutCI = vks::initializers::pipelineLayoutCreateInfo(descriptorSetLayouts.data(), 2);
+	VkPipelineLayoutCreateInfo pPipelineLayoutCI = vks::initializers::pipelineLayoutCreateInfo(&rt_descriptorSetLayout, 1);
 
 	//setup push constants
 	VkPushConstantRange push_constant;
@@ -89,7 +79,6 @@ void rtf::PathTracerManager::createRayTracingPipeline() {
 
 	pPipelineLayoutCI.pPushConstantRanges = &push_constant;
 	pPipelineLayoutCI.pushConstantRangeCount = 1;
-	pPipelineLayoutCI.setLayoutCount = 2;
 
 	VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pPipelineLayoutCI, nullptr, &rt_pipelineLayout));
 
@@ -147,7 +136,6 @@ void rtf::PathTracerManager::createRayTracingPipeline() {
 	rayTracingPipelineCI.maxPipelineRayRecursionDepth = 2;
 	rayTracingPipelineCI.layout = rt_pipelineLayout;
 	VK_CHECK_RESULT(vkCreateRayTracingPipelinesKHR(device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &rayTracingPipelineCI, nullptr, &rt_pipeline));
-
 }
 
 void rtf::PathTracerManager::createDescriptorSets()
@@ -195,9 +183,6 @@ void rtf::PathTracerManager::createDescriptorSets()
 		vks::initializers::writeDescriptorSet(rt_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4, &indexBufferDescriptor),
 	};
 
-	// TODO
-	// Write for set = 1
-
 	vkUpdateDescriptorSets(device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
 }
 
@@ -205,6 +190,8 @@ void rtf::PathTracerManager::createDescriptorSets()
 void rtf::PathTracerManager::createUniformBuffer()
 {
 	RaytracingManager::createUniformBuffer();
+
+
 }
 
 void rtf::PathTracerManager::updateUniformBuffers(float timer, Camera* camera)

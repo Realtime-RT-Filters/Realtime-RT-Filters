@@ -9,6 +9,19 @@ namespace rtf {
 		PathTracerManager() :RaytracingManager() {}
 		~PathTracerManager() { this->cleanup(); }
 
+		struct PushConstant
+		{
+			glm::vec4	clearColor{ 0.0f, 0.0f, 0.0f, 0.0f };
+			glm::vec3	lightPosition{ 0.f, 4.5f, 0.f };
+			float         lightIntensity{ 10.f };
+			int           lightType{ -1 }; // -1: off, 0: point, 1: infinite
+			int           frame{ 0 };
+			int           samples{ 2 };
+			int           bounces{ 2 };
+			int           bounceSamples{ 2 };
+			float         temporalAlpha{ 0.1f };
+		} m_pushConstants;
+
 		void setup(
 			RTFilterDemo* rtFilterDemo,
 			VkPhysicalDevice physicalDevice,

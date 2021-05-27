@@ -5,11 +5,6 @@
 
 layout(location = 0) rayPayloadInEXT hitPayload prd;
 
-layout(push_constant) uniform Constants
-{
-  vec4 clearColor;
-};
-
 void main()
 {
   prd.radiance = vec3(0);

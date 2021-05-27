@@ -9,7 +9,6 @@
 #include "raycommon.glsl"
 #include "sampling.glsl"
 
-
 hitAttributeEXT vec2 attribs;
 
 // clang-format off
@@ -19,15 +18,12 @@ layout(location = 1) rayPayloadEXT bool isShadowed;
 layout(set = 0, binding = 0 ) uniform accelerationStructureEXT topLevelAS;
 layout(set = 0, binding = 3) readonly buffer _InstanceInfo {PrimMeshInfo primInfo[];};
 
-layout(set = 1, binding = B_VERTICES) readonly buffer _VertexBuf {float vertices[];};
-layout(set = 1, binding = B_INDICES) readonly buffer _Indices {uint indices[];};
-layout(set = 1, binding = B_NORMALS) readonly buffer _NormalBuf {float normals[];};
-layout(set = 1, binding = B_TEXCOORDS) readonly buffer _TexCoordBuf {float texcoord0[];};
-layout(set = 1, binding = B_MATERIALS) readonly buffer _MaterialBuffer {GltfShadeMaterial materials[];};
-layout(set = 1, binding = B_TEXTURES) uniform sampler2D texturesMap[]; // all textures
-
-
-// clang-format on
+layout(set = 0, binding = B_VERTICES) readonly buffer _VertexBuf { vec4 vertices[];};
+layout(set = 0, binding = B_INDICES) readonly buffer _Indices { uint indices[];};
+layout(set = 0, binding = B_NORMALS) readonly buffer _NormalBuf{ uint normals[];};
+layout(set = 0, binding = B_TEXCOORDS) readonly buffer TextureCoord {float textureCoord[];};
+layout(set = 0, binding = B_MATERIALS) readonly buffer _MaterialBuffer {GltfShadeMaterial materials[];};
+// layout(set = 0, binding = B_TEXTURES) uniform sampler2D texturesMap[]; // all textures
 
 layout(push_constant) uniform Constants
 {
@@ -44,29 +40,31 @@ layout(push_constant) uniform Constants
 pushC;
 
 // Return the vertex position
-vec3 getVertex(uint index)
-{
-  vec3 vp;
-  vp.x = vertices[3 * index + 0];
-  vp.y = vertices[3 * index + 1];
-  vp.z = vertices[3 * index + 2];
-  return vp;
-}
+// vec3 getVertex(uint index)
+// {
+//   vec3 vp;
+//   vp.x = vertices[3 * index + 0];
+//   vp.y = vertices[3 * index + 1];
+//   vp.z = vertices[3 * index + 2];
+//   return vp;
+// }
 
 vec3 getNormal(uint index)
 {
-  vec3 vp;
-  vp.x = normals[3 * index + 0];
-  vp.y = normals[3 * index + 1];
-  vp.z = normals[3 * index + 2];
+  // vec3 vp;
+  vec3 vp = vec3(0,0,0);
+  // vp.x = normals[3 * index + 0];
+  // vp.y = normals[3 * index + 1];
+  // vp.z = normals[3 * index + 2];
   return vp;
 }
 
 vec2 getTexCoord(uint index)
 {
-  vec2 vp;
-  vp.x = texcoord0[2 * index + 0];
-  vp.y = texcoord0[2 * index + 1];
+  // vec2 vp;
+  // vp.x = texcoord0[2 * index + 0];
+  // vp.y = texcoord0[2 * index + 1];
+  vec2 vp = vec2(0,0);
   return vp;
 }
 
@@ -101,9 +99,9 @@ void main()
   const vec3 barycentrics = vec3(1.0 - attribs.x - attribs.y, attribs.x, attribs.y);
 
   // Vertex of the triangle
-  const vec3 pos0           = getVertex(triangleIndex.x);
-  const vec3 pos1           = getVertex(triangleIndex.y);
-  const vec3 pos2           = getVertex(triangleIndex.z);
+  const vec3 pos0           = vertices[0].xyz;
+  const vec3 pos1           = vertices[1].xyz;
+  const vec3 pos2           = vertices[2].xyz;
   const vec3 position       = pos0 * barycentrics.x + pos1 * barycentrics.y + pos2 * barycentrics.z;
   const vec3 world_position = vec3(gl_ObjectToWorldEXT * vec4(position, 1.0));
 
@@ -121,17 +119,18 @@ void main()
   const vec2 uv2       = getTexCoord(triangleIndex.z);
   const vec2 texcoord0 = uv0 * barycentrics.x + uv1 * barycentrics.y + uv2 * barycentrics.z;
 
-  // https://en.wikipedia.org/wiki/Path_tracing
   // Material of the object
-  GltfShadeMaterial mat       = materials[nonuniformEXT(matIndex)];
-  vec3              emittance = mat.emissiveFactor;
+  // GltfShadeMaterial mat       = materials[nonuniformEXT(matIndex)];
+  // vec3              emittance = mat.emissiveFactor;
+  vec3              emittance = vec3(1,1,1);
 
-  vec3  albedo    = mat.pbrBaseColorFactor.xyz;
-  if(mat.pbrBaseColorTexture > -1)
-  {
-    uint txtId = mat.pbrBaseColorTexture;
-    albedo *= texture(texturesMap[nonuniformEXT(txtId)], texcoord0).xyz;
-  }
+  // vec3  albedo    = mat.pbrBaseColorFactor.xyz;
+  vec3  albedo    = vec3(1,1,1);
+  // if(mat.pbrBaseColorTexture > -1)
+  // {
+  //   uint txtId = mat.pbrBaseColorTexture;
+  //   albedo *= texture(texturesMap[nonuniformEXT(txtId)], texcoord0).xyz;
+  // }
 
   if(emittance != vec3(0))
   {
