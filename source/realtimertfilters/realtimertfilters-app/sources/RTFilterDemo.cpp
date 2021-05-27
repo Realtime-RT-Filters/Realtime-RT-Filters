@@ -2,6 +2,7 @@
 #include "../headers/VulkanglTFModel.h"
 #include "../project_defines.hpp"
 #include "../headers/PathTracerManager.hpp"
+#include "../headers/SpirvCompiler.hpp"
 
 namespace rtf
 {
@@ -26,6 +27,12 @@ namespace rtf
 
 		m_pathTracerManager = new PathTracerManager();
 		m_pathTracerManager->enableExtensions(enabledDeviceExtensions);
+
+		SpirvCompiler compiler;
+		if (compiler.compileShaders())
+		{
+			throw std::runtime_error("Shader compilation failed!");
+		}
 	}
 	RTFilterDemo::~RTFilterDemo()
 	{
