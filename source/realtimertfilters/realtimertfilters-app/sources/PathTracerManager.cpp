@@ -55,7 +55,7 @@ void rtf::PathTracerManager::createRayTracingPipeline() {
 	//Descripor Set = 0
 	std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
 		// Binding 0: Acceleration structure
-		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_ALL_GRAPHICS, 0),
+		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_ALL_GRAPHICS, 0),
 		// Binding 1: Storage image
 		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR, 1),
 		// Binding 2: Uniform buffer
@@ -152,6 +152,7 @@ void rtf::PathTracerManager::createRayTracingPipeline() {
 
 void rtf::PathTracerManager::createDescriptorSets()
 {
+	// TODO extend it for Set = 1
 	std::vector<VkDescriptorPoolSize> poolSizes = {
 		{ VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1 },
 		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
@@ -193,6 +194,10 @@ void rtf::PathTracerManager::createDescriptorSets()
 		// Binding 4: Scene index buffer
 		vks::initializers::writeDescriptorSet(rt_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4, &indexBufferDescriptor),
 	};
+
+	// TODO
+	// Write for set = 1
+
 	vkUpdateDescriptorSets(device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
 }
 
