@@ -60,21 +60,24 @@ namespace rtf
 		return exitCode != 0;
 	}
 }
+namespace fs = std::filesystem;
 #else
+#include <filesystem>
+
 namespace rtf
 {
-	// TODO: Call glslc on linux
-	// return true if compilation fails
-	bool callGlslCompiler(std::string& inputFile)
+	// returns true if compilation fails
+	bool callGlslCompiler(std::string& inputFileFullPath)
 	{
-		return true;
+		std::string command("/bin/glslc --target-spv=spv1.5 " + inputFileFullPath + " -o " + inputFileFullPath + ".spv");
+		int returnvalue = std::system(command.c_str());
+		return returnvalue != 0;
 	}
 }
+namespace fs = std::filesystem;
 #endif
 
 
-
-namespace fs = std::filesystem;
 
 namespace rtf
 {
@@ -87,7 +90,7 @@ namespace rtf
 		bool verbose{ false };
 
 		// file endings that can be detected and directed to a shader type
-		std::vector<char*> validFileEndings =
+		std::vector<std::string> validFileEndings =
 		{
 			"frag",
 			"vert",
@@ -99,7 +102,8 @@ namespace rtf
 		// call compiled shaders with no specific shaders passed
 		bool compileShaders()
 		{
-			return compileShaders(std::vector<std::string>());
+			std::vector<std::string> shaders = {};
+			return compileShaders(shaders);
 		}
 
 		// compiles either all shaders passed by the vector or if left to null, compiles
@@ -177,7 +181,7 @@ namespace rtf
 		{
 			for (auto& fileEnding : validFileEndings)
 			{
-				if (endsWith(shaderFile, std::string(fileEnding)))
+				if (endsWith(shaderFile, fileEnding))
 					return true;
 			}
 
@@ -186,12 +190,12 @@ namespace rtf
 		}
 
 		// https://stackoverflow.com/questions/874134/find-out-if-string-ends-with-another-string-in-c
-		bool endsWith(std::string_view str, std::string_view suffix)
+		bool endsWith(std::string str, std::string suffix)
 		{
 			return str.size() >= suffix.size() && 0 == str.compare(str.size() - suffix.size(), suffix.size(), suffix);
 		}
 
-		bool startsWith(std::string_view str, std::string_view prefix)
+		bool startsWith(std::string str, std::string prefix)
 		{
 			return str.size() >= prefix.size() && 0 == str.compare(0, prefix.size(), prefix);
 		}
