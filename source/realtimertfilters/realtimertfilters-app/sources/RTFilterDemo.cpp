@@ -50,7 +50,7 @@ namespace rtf
 		vkDestroyDescriptorSetLayout(device, m_Comp_DescriptorSetLayout, nullptr);
 		m_Comp_UnformBuffer.destroy();
 
-		vkDestroySemaphore(device, m_GBufferSemaphore, nullptr);
+		vkDestroySemaphore(device, m_SemaphoreA, nullptr);
 
 		//Ray tracing destructors
 		m_rtManager.cleanup();
@@ -64,6 +64,10 @@ namespace rtf
 		if (deviceFeatures.samplerAnisotropy)
 		{
 			enabledFeatures.samplerAnisotropy = VK_TRUE;
+		}
+		if (deviceFeatures.fragmentStoresAndAtomics)
+		{
+			enabledFeatures.fragmentStoresAndAtomics = VK_TRUE;
 		}
 		deviceCreatepNextChain = m_pathTracerManager->getEnabledFeatures();
 	}
@@ -90,11 +94,12 @@ namespace rtf
 	}
 
 
-	void RTFilterDemo::setupGBufferSemaphore()
+	void RTFilterDemo::setupSemaphores()
 	{
-		// Create a semaphore used to synchronize the conclusion of gbuffer rendering
+		// Create two semaphores which are used interleaved with each other
 		VkSemaphoreCreateInfo semaphoreCreateInfo = vks::initializers::semaphoreCreateInfo();
-		VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &m_GBufferSemaphore));
+		VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &m_SemaphoreA));
+		VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &m_SemaphoreB));
 	}
 
 	void RTFilterDemo::loadAssets()
@@ -389,26 +394,35 @@ namespace rtf
 
 		// GBuffer rendering
 
+		// Setup timeline semaphore
+
 		// Wait for swap chain presentation to finish
 		submitInfo.pWaitSemaphores = &semaphores.presentComplete;
+		submitInfo.pSignalSemaphores = &m_SemaphoreA;
 		// Signal ready with offscreen semaphore
-		submitInfo.pSignalSemaphores = &m_GBufferSemaphore;
 
 		// Fetch GBuffer command buffers from GBuffer renderpass
 		m_RP_GBuffer->draw(submitInfo.pCommandBuffers, submitInfo.commandBufferCount);
+
 		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
 
+		submitInfo.pWaitSemaphores = &m_SemaphoreA;
+		//submitInfo.pSignalSemaphores = &m_SemaphoreB;
+
+		//m_GaussPass->draw(submitInfo.pCommandBuffers, submitInfo.commandBufferCount);
+		//VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
 		// Scene rendering
 
 		// Wait for offscreen semaphore
-		submitInfo.pWaitSemaphores = &m_GBufferSemaphore;
 		// Signal ready with render complete semaphore
+		//submitInfo.pWaitSemaphores = &m_SemaphoreB;
 		submitInfo.pSignalSemaphores = &semaphores.renderComplete;
 
 		// Submit work
+		//submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
 		submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
+		submitInfo.commandBufferCount = 1;
 		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-
 		VulkanExampleBase::submitFrame();
 	}
 	void RTFilterDemo::prepare()
@@ -418,10 +432,16 @@ namespace rtf
 		//We create the Attachment manager
 		m_attachment_manager = new Attachment_Manager(&device, vulkanDevice, &physicalDevice, width, height);
 		m_RP_GBuffer = new RenderpassGbuffer(instance, vulkanDevice, m_attachment_manager, this);
+		m_GaussPass = new RenderpassPostProcess(this);
 
 		loadAssets();
 
 		m_RP_GBuffer->prepare();
+
+		m_GaussPass->ConfigureShader("filter/postprocess_gauss.frag.spv");
+		m_GaussPass->PushAttachment(m_attachment_manager->getAttachment(Attachment::albedo), RenderpassPostProcess::AttachmentUse::ReadOnly);
+		m_GaussPass->PushAttachment(m_attachment_manager->getAttachment(Attachment::rtoutput), RenderpassPostProcess::AttachmentUse::WriteOnly);
+		m_GaussPass->prepare();
 
 		setupDefaultSampler();
 		Comp_PrepareUniformBuffers();
@@ -437,7 +457,7 @@ namespace rtf
 		m_pathTracerManager->setup(this, physicalDevice, vulkanDevice, device, queue, &swapChain, descriptorPool, &camera);
 		m_pathTracerManager->prepare(width, height);
 		buildCommandBuffers();
-		setupGBufferSemaphore();
+		setupSemaphores();
 
 		//GUI Renderpass
 		m_renderpass_gui = new Renderpass_Gui(instance, vulkanDevice, m_attachment_manager, this);

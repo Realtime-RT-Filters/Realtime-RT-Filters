@@ -34,7 +34,7 @@ namespace rtf {
 
 		inline VkExtent2D GetSize() const { return m_size; }
 
-		void createAttachment(VkFormat format, VkImageUsageFlagBits usage, FrameBufferAttachment* attachment, int width, int height);
+		void createAttachment(VkFormat format, VkImageUsageFlags usage, FrameBufferAttachment* attachment, int width, int height);
 		FrameBufferAttachment* getAttachment(Attachment);
 
 		void CreateAllAttachments(int width, int height);

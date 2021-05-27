@@ -26,7 +26,6 @@ namespace rtf
 	{
 	public:
 		VkFramebuffer m_FrameBuffer = nullptr;
-		VkSampler m_ColorSampler = {};
 
 		FrameBufferAttachment* m_PositionAttachment = nullptr;
 		FrameBufferAttachment* m_NormalAttachment = nullptr;

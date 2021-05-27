@@ -18,7 +18,7 @@ namespace rtf
 	{
 	protected:
 		// Vulkan Environment
-		VkInstance m_Instance;
+		//VkInstance m_Instance;
 		vks::VulkanDevice* m_Device;
 		Attachment_Manager* m_AttachmentManager;
 		RTFilterDemo* m_Main;
@@ -35,7 +35,9 @@ namespace rtf
 		VkDescriptorSetLayout m_DescriptorSetLayout;
 
 	public:
+		
 		Renderpass(VkInstance instance, vks::VulkanDevice* device, Attachment_Manager* attachmentManager, RTFilterDemo* rtfilterdemo);
+		Renderpass(RTFilterDemo* demo);
 		virtual ~Renderpass();
 
 		// Member level copy of a renderpass object makes no sense, so we delete auto-generated constructors and operators associated with it
@@ -45,9 +47,11 @@ namespace rtf
 
 
 		virtual void prepare() = 0; // Setup pipelines, passes, descriptorsets, etc.
-		virtual void draw(VkQueue queue) = 0; // Push your shit onto the queue
+		virtual void draw(VkQueue queue); // Push your shit onto the queue
 		virtual void draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount);
 		virtual void cleanUp(); // Cleanup any mess you made (is called from the destructor)
+
+		inline VkDevice LogicalDevice() { return m_Device->logicalDevice; }
 	};
 }
 

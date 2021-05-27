@@ -69,8 +69,8 @@ namespace rtf
 
 		// Albedo (color)
 		this->createAttachment(
-			VK_FORMAT_R8G8B8A8_UNORM,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			VK_FORMAT_R16G16B16A16_SFLOAT,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
 			&m_albedo,
 			width,
 			height);
@@ -113,7 +113,7 @@ namespace rtf
 		//Ray Tracing Output
 		this->createAttachment(
 			VK_FORMAT_R8G8B8A8_UNORM,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
 			&m_rtoutput,
 			width,
 			height);
@@ -146,7 +146,7 @@ namespace rtf
 	}
 
 	// Create a frame buffer attachment
-	void Attachment_Manager::createAttachment(VkFormat format, VkImageUsageFlagBits usage, FrameBufferAttachment* attachment, int width, int height)
+	void Attachment_Manager::createAttachment(VkFormat format, VkImageUsageFlags usage, FrameBufferAttachment* attachment, int width, int height)
 	{
 		VkImageAspectFlags aspectMask = 0;
 		VkImageLayout imageLayout;

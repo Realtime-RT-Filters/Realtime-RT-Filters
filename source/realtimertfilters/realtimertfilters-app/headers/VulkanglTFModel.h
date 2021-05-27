@@ -86,8 +86,8 @@ namespace vkglTF
 		vkglTF::Texture* occlusionTexture = nullptr;
 		vkglTF::Texture* emissiveTexture = nullptr;
 
-		vkglTF::Texture* specularGlossinessTexture;
-		vkglTF::Texture* diffuseTexture;
+		vkglTF::Texture* specularGlossinessTexture = nullptr;
+		vkglTF::Texture* diffuseTexture = nullptr;
 
 		VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
 

@@ -124,21 +124,6 @@ namespace rtf
 		fbufCreateInfo.height = size.height;
 		fbufCreateInfo.layers = 1;
 		VK_CHECK_RESULT(vkCreateFramebuffer(m_Device->logicalDevice, &fbufCreateInfo, nullptr, &m_FrameBuffer));
-
-		// Create sampler to sample from the color attachments
-		VkSamplerCreateInfo sampler = vks::initializers::samplerCreateInfo();
-		sampler.magFilter = VK_FILTER_NEAREST;
-		sampler.minFilter = VK_FILTER_NEAREST;
-		sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		sampler.addressModeV = sampler.addressModeU;
-		sampler.addressModeW = sampler.addressModeU;
-		sampler.mipLodBias = 0.0f;
-		sampler.maxAnisotropy = 1.0f;
-		sampler.minLod = 0.0f;
-		sampler.maxLod = 1.0f;
-		sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-		VK_CHECK_RESULT(vkCreateSampler(m_Device->logicalDevice, &sampler, nullptr, &m_ColorSampler));
 	}
 
 	void RenderpassGbuffer::draw(VkQueue queue)
@@ -154,7 +139,6 @@ namespace rtf
 
 	void RenderpassGbuffer::cleanUp()
 	{
-		vkDestroySampler(m_Device->logicalDevice, m_ColorSampler, nullptr);
 		vkDestroyFramebuffer(m_Device->logicalDevice, m_FrameBuffer, nullptr);
 		vkDestroyPipeline(m_Device->logicalDevice, m_Pipeline, nullptr);
 		vkDestroyPipelineLayout(m_Device->logicalDevice, m_PipelineLayout, nullptr);

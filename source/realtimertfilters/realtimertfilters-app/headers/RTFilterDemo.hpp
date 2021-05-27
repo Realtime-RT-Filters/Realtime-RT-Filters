@@ -24,6 +24,7 @@
 
 //All Filter render passes here
 #include "Renderpass_Filter.hpp" //Example Renderpass
+#include "Renderpass_PostProcess.hpp"
 
 
 #define ENABLE_VALIDATION true
@@ -56,6 +57,7 @@ namespace rtf
 
 		//Renderpass
 		Renderpass_Gui* m_renderpass_gui;
+		RenderpassPostProcess* m_GaussPass;
 
 #pragma region helper_structs
 
@@ -95,7 +97,8 @@ namespace rtf
 		VkSampler m_DefaultColorSampler;
 
 		// Semaphore used to synchronize between offscreen and final scene rendering
-		VkSemaphore m_GBufferSemaphore = VK_NULL_HANDLE;
+		VkSemaphore m_SemaphoreA = VK_NULL_HANDLE;
+		VkSemaphore m_SemaphoreB = VK_NULL_HANDLE;
 
 		RTFilterDemo();
 
@@ -108,7 +111,7 @@ namespace rtf
 		void setupDefaultSampler();
 
 		// Build command buffer for rendering the scene to the offscreen frame buffer attachments
-		void setupGBufferSemaphore();
+		void setupSemaphores();
 
 		void loadAssets();
 
