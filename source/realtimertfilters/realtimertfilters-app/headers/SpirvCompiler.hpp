@@ -31,8 +31,7 @@ namespace rtf
 		si.cb = sizeof(si);
 		ZeroMemory(&pi, sizeof(pi));
 
-		std::string commandLine = std::string(lpApplicationName) + " " + inputFileFullPath + " -o " + inputFileFullPath + ".spv2";
-		std::cout << "Output: " << commandLine << std::endl;
+		std::string commandLine = std::string(lpApplicationName) + " --target-spv=spv1.5 " + inputFileFullPath + " -o " + inputFileFullPath + ".spv";
 		// start the program up
 		CreateProcess(lpApplicationName,   // the path
 			(LPSTR)commandLine.c_str(),        // Command line
