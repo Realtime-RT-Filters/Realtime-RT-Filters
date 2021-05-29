@@ -31,8 +31,8 @@ namespace rtf
 		si.cb = sizeof(si);
 		ZeroMemory(&pi, sizeof(pi));
 
-		std::string commandLine = std::string(lpApplicationName) + " " + inputFileFullPath + " -o " + inputFileFullPath + ".spv";
-
+		std::string commandLine = std::string(lpApplicationName) + " " + inputFileFullPath + " -o " + inputFileFullPath + ".spv2";
+		std::cout << "Output: " << commandLine << std::endl;
 		// start the program up
 		CreateProcess(lpApplicationName,   // the path
 			(LPSTR)commandLine.c_str(),        // Command line
@@ -170,6 +170,10 @@ namespace rtf
 		{
 			fs::path pathSource(shaderFilePath);
 			fs::path pathOutput(shaderFilePath + ".spv");
+			if (!fs::exists(pathOutput))
+			{
+				return true;
+			}
 
 			fs::file_time_type ftimeSource = fs::last_write_time(pathSource);
 			fs::file_time_type ftimeOutput = fs::last_write_time(pathOutput);
