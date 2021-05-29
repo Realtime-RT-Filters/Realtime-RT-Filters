@@ -150,12 +150,6 @@ protected:
 	VkPipelineStageFlags submitPipelineStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	// Contains command buffers and semaphores to be presented to the queue
 	VkSubmitInfo submitInfo;
-	// Command buffers used for rendering
-	std::vector<VkCommandBuffer> drawCmdBuffers;
-	// Global render pass for frame buffer writes
-	VkRenderPass renderPass;
-	// List of available frame buffers (same as number of swap chain images)
-	std::vector<VkFramebuffer>frameBuffers;
 	// Active frame buffer index
 	uint32_t currentBuffer = 0;
 	// Descriptor set pool
@@ -190,6 +184,17 @@ public:
 
 	/** @brief Encapsulated physical and logical vulkan device */
 	vks::VulkanDevice *vulkanDevice;
+
+
+	// Global render pass for frame buffer writes
+	VkRenderPass renderPass;
+
+
+	// Command buffers used for rendering
+	std::vector<VkCommandBuffer> drawCmdBuffers;
+	// List of available frame buffers (same as number of swap chain images)
+	std::vector<VkFramebuffer>frameBuffers;
+
 
 	/** @brief Example settings that can be changed e.g. by command line arguments */
 	struct Settings {

@@ -156,47 +156,55 @@ namespace rtf
 		else
 		{
 
-			VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
+			if (gui_rp_on) {
+				
 
-			VkClearValue clearValues[2];
-			clearValues[0].color = { { 0.0f, 0.0f, 0.2f, 0.0f } };
-			clearValues[1].depthStencil = { 1.0f, 0 };
+			}
+			else {
 
-			VkRenderPassBeginInfo renderPassBeginInfo = vks::initializers::renderPassBeginInfo();
-			renderPassBeginInfo.renderPass = renderPass;
-			renderPassBeginInfo.renderArea.offset.x = 0;
-			renderPassBeginInfo.renderArea.offset.y = 0;
-			renderPassBeginInfo.renderArea.extent.width = width;
-			renderPassBeginInfo.renderArea.extent.height = height;
-			renderPassBeginInfo.clearValueCount = 2;
-			renderPassBeginInfo.pClearValues = clearValues;
+				VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
 
-			for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
-			{
-				renderPassBeginInfo.framebuffer = frameBuffers[i];
+				VkClearValue clearValues[2];
+				clearValues[0].color = { { 0.0f, 0.0f, 0.2f, 0.0f } };
+				clearValues[1].depthStencil = { 1.0f, 0 };
 
-				VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
+				VkRenderPassBeginInfo renderPassBeginInfo = vks::initializers::renderPassBeginInfo();
+				renderPassBeginInfo.renderPass = renderPass;
+				renderPassBeginInfo.renderArea.offset.x = 0;
+				renderPassBeginInfo.renderArea.offset.y = 0;
+				renderPassBeginInfo.renderArea.extent.width = width;
+				renderPassBeginInfo.renderArea.extent.height = height;
+				renderPassBeginInfo.clearValueCount = 2;
+				renderPassBeginInfo.pClearValues = clearValues;
 
-				vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+				for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
+				{
+					renderPassBeginInfo.framebuffer = frameBuffers[i];
 
-				VkViewport viewport = vks::initializers::viewport((float)width, (float)height, 0.0f, 1.0f);
-				vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
+					VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
 
-				VkRect2D scissor = vks::initializers::rect2D(width, height, 0, 0);
-				vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
+					vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-				vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Comp_PipelineLayout, 0, 1, &m_Comp_DescriptorSet, 0, nullptr);
+					VkViewport viewport = vks::initializers::viewport((float)width, (float)height, 0.0f, 1.0f);
+					vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
 
-				vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Comp_Pipeline);
-				// Final composition as full screen quad
-				// Note: Also used for debug display if debugDisplayTarget > 0
-				vkCmdDraw(drawCmdBuffers[i], 3, 1, 0, 0);
+					VkRect2D scissor = vks::initializers::rect2D(width, height, 0, 0);
+					vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
 
-				drawUI(drawCmdBuffers[i]);
+					vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Comp_PipelineLayout, 0, 1, &m_Comp_DescriptorSet, 0, nullptr);
 
-				vkCmdEndRenderPass(drawCmdBuffers[i]);
+					vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Comp_Pipeline);
+					// Final composition as full screen quad
+					// Note: Also used for debug display if debugDisplayTarget > 0
+					vkCmdDraw(drawCmdBuffers[i], 3, 1, 0, 0);
 
-				VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+					drawUI(drawCmdBuffers[i]);
+
+					vkCmdEndRenderPass(drawCmdBuffers[i]);
+
+					VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+				}
+
 			}
 		}
 	}
@@ -404,9 +412,16 @@ namespace rtf
 		// Fetch GBuffer command buffers from GBuffer renderpass
 		m_RP_GBuffer->draw(submitInfo.pCommandBuffers, submitInfo.commandBufferCount);
 
+
 		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
 
 		submitInfo.pWaitSemaphores = &m_SemaphoreA;
+
+		//m_renderpass_gui->draw(submitInfo.pCommandBuffers, submitInfo.commandBufferCount);
+
+
+		//VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+
 		//submitInfo.pSignalSemaphores = &m_SemaphoreB;
 
 		//m_GaussPass->draw(submitInfo.pCommandBuffers, submitInfo.commandBufferCount);
@@ -460,7 +475,9 @@ namespace rtf
 		setupSemaphores();
 
 		//GUI Renderpass
-		m_renderpass_gui = new Renderpass_Gui(instance, vulkanDevice, m_attachment_manager, this);
+		m_renderpass_gui = new Renderpass_Gui(instance, vulkanDevice, m_attachment_manager, this, &swapChain, &timer, &debugDisplayTarget, &camera);
+		m_renderpass_gui->prepare();
+
 
 		prepared = true;
 	}

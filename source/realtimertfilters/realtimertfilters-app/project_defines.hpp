@@ -6,4 +6,4 @@
 #define MODEL_NAME "models/Sponza/glTF/Sponza.gltf"
 
 // vulkan glslc executable
-#define RT_GLSLC_EXECUTABLE_PATH "S:/Projects/Programming/SDKs/Vulkan-1.2.170.0/Bin/glslc.exe"
+#define RT_GLSLC_EXECUTABLE_PATH "C:/VulkanSDK/1.2.176.1/Bin/glslc.exe"
