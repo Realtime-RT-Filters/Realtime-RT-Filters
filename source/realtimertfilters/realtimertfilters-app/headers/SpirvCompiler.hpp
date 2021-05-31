@@ -86,7 +86,7 @@ namespace rtf
 	// returns true if compilation fails
 	inline bool callGlslCompiler(const ShaderFileInfo& shaderFileInfo)
 	{
-		std::string command("/bin/glslc --target-spv=spv1.5 " + PathToString(shaderFileInfo.m_SourcePathFull) + " -o " + PathToString(shaderFileInfo.m_OutPathFull);
+		std::string command("/bin/glslc --target-spv=spv1.5 " + PathToString(shaderFileInfo.m_SourcePathFull) + " -o " + PathToString(shaderFileInfo.m_OutPathFull));
 		int returnvalue = std::system(command.c_str());
 		return returnvalue != 0;
 	}
