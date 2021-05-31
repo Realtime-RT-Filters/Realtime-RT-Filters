@@ -19,6 +19,9 @@ namespace rtf
 		camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 256.0f);
 		settings.overlay = true;
 
+		// required for debugprintf in shaders
+		enabledDeviceExtensions.push_back(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME);
+
 		enabledInstanceExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 		enabledInstanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 		apiVersion = VK_API_VERSION_1_2;
@@ -69,6 +72,11 @@ namespace rtf
 		{
 			enabledFeatures.fragmentStoresAndAtomics = VK_TRUE;
 		}
+		if (deviceFeatures.vertexPipelineStoresAndAtomics)
+		{
+			enabledFeatures.vertexPipelineStoresAndAtomics = VK_TRUE;
+		}
+		
 		deviceCreatepNextChain = m_pathTracerManager->getEnabledFeatures();
 	}
 
@@ -232,6 +240,8 @@ namespace rtf
 			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
 			// Binding 4 : Fragment shader uniform buffer
 			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 4),
+			// Binding 3 : Albedo texture target
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5),
 		};
 
 		VkDescriptorSetLayoutCreateInfo descriptorLayout = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings);
@@ -267,6 +277,12 @@ namespace rtf
 				m_attachment_manager->getAttachment(Attachment::albedo)->view,
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
+		VkDescriptorImageInfo texDescriptorMotion =
+			vks::initializers::descriptorImageInfo(
+				m_DefaultColorSampler,
+				m_attachment_manager->getAttachment(Attachment::motionvector)->view,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
 		// Deferred composition
 		VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &allocInfo, &m_Comp_DescriptorSet));
 		writeDescriptorSets = {
@@ -278,6 +294,8 @@ namespace rtf
 			vks::initializers::writeDescriptorSet(m_Comp_DescriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &texDescriptorAlbedo),
 			// Binding 4 : Fragment shader uniform buffer
 			vks::initializers::writeDescriptorSet(m_Comp_DescriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 4, &m_Comp_UnformBuffer.descriptor),
+			// Binding 5 : motion buffer vector
+			vks::initializers::writeDescriptorSet(m_Comp_DescriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, &texDescriptorMotion),
 		};
 		vkUpdateDescriptorSets(device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
 	}
@@ -532,7 +550,7 @@ namespace rtf
 	{
 		if (overlay->header("Settings"))
 		{
-			if (overlay->comboBox("Display", &debugDisplayTarget, { "Final composition", "Position", "Normals", "Albedo", "Specular", "Ray Tracing", "Path Tracing" }))
+			if (overlay->comboBox("Display", &debugDisplayTarget, { "Final composition", "Position", "Normals", "Albedo", "Specular", "Ray Tracing", "Path Tracing", "Motion vectors" }))
 			{
 				Comp_UpdateUniformBuffer();
 			}

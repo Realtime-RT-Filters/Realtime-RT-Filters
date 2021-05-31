@@ -3,6 +3,7 @@
 layout (binding = 1) uniform sampler2D samplerposition;
 layout (binding = 2) uniform sampler2D samplerNormal;
 layout (binding = 3) uniform sampler2D samplerAlbedo;
+layout (binding = 5) uniform sampler2D samplerMotion;
 
 layout (location = 0) in vec2 inUV;
 
@@ -27,6 +28,7 @@ void main()
 	vec3 fragPos = texture(samplerposition, inUV).rgb;
 	vec3 normal = texture(samplerNormal, inUV).rgb;
 	vec4 albedo = texture(samplerAlbedo, inUV);
+	vec2 motion = texture(samplerMotion, inUV).rg;
 	
 	// Debug display
 	if (ubo.displayDebugTarget > 0) {
@@ -42,6 +44,10 @@ void main()
 				break;
 			case 4: 
 				outFragcolor.rgb = albedo.aaa;
+				break;
+			case 7:
+				outFragcolor = vec4(1,0,1,1);
+				outFragcolor.rg = motion;
 				break;
 		}		
 		outFragcolor.a = 1.0;
