@@ -24,7 +24,7 @@ namespace rtf
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-// https://stackoverflow.com/questions/15435994/how-do-i-open-an-exe-from-another-c-exe
+	// https://stackoverflow.com/questions/15435994/how-do-i-open-an-exe-from-another-c-exe
 	using SPV_STR = std::wstring;
 
 	inline SPV_STR PathToString(const fs::path& path)
@@ -76,9 +76,9 @@ namespace rtf
 
 #define SPIRV_FILEENDING std::wstring(L".spv")
 #else
-using COMPILERPATH_STR_TYPE = std::string;
+	using SPV_STR = std::string;
 
-	inline COMPILERPATH_STR_TYPE PathToString(const fs::path& path)
+	inline SPV_STR PathToString(const fs::path& path)
 	{
 		return path.string();
 	}
@@ -92,10 +92,10 @@ using COMPILERPATH_STR_TYPE = std::string;
 	}
 
 #define SPIRV_FILEENDING std::string(".spv")
-namespace fs = std::filesystem;
+	namespace fs = std::filesystem;
 #endif
 
-class SpirvCompiler
+	class SpirvCompiler
 	{
 	public:
 		SPV_STR m_SourceDir = SPV_STR();
@@ -104,7 +104,7 @@ class SpirvCompiler
 		bool m_ThrowException = true;
 
 		SpirvCompiler() = default;
-		SpirvCompiler(SPV_STR sourceDir, SPV_STR outDir, bool verbose = false, bool throwException = true) : m_SourceDir(sourceDir), m_OutputDir(outDir), m_Verbose(verbose), m_ThrowException(throwException) {}
+		SpirvCompiler(const SPV_STR& sourceDir, const SPV_STR& outDir, bool verbose = false, bool throwException = true) : m_SourceDir(sourceDir), m_OutputDir(outDir), m_Verbose(verbose), m_ThrowException(throwException) {}
 
 		// file endings that can be detected and directed to a shader type
 		std::vector<SPV_STR> validFileEndings =
