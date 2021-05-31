@@ -31,8 +31,13 @@ namespace rtf
 		m_pathTracerManager = new PathTracerManager();
 		m_pathTracerManager->enableExtensions(enabledDeviceExtensions);
 
+#ifdef _WIN32
 		SpirvCompiler compiler(getShadersPathW(), getShadersPathW());
+#else
+		SpirvCompiler compiler(getShadersPath(), getShadersPath());
+#endif
 		compiler.CompileAll();
+
 	}
 	RTFilterDemo::~RTFilterDemo()
 	{
