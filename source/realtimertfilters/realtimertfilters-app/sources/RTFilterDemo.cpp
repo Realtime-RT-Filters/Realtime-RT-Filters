@@ -1,4 +1,4 @@
-#include "../headers/RTFilterDemo.hpp"
+﻿#include "../headers/RTFilterDemo.hpp"
 #include "../headers/VulkanglTFModel.h"
 #include "../project_defines.hpp"
 #include "../headers/PathTracerManager.hpp"
@@ -40,11 +40,13 @@ namespace rtf
 		m_pathTracerManager = new PathTracerManager();
 		m_pathTracerManager->enableExtensions(enabledDeviceExtensions);
 
-		SpirvCompiler compiler;
-		if (compiler.compileShaders())
-		{
-			throw std::runtime_error("Shader compilation failed!");
-		}
+#ifdef _WIN32
+		SpirvCompiler compiler(getShadersPathW(), getShadersPathW());
+#else
+		SpirvCompiler compiler(getShadersPath(), getShadersPath());
+#endif
+		compiler.CompileAll();
+
 	}
 	RTFilterDemo::~RTFilterDemo()
 	{
@@ -515,6 +517,10 @@ namespace rtf
 	std::string RTFilterDemo::getShadersPath2()
 	{
 		return getShadersPath();
+	}
+	std::wstring RTFilterDemo::getShadersPathW()
+	{
+		return getAssetPathW() + L"shaders/glsl/";
 	}
 	VkPipelineShaderStageCreateInfo RTFilterDemo::LoadShader(std::string shadername, VkShaderStageFlagBits stage)
 	{
