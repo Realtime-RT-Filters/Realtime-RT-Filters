@@ -10,139 +10,41 @@ namespace rtf
 		this->physicalDevice = physicalDevice;
 
 		//create neccessary Attachments
-		CreateAllAttachments(width, height);
+		createAllAttachments(width, height);
 	}
 
 	FrameBufferAttachment* Attachment_Manager::getAttachment(Attachment attachment)
 	{
-
-		//Return requested attachment depending on request
-		switch (attachment)
-		{
-		case Attachment::position:
-			return &m_position;
-		case Attachment::normal:
-			return &m_normal;
-		case Attachment::albedo:
-			return &m_albedo;
-		case Attachment::depth:
-			return &m_depth;
-		case Attachment::meshid:
-			return &m_meshid;
-		case Attachment::motionvector:
-			return &m_motionvector;
-		case Attachment::rtoutput:
-			return &m_rtoutput;
-		case Attachment::filteroutput:
-			return &m_filteroutput;
-		default:
-			break;
-		}
-
-        return nullptr; // not allowed without fpermissive: won't work anyway: &FrameBufferAttachment();
+		return &m_attachments[(int)attachment];
 	}
 
 
-	void Attachment_Manager::CreateAllAttachments(int width, int height)
+	void Attachment_Manager::createAllAttachments(int width, int height)
 	{
-
-		//create all the required attachments here
-
-		//Prepass Outputs
-		// (World space) Positions
-		this->createAttachment(
-			VK_FORMAT_R16G16B16A16_SFLOAT,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-			&m_position,
-			width,
-			height);
-
-
-		// (World space) Normals
-		this->createAttachment(
-			VK_FORMAT_R16G16B16A16_SFLOAT,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-			&m_normal,
-			width,
-			height);
-
-
-		// Albedo (color)
-		this->createAttachment(
-			VK_FORMAT_R16G16B16A16_SFLOAT,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
-			&m_albedo,
-			width,
-			height);
-
-
-		// Depth attachment
-
 		// Find a suitable depth format
 		VkFormat attDepthFormat;
 		VkBool32 validDepthFormat = vks::tools::getSupportedDepthFormat(*physicalDevice, &attDepthFormat);
 		assert(validDepthFormat);
+		m_attachmentTypes[(int)Attachment::depth].first = attDepthFormat;
 
-		this->createAttachment(
-			attDepthFormat,
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-			&m_depth,
-			width,
-			height);
-		//Ray Tracing Outputs
-
-
-		//Mesh ID
-		this->createAttachment(
-			VK_FORMAT_R32_UINT,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-			&m_meshid,
-			width,
-			height);
-
-
-		//Motion Vector
-		this->createAttachment(
-			VK_FORMAT_R32G32_SFLOAT,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-			&m_motionvector,
-			width,
-			height);
-
-
-		//Ray Tracing Output
-		this->createAttachment(
-			VK_FORMAT_R16G16B16A16_SFLOAT,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
-			&m_rtoutput,
-			width,
-			height);
-
-
-
-		//Filter Output
-		this->createAttachment(
-			VK_FORMAT_R16G16B16A16_SFLOAT,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-			&m_filteroutput,
-			width,
-			height);
-
-
-
+		for (int idx = 0; idx < m_maxAttachmentSize; idx++)
+		{
+			this->createAttachment(
+				m_attachmentTypes.at(idx).first, // VkFormat
+				m_attachmentTypes.at(idx).second, // VkImageUsageFlags
+				&m_attachments[idx],
+				width,
+				height);
+		}
 	}
 
-	void Attachment_Manager::DestroyAllAttachments()
+	void Attachment_Manager::destroyAllAttachments()
 	{
 		//Destroy & free all attachments
-		destroyAttachment(&m_position);
-		destroyAttachment(&m_normal);
-		destroyAttachment(&m_albedo);
-		destroyAttachment(&m_depth);
-		destroyAttachment(&m_meshid);
-		destroyAttachment(&m_motionvector);
-		destroyAttachment(&m_rtoutput);
-		destroyAttachment(&m_filteroutput);
+		for (int idx = 0; idx < m_maxAttachmentSize; idx++)
+		{
+			destroyAttachment(&m_attachments[idx]);
+		}
 	}
 
 	// Create a frame buffer attachment
@@ -204,7 +106,7 @@ namespace rtf
 	
 	Attachment_Manager::~Attachment_Manager()
 	{
-		DestroyAllAttachments();
+		destroyAllAttachments();
 	}
 
 	void Attachment_Manager::destroyAttachment(FrameBufferAttachment* attachment)
