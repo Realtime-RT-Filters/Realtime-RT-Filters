@@ -112,7 +112,7 @@ namespace rtf
 
 		//Ray Tracing Output
 		this->createAttachment(
-			VK_FORMAT_R8G8B8A8_UNORM,
+			VK_FORMAT_R16G16B16A16_SFLOAT,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
 			&m_rtoutput,
 			width,
@@ -122,7 +122,7 @@ namespace rtf
 
 		//Filter Output
 		this->createAttachment(
-			VK_FORMAT_R8G8B8A8_UNORM,
+			VK_FORMAT_R16G16B16A16_SFLOAT,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 			&m_filteroutput,
 			width,
