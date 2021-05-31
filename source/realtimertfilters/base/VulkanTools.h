@@ -60,6 +60,7 @@
 #endif
 
 const std::string getAssetPath();
+const std::wstring getAssetPathW();
 
 namespace vks
 {

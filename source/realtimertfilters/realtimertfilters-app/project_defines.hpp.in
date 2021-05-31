@@ -6,4 +6,5 @@
 #define MODEL_NAME "models/Sponza/glTF/Sponza.gltf"
 
 // vulkan glslc executable
-#define RT_GLSLC_EXECUTABLE_PATH "${Vulkan_GLSLC_EXECUTABLE}"
+#define SPIRV_COMPILER_CMD_NAME "${Vulkan_GLSLC_EXECUTABLE}"
+#define SPIRV_COMPILER_CMD_NAME_W L"${Vulkan_GLSLC_EXECUTABLE}"

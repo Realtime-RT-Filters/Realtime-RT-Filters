@@ -1,1 +1,2 @@
 #define VK_EXAMPLE_DATA_DIR "${CMAKE_SOURCE_DIR}/realtimertfilters-app/data/"
+#define VK_EXAMPLE_DATA_DIR_W L"${CMAKE_SOURCE_DIR}/realtimertfilters-app/data/"

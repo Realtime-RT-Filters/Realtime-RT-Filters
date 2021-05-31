@@ -20,6 +20,17 @@ const std::string getAssetPath()
 #endif
 }
 
+const std::wstring getAssetPathW()
+{
+#if defined(VK_USE_PLATFORM_ANDROID_KHR)
+	return L"";
+#elif defined(VK_EXAMPLE_DATA_DIR_W)
+	return VK_EXAMPLE_DATA_DIR_W;
+#else
+	return L"data/";
+#endif
+}
+
 namespace vks
 {
 	namespace tools
