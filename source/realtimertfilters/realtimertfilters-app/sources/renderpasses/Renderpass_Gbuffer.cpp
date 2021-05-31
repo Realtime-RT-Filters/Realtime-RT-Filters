@@ -1,19 +1,19 @@
-#include "../headers/Renderpass_Gbuffer.hpp"
-#include "../headers/RTFilterDemo.hpp"
+#include "../../headers/renderpasses/Renderpass_Gbuffer.hpp"
+#include "../../headers/RTFilterDemo.hpp"
 #include <VulkanTools.cpp>
 
 namespace rtf
 {
 
-	RenderpassGbuffer::RenderpassGbuffer(VkInstance instance, vks::VulkanDevice* device, Attachment_Manager* attachment_manager, RTFilterDemo* demo)
-		: Renderpass(instance, device, attachment_manager, demo)
+	RenderpassGbuffer::RenderpassGbuffer()
 	{
-		m_Scene = &(demo->m_Scene);
 	}
 
 	// Heavily inspired from Sascha Willems' "deferred" vulkan example
 	void RenderpassGbuffer::prepare()
 	{
+		m_Scene = &(m_rtFilterDemo->m_Scene);
+		m_camera = &m_rtFilterDemo->camera;
 		prepareAttachments();
 		prepareRenderpass();
 		prepareUBOs();
@@ -26,11 +26,11 @@ namespace rtf
 
 	void RenderpassGbuffer::prepareAttachments()
 	{
-		m_PositionAttachment = m_AttachmentManager->getAttachment(Attachment::position);
-		m_NormalAttachment = m_AttachmentManager->getAttachment(Attachment::normal);
-		m_AlbedoAttachment = m_AttachmentManager->getAttachment(Attachment::albedo);
-		m_MotionAttachment = m_AttachmentManager->getAttachment(Attachment::motionvector);
-		m_DepthAttachment = m_AttachmentManager->getAttachment(Attachment::depth);
+		m_PositionAttachment = m_attachmentManager->getAttachment(Attachment::position);
+		m_NormalAttachment = m_attachmentManager->getAttachment(Attachment::normal);
+		m_AlbedoAttachment = m_attachmentManager->getAttachment(Attachment::albedo);
+		m_MotionAttachment = m_attachmentManager->getAttachment(Attachment::motionvector);
+		m_DepthAttachment = m_attachmentManager->getAttachment(Attachment::depth);
 		assert(m_PositionAttachment != nullptr);
 		assert(m_NormalAttachment != nullptr);
 		assert(m_AlbedoAttachment != nullptr);
@@ -106,13 +106,13 @@ namespace rtf
 		renderPassInfo.dependencyCount = 2;
 		renderPassInfo.pDependencies = subPassDependencies;
 
-		VK_CHECK_RESULT(vkCreateRenderPass(m_Device->logicalDevice, &renderPassInfo, nullptr, &m_Renderpass));
+		VK_CHECK_RESULT(vkCreateRenderPass(m_vulkanDevice->logicalDevice, &renderPassInfo, nullptr, &m_Renderpass));
 
 		VkImageView attachmentViews[ATTACHMENT_COUNT] = {
 			m_PositionAttachment->view, m_NormalAttachment->view, m_AlbedoAttachment->view, m_MotionAttachment->view, m_DepthAttachment->view
 		};
 
-		VkExtent2D size = m_AttachmentManager->GetSize();
+		VkExtent2D size = m_attachmentManager->GetSize();
 
 		VkFramebufferCreateInfo fbufCreateInfo = {};
 		fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -123,12 +123,7 @@ namespace rtf
 		fbufCreateInfo.width = size.width;
 		fbufCreateInfo.height = size.height;
 		fbufCreateInfo.layers = 1;
-		VK_CHECK_RESULT(vkCreateFramebuffer(m_Device->logicalDevice, &fbufCreateInfo, nullptr, &m_FrameBuffer));
-	}
-
-	void RenderpassGbuffer::draw(VkQueue queue)
-	{
-
+		VK_CHECK_RESULT(vkCreateFramebuffer(m_vulkanDevice->logicalDevice, &fbufCreateInfo, nullptr, &m_FrameBuffer));
 	}
 
 	void RenderpassGbuffer::draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount)
@@ -139,20 +134,20 @@ namespace rtf
 
 	void RenderpassGbuffer::cleanUp()
 	{
-		vkDestroyFramebuffer(m_Device->logicalDevice, m_FrameBuffer, nullptr);
-		vkDestroyPipeline(m_Device->logicalDevice, m_Pipeline, nullptr);
-		vkDestroyPipelineLayout(m_Device->logicalDevice, m_PipelineLayout, nullptr);
-		vkDestroyDescriptorSetLayout(m_Device->logicalDevice, m_DescriptorSetLayout, nullptr);
+		vkDestroyFramebuffer(m_vulkanDevice->logicalDevice, m_FrameBuffer, nullptr);
+		vkDestroyPipeline(m_vulkanDevice->logicalDevice, m_Pipeline, nullptr);
+		vkDestroyPipelineLayout(m_vulkanDevice->logicalDevice, m_PipelineLayout, nullptr);
+		vkDestroyDescriptorSetLayout(m_vulkanDevice->logicalDevice, m_DescriptorSetLayout, nullptr);
 		m_Buffer.destroy();
-		vkDestroyRenderPass(m_Device->logicalDevice, m_Renderpass, nullptr);
-		vkDestroyPipelineCache(m_Device->logicalDevice, m_PipelineCache, nullptr);
+		vkDestroyRenderPass(m_vulkanDevice->logicalDevice, m_Renderpass, nullptr);
+		vkDestroyPipelineCache(m_vulkanDevice->logicalDevice, m_PipelineCache, nullptr);
 	}
 
 
 	void RenderpassGbuffer::prepareUBOs()
 	{
 		// Offscreen vertex shader
-		VK_CHECK_RESULT(m_Device->createBuffer(
+		VK_CHECK_RESULT(m_vulkanDevice->createBuffer(
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			&m_Buffer,
@@ -161,9 +156,9 @@ namespace rtf
 		// Map persistent
 		VK_CHECK_RESULT(m_Buffer.map());
 	}
-	void RenderpassGbuffer::updateUniformBuffer(Camera& camera)
+	void RenderpassGbuffer::updateUniformBuffer()
 	{
-		UBO_GBuffer_PushCamera(m_UBO, camera);
+		UBO_GBuffer_PushCamera(m_UBO, *m_camera);
 		memcpy(m_Buffer.mapped, &m_UBO, sizeof(m_UBO));
 	}
 
@@ -175,14 +170,14 @@ namespace rtf
 		};
 
 		VkDescriptorPoolCreateInfo descriptorPoolInfo = vks::initializers::descriptorPoolCreateInfo(poolSizes, 3);
-		VK_CHECK_RESULT(vkCreateDescriptorPool(m_Device->logicalDevice, &descriptorPoolInfo, nullptr, &m_DescriptorPool));
+		VK_CHECK_RESULT(vkCreateDescriptorPool(m_vulkanDevice->logicalDevice, &descriptorPoolInfo, nullptr, &m_DescriptorPool));
 	}
 
 	void RenderpassGbuffer::setupDescriptorSetLayout()
 	{
 		std::vector<VkDescriptorSetLayout> gltfDescriptorSetLayouts = { vkglTF::descriptorSetLayoutUbo, vkglTF::descriptorSetLayoutImage };
 		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfoOffscreen = vks::initializers::pipelineLayoutCreateInfo(gltfDescriptorSetLayouts.data(), 2);
-		VK_CHECK_RESULT(vkCreatePipelineLayout(m_Device->logicalDevice, &pPipelineLayoutCreateInfoOffscreen, nullptr, &m_PipelineLayout));
+		VK_CHECK_RESULT(vkCreatePipelineLayout(m_vulkanDevice->logicalDevice, &pPipelineLayoutCreateInfoOffscreen, nullptr, &m_PipelineLayout));
 	}
 
 	void RenderpassGbuffer::setupDescriptorSet()
@@ -192,19 +187,19 @@ namespace rtf
 		// Model
 		// use descriptor set layout delivered by gltf
 		VkDescriptorSetAllocateInfo allocInfoOffscreen = vks::initializers::descriptorSetAllocateInfo(m_DescriptorPool, &vkglTF::descriptorSetLayoutUbo, 1);
-		VK_CHECK_RESULT(vkAllocateDescriptorSets(m_Device->logicalDevice, &allocInfoOffscreen, &m_DescriptorSetScene));
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(m_vulkanDevice->logicalDevice, &allocInfoOffscreen, &m_DescriptorSetScene));
 		writeDescriptorSets = {
 			// Binding 0: Vertex shader uniform buffer
 			vks::initializers::writeDescriptorSet(m_DescriptorSetScene, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &m_Buffer.descriptor),
 		};
-		vkUpdateDescriptorSets(m_Device->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
+		vkUpdateDescriptorSets(m_vulkanDevice->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
 	}
 
 	void RenderpassGbuffer::buildCommandBuffer()
 	{
 		if (m_CmdBuffer == nullptr)
 		{
-			m_CmdBuffer = m_Device->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, false);
+			m_CmdBuffer = m_vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, false);
 		}
 
 		VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
@@ -217,7 +212,7 @@ namespace rtf
 		clearValues[3].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
 		clearValues[4].depthStencil = { 1.0f, 0 };
 
-		VkExtent2D size = m_AttachmentManager->GetSize();
+		VkExtent2D size = m_attachmentManager->GetSize();
 
 		VkRenderPassBeginInfo renderPassBeginInfo = vks::initializers::renderPassBeginInfo();
 		renderPassBeginInfo.renderPass = m_Renderpass;
@@ -251,7 +246,7 @@ namespace rtf
 	{
 		VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
 		pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-		VK_CHECK_RESULT(vkCreatePipelineCache(m_Device->logicalDevice, &pipelineCacheCreateInfo, nullptr, &m_PipelineCache));
+		VK_CHECK_RESULT(vkCreatePipelineCache(m_vulkanDevice->logicalDevice, &pipelineCacheCreateInfo, nullptr, &m_PipelineCache));
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = vks::initializers::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 		VkPipelineRasterizationStateCreateInfo rasterizationState = vks::initializers::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
@@ -265,8 +260,8 @@ namespace rtf
 		VkPipelineVertexInputStateCreateInfo vertexInputState = vks::initializers::pipelineVertexInputStateCreateInfo();
 		VkPipelineShaderStageCreateInfo shaderStages[2]
 		{
-			m_Main->LoadShader("prepass/rasterprepass.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
-			m_Main->LoadShader("prepass/rasterprepass.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+			m_rtFilterDemo->LoadShader("prepass/rasterprepass.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
+			m_rtFilterDemo->LoadShader("prepass/rasterprepass.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
 		};
 
 		VkGraphicsPipelineCreateInfo pipelineCI = vks::initializers::pipelineCreateInfo(m_PipelineLayout, m_Renderpass);
@@ -304,7 +299,7 @@ namespace rtf
 		colorBlendState.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
 		colorBlendState.pAttachments = blendAttachmentStates.data();
 
-		VK_CHECK_RESULT(vkCreateGraphicsPipelines(m_Device->logicalDevice, m_PipelineCache, 1, &pipelineCI, nullptr, &m_Pipeline));
+		VK_CHECK_RESULT(vkCreateGraphicsPipelines(m_vulkanDevice->logicalDevice, m_PipelineCache, 1, &pipelineCI, nullptr, &m_Pipeline));
 	}
 
 	void UBO_GBuffer_PushCamera(UBO_GBuffer& ubo, Camera& camera)

@@ -1,26 +1,27 @@
-#include "../headers/Renderpass_PostProcess.hpp"
-#include "../headers/VulkanglTFModel.h"
-#include "../headers/RTFilterDemo.hpp"
+#include "../../headers/renderpasses/Renderpass_PostProcess.hpp"
+#include "../../headers/VulkanglTFModel.h"
+#include "../../headers/RTFilterDemo.hpp"
 
 namespace rtf
 {
 	RenderpassPostProcess::StaticsContainer* GlobalStatics;
 	uint32_t InstanceCount;
 
-	RenderpassPostProcess::RenderpassPostProcess(RTFilterDemo* demo)
-		: Renderpass(demo)
+	RenderpassPostProcess::RenderpassPostProcess()
 	{}
+
 	void RenderpassPostProcess::ConfigureShader(const std::string& shadername)
 	{
 		m_Shadername = shadername;
-
 	}
+
 	void RenderpassPostProcess::PushAttachment(FrameBufferAttachment* attachment, AttachmentUse use)
 	{
 		m_Attachments.push_back(AttachmentContainer{ attachment, use });
 	}
 	void RenderpassPostProcess::prepare()
 	{
+
 		// Assure the object has been properly configured
 		assert(!m_Shadername.empty());
 		m_CombinedAttachmentCount = m_Attachments.size();
@@ -49,7 +50,7 @@ namespace rtf
 		// Fetch our statics
 		if (GlobalStatics == nullptr)
 		{
-			GlobalStatics = new StaticsContainer(m_Main);
+			GlobalStatics = new StaticsContainer(m_rtFilterDemo);
 			InstanceCount = 0;
 		}
 		Statics = GlobalStatics;
@@ -71,12 +72,12 @@ namespace rtf
 
 	void RenderpassPostProcess::cleanUp()
 	{
-		vkDestroyRenderPass(LogicalDevice(), m_Renderpass, nullptr);
-		vkDestroyPipeline(LogicalDevice(), m_Pipeline, nullptr);
-		vkDestroyPipelineLayout(LogicalDevice(), m_PipelineLayout, nullptr);
-		vkDestroyDescriptorSetLayout(LogicalDevice(), m_DescriptorSetLayout, nullptr);
-		vkDestroyDescriptorPool(LogicalDevice(), m_DescriptorPool, nullptr);
-		vkDestroyFramebuffer(LogicalDevice(), m_Framebuffer, nullptr);
+		vkDestroyRenderPass(m_vulkanDevice->logicalDevice, m_Renderpass, nullptr);
+		vkDestroyPipeline(m_vulkanDevice->logicalDevice, m_Pipeline, nullptr);
+		vkDestroyPipelineLayout(m_vulkanDevice->logicalDevice, m_PipelineLayout, nullptr);
+		vkDestroyDescriptorSetLayout(m_vulkanDevice->logicalDevice, m_DescriptorSetLayout, nullptr);
+		vkDestroyDescriptorPool(m_vulkanDevice->logicalDevice, m_DescriptorPool, nullptr);
+		vkDestroyFramebuffer(m_vulkanDevice->logicalDevice, m_Framebuffer, nullptr);
 
 		// Clean up statics
 		InstanceCount--;
@@ -170,7 +171,7 @@ namespace rtf
 		renderPassInfo.pSubpasses = &subpass;
 		renderPassInfo.dependencyCount = 2;
 		renderPassInfo.pDependencies = dependencies.data();
-		VK_CHECK_RESULT(vkCreateRenderPass(LogicalDevice(), &renderPassInfo, nullptr, &m_Renderpass));
+		VK_CHECK_RESULT(vkCreateRenderPass(m_vulkanDevice->logicalDevice, &renderPassInfo, nullptr, &m_Renderpass));
 	}
 	void RenderpassPostProcess::setupDescriptorSetLayout()
 	{
@@ -187,7 +188,7 @@ namespace rtf
 		}
 
 		VkDescriptorSetLayoutCreateInfo descriptorLayout = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings);
-		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(LogicalDevice(), &descriptorLayout, nullptr, &m_DescriptorSetLayout));
+		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_vulkanDevice->logicalDevice, &descriptorLayout, nullptr, &m_DescriptorSetLayout));
 
 		// Shared pipeline layout used by composition
 		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo = vks::initializers::pipelineLayoutCreateInfo(&m_DescriptorSetLayout, 1);
@@ -204,7 +205,7 @@ namespace rtf
 		pPipelineLayoutCreateInfo.pPushConstantRanges = &push_constant;
 		pPipelineLayoutCreateInfo.pushConstantRangeCount = 1;
 
-		VK_CHECK_RESULT(vkCreatePipelineLayout(LogicalDevice(), &pPipelineLayoutCreateInfo, nullptr, &m_PipelineLayout));
+		VK_CHECK_RESULT(vkCreatePipelineLayout(m_vulkanDevice->logicalDevice, &pPipelineLayoutCreateInfo, nullptr, &m_PipelineLayout));
 
 		std::vector<VkDescriptorPoolSize> poolSizes;
 		poolSizes.reserve(1);
@@ -217,12 +218,12 @@ namespace rtf
 		VkDescriptorPoolCreateInfo descriptorPoolInfo = vks::initializers::descriptorPoolCreateInfo(
 			//{ vks::initializers::descriptorPoolSize(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_CombinedAttachmentCount) }, 1);
 			poolSizes, 1);
-		VK_CHECK_RESULT(vkCreateDescriptorPool(LogicalDevice(), &descriptorPoolInfo, nullptr, &m_DescriptorPool));
+		VK_CHECK_RESULT(vkCreateDescriptorPool(m_vulkanDevice->logicalDevice, &descriptorPoolInfo, nullptr, &m_DescriptorPool));
 	}
 	void RenderpassPostProcess::setupDescriptorSet()
 	{
 		VkDescriptorSetAllocateInfo allocInfo = vks::initializers::descriptorSetAllocateInfo(m_DescriptorPool, &m_DescriptorSetLayout, 1);
-		vkAllocateDescriptorSets(LogicalDevice(), &allocInfo, &m_AttachmentDescriptorSet);
+		vkAllocateDescriptorSets(m_vulkanDevice->logicalDevice, &allocInfo, &m_AttachmentDescriptorSet);
 
 		std::vector<VkDescriptorImageInfo> imageInfos;
 		imageInfos.reserve(m_CombinedAttachmentCount);
@@ -241,7 +242,7 @@ namespace rtf
 			//}
 			layout = VkImageLayout::VK_IMAGE_LAYOUT_GENERAL;
 			imageInfos.push_back(vks::initializers::descriptorImageInfo(
-			//	m_Main->m_DefaultColorSampler,
+			//	m_rtFilterDemo->m_DefaultColorSampler,
 				nullptr,
 				m_Attachments[i].m_Attachment->view,
 				layout
@@ -261,7 +262,7 @@ namespace rtf
 			));
 		}
 
-		vkUpdateDescriptorSets(LogicalDevice(), static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
+		vkUpdateDescriptorSets(m_vulkanDevice->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
 	}
 	void RenderpassPostProcess::setupPipeline()
 	{
@@ -295,11 +296,11 @@ namespace rtf
 		// Final fullscreen composition pass pipeline
 		rasterizationState.cullMode = VK_CULL_MODE_FRONT_BIT;
 		shaderStages[0] = Statics->m_VertexPassthroughShader;
-		shaderStages[1] = m_Main->LoadShader(m_Shadername, VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[1] = m_rtFilterDemo->LoadShader(m_Shadername, VK_SHADER_STAGE_FRAGMENT_BIT);
 		// Empty vertex input state, vertices are generated by the vertex shader
 		VkPipelineVertexInputStateCreateInfo emptyInputState = vks::initializers::pipelineVertexInputStateCreateInfo();
 		pipelineCI.pVertexInputState = &emptyInputState;
-		VK_CHECK_RESULT(vkCreateGraphicsPipelines(LogicalDevice(), Statics->m_PipelineCache, 1, &pipelineCI, nullptr, &m_Pipeline));
+		VK_CHECK_RESULT(vkCreateGraphicsPipelines(m_vulkanDevice->logicalDevice, Statics->m_PipelineCache, 1, &pipelineCI, nullptr, &m_Pipeline));
 	}
 
 	void RenderpassPostProcess::setupFramebuffer()
@@ -311,7 +312,7 @@ namespace rtf
 			attachmentViews.push_back(m_Attachments[i].m_Attachment->view);
 		}
 
-		VkExtent2D size = m_AttachmentManager->GetSize();
+		VkExtent2D size = m_attachmentManager->GetSize();
 
 		VkFramebufferCreateInfo fbufCreateInfo = {};
 		fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -322,14 +323,14 @@ namespace rtf
 		fbufCreateInfo.width = size.width;
 		fbufCreateInfo.height = size.height;
 		fbufCreateInfo.layers = 1;
-		VK_CHECK_RESULT(vkCreateFramebuffer(LogicalDevice(), &fbufCreateInfo, nullptr, &m_Framebuffer));
+		VK_CHECK_RESULT(vkCreateFramebuffer(m_vulkanDevice->logicalDevice, &fbufCreateInfo, nullptr, &m_Framebuffer));
 	}
 
 	void RenderpassPostProcess::buildCommandBuffer()
 	{
 		if (m_CmdBuffer == nullptr)
 		{
-			m_CmdBuffer = m_Device->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, false);
+			m_CmdBuffer = m_vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, false);
 		}
 
 		VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
@@ -342,8 +343,8 @@ namespace rtf
 		renderPassBeginInfo.renderPass = m_Renderpass;
 		renderPassBeginInfo.renderArea.offset.x = 0;
 		renderPassBeginInfo.renderArea.offset.y = 0;
-		renderPassBeginInfo.renderArea.extent.width = m_Main->width;
-		renderPassBeginInfo.renderArea.extent.height = m_Main->height;
+		renderPassBeginInfo.renderArea.extent.width = m_rtFilterDemo->width;
+		renderPassBeginInfo.renderArea.extent.height = m_rtFilterDemo->height;
 		renderPassBeginInfo.clearValueCount = 2;
 		renderPassBeginInfo.pClearValues = clearValues;
 
@@ -354,17 +355,17 @@ namespace rtf
 
 		vkCmdBeginRenderPass(m_CmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		VkViewport viewport = vks::initializers::viewport((float)m_Main->width, (float)m_Main->height, 0.0f, 1.0f);
+		VkViewport viewport = vks::initializers::viewport((float)m_rtFilterDemo->width, (float)m_rtFilterDemo->height, 0.0f, 1.0f);
 		vkCmdSetViewport(m_CmdBuffer, 0, 1, &viewport);
 
-		VkRect2D scissor = vks::initializers::rect2D(m_Main->width, m_Main->height, 0, 0);
+		VkRect2D scissor = vks::initializers::rect2D(m_rtFilterDemo->width, m_rtFilterDemo->height, 0, 0);
 		vkCmdSetScissor(m_CmdBuffer, 0, 1, &scissor);
 
 		vkCmdBindDescriptorSets(m_CmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_AttachmentDescriptorSet, 0, nullptr);
 
 		vkCmdBindPipeline(m_CmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 
-		m_PushConstants = PushConstantsContainer{ m_Main->width, m_Main->height };
+		m_PushConstants = PushConstantsContainer{ m_rtFilterDemo->width, m_rtFilterDemo->height };
 		vkCmdPushConstants(m_CmdBuffer, m_PipelineLayout, VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstantsContainer), &m_PushConstants);
 
 		// Final composition as full screen quad

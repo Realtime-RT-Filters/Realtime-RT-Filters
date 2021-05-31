@@ -4,6 +4,15 @@
 #include "../headers/PathTracerManager.hpp"
 #include "../headers/SpirvCompiler.hpp"
 
+#include "../headers/renderpasses/RenderpassManager.hpp"
+
+#include "../headers/renderpasses/Renderpass_Gbuffer.hpp"
+#include "../headers/renderpasses/Renderpass_Gui.hpp"
+
+//All Filter render passes here
+#include "../headers/renderpasses/Renderpass_Filter.hpp" //Example Renderpass
+#include "../headers/renderpasses/Renderpass_PostProcess.hpp"
+
 namespace rtf
 {
 	RTFilterDemo::RTFilterDemo() : VulkanExampleBase(ENABLE_VALIDATION)
@@ -45,7 +54,7 @@ namespace rtf
 		vkDestroySampler(device, m_DefaultColorSampler, nullptr);
 
 		// Frame buffer
-		delete m_attachment_manager;
+		delete m_attachmentManager;
 
 		// Destroy composition view components
 		vkDestroyPipeline(device, m_Comp_Pipeline, nullptr);
@@ -53,7 +62,10 @@ namespace rtf
 		vkDestroyDescriptorSetLayout(device, m_Comp_DescriptorSetLayout, nullptr);
 		m_Comp_UnformBuffer.destroy();
 
-		vkDestroySemaphore(device, m_SemaphoreA, nullptr);
+		if (m_renderpassManager)
+		{
+			delete m_renderpassManager;
+		}
 
 		//Ray tracing destructors
 		m_rtManager.cleanup();
@@ -99,15 +111,6 @@ namespace rtf
 		sampler.maxLod = 1.0f;
 		sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		VK_CHECK_RESULT(vkCreateSampler(device, &sampler, nullptr, &m_DefaultColorSampler));
-	}
-
-
-	void RTFilterDemo::setupSemaphores()
-	{
-		// Create two semaphores which are used interleaved with each other
-		VkSemaphoreCreateInfo semaphoreCreateInfo = vks::initializers::semaphoreCreateInfo();
-		VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &m_SemaphoreA));
-		VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &m_SemaphoreB));
 	}
 
 	void RTFilterDemo::loadAssets()
@@ -262,25 +265,25 @@ namespace rtf
 		VkDescriptorImageInfo texDescriptorPosition =
 			vks::initializers::descriptorImageInfo(
 				m_DefaultColorSampler,
-				m_attachment_manager->getAttachment(Attachment::position)->view,
+				m_attachmentManager->getAttachment(Attachment::position)->view,
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		VkDescriptorImageInfo texDescriptorNormal =
 			vks::initializers::descriptorImageInfo(
 				m_DefaultColorSampler,
-				m_attachment_manager->getAttachment(Attachment::normal)->view,
+				m_attachmentManager->getAttachment(Attachment::normal)->view,
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		VkDescriptorImageInfo texDescriptorAlbedo =
 			vks::initializers::descriptorImageInfo(
 				m_DefaultColorSampler,
-				m_attachment_manager->getAttachment(Attachment::albedo)->view,
+				m_attachmentManager->getAttachment(Attachment::albedo)->view,
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		VkDescriptorImageInfo texDescriptorMotion =
 			vks::initializers::descriptorImageInfo(
 				m_DefaultColorSampler,
-				m_attachment_manager->getAttachment(Attachment::motionvector)->view,
+				m_attachmentManager->getAttachment(Attachment::motionvector)->view,
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		// Deferred composition
@@ -406,75 +409,31 @@ namespace rtf
 	void RTFilterDemo::draw()
 	{
 		VulkanExampleBase::prepareFrame();
-
-		// The scene render command buffer has to wait for the offscreen
-		// rendering to be finished before we can use the framebuffer
-		// color image for sampling during final rendering
-		// To ensure this we use a dedicated offscreen synchronization
-		// semaphore that will be signaled when offscreen renderin
-		// has been finished
-		// This is necessary as an implementation may start both
-		// command buffers at the same time, there is no guarantee
-		// that command buffers will be executed in the order they
-		// have been submitted by the application
-
-		// GBuffer rendering
-
-		// Setup timeline semaphore
-
-		// Wait for swap chain presentation to finish
-		submitInfo.pWaitSemaphores = &semaphores.presentComplete;
-		submitInfo.pSignalSemaphores = &m_SemaphoreA;
-		// Signal ready with offscreen semaphore
-
-		// Fetch GBuffer command buffers from GBuffer renderpass
-		m_RP_GBuffer->draw(submitInfo.pCommandBuffers, submitInfo.commandBufferCount);
-
-
-		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-
-		submitInfo.pWaitSemaphores = &m_SemaphoreA;
-
-		//m_renderpass_gui->draw(submitInfo.pCommandBuffers, submitInfo.commandBufferCount);
-
-
-		//VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-
-		//submitInfo.pSignalSemaphores = &m_SemaphoreB;
-
-		//m_GaussPass->draw(submitInfo.pCommandBuffers, submitInfo.commandBufferCount);
-		//VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-		// Scene rendering
-
-		// Wait for offscreen semaphore
-		// Signal ready with render complete semaphore
-		//submitInfo.pWaitSemaphores = &m_SemaphoreB;
-		submitInfo.pSignalSemaphores = &semaphores.renderComplete;
-
-		// Submit work
-		//submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
-		submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
-		submitInfo.commandBufferCount = 1;
-		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+		// submit the renderpasses one after another
+		m_renderpassManager->draw(drawCmdBuffers[currentBuffer]);
 		VulkanExampleBase::submitFrame();
 	}
 	void RTFilterDemo::prepare()
 	{
 		VulkanExampleBase::prepare();
 
-		//We create the Attachment manager
-		m_attachment_manager = new Attachment_Manager(&device, vulkanDevice, &physicalDevice, width, height);
-		m_RP_GBuffer = new RenderpassGbuffer(instance, vulkanDevice, m_attachment_manager, this);
-		m_GaussPass = new RenderpassPostProcess(this);
-
+		std::cout << "loading assets.." << std::endl;
 		loadAssets();
+		std::cout << "done." << std::endl;
 
-		m_RP_GBuffer->prepare();
+		//We create the Attachment manager
+		m_attachmentManager = new Attachment_Manager(&device, vulkanDevice, &physicalDevice, width, height);
 
-		m_GaussPass->ConfigureShader("filter/postprocess_gauss.frag.spv");
-		m_GaussPass->PushAttachment(m_attachment_manager->getAttachment(Attachment::albedo), RenderpassPostProcess::AttachmentUse::ReadOnly);
-		m_GaussPass->PushAttachment(m_attachment_manager->getAttachment(Attachment::rtoutput), RenderpassPostProcess::AttachmentUse::WriteOnly);
-		m_GaussPass->prepare();
+		m_renderpassManager = new RenderpassManager();
+		m_renderpassManager->addRenderpass(std::make_shared<RenderpassGbuffer>());
+
+		auto gbufferPass = std::make_shared<RenderpassPostProcess>();
+		gbufferPass->ConfigureShader("filter/postprocess_gauss.frag.spv");
+		gbufferPass->PushAttachment(m_attachmentManager->getAttachment(Attachment::albedo), RenderpassPostProcess::AttachmentUse::ReadOnly);
+		gbufferPass->PushAttachment(m_attachmentManager->getAttachment(Attachment::rtoutput), RenderpassPostProcess::AttachmentUse::WriteOnly);
+		m_renderpassManager->addRenderpass(gbufferPass);
+
+		m_renderpassManager->prepare(this);
 
 		setupDefaultSampler();
 		Comp_PrepareUniformBuffers();
@@ -490,11 +449,10 @@ namespace rtf
 		m_pathTracerManager->setup(this, physicalDevice, vulkanDevice, device, queue, &swapChain, descriptorPool, &camera);
 		m_pathTracerManager->prepare(width, height);
 		buildCommandBuffers();
-		setupSemaphores();
 
 		//GUI Renderpass
-		m_renderpass_gui = new Renderpass_Gui(instance, vulkanDevice, m_attachment_manager, this, &swapChain, &timer, &debugDisplayTarget, &camera);
-		m_renderpass_gui->prepare();
+		//m_renderpass_gui = new Renderpass_Gui(instance, vulkanDevice, m_attachmentManager, this, &swapChain, &timer, &debugDisplayTarget, &camera);
+		//m_renderpass_gui->prepare();
 
 
 		prepared = true;
@@ -540,11 +498,8 @@ namespace rtf
 			Comp_UpdateUniformBuffer();
 		}
 
-		//Ray tracing variant uses the other Uniform Buffers
-		m_RP_GBuffer->updateUniformBuffer(camera);
 		m_rtManager.updateUniformBuffers(timer, &camera);
 		m_pathTracerManager->updateUniformBuffers(timer, &camera);
-
 	}
 	void RTFilterDemo::OnUpdateUIOverlay(vks::UIOverlay* overlay)
 	{

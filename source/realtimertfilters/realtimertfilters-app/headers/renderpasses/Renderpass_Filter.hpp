@@ -1,9 +1,9 @@
 #ifndef Renderpass_Filter_h
 #define Renderpass_Filter_h
 
-#include "disable_warnings.h"
+#include "../disable_warnings.h"
 #include <VulkanDevice.h>
-#include "Attachment_Manager.hpp"
+#include "../Attachment_Manager.hpp"
 #include "Renderpass.hpp"
 
 namespace rtf
@@ -13,9 +13,16 @@ namespace rtf
 	/// </summary>
     class Renderpass_Filter : public Renderpass
 	{
+
+	public:
+		Renderpass_Filter();
+		virtual ~Renderpass_Filter();
+
+		virtual void prepare() override;
+		virtual void draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount);
+		virtual void cleanUp() override;
+
 	protected:
-
-
 		struct FrameBuffer
 		{
 			int32_t width, height;
@@ -23,12 +30,6 @@ namespace rtf
 			FrameBufferAttachment* position, * normal, * albedo;
 			VkRenderPass renderPass;
 		} offScreenFrameBuf;
-
-		void prepare();
-
-	public:
-		Renderpass_Filter(VkInstance instance, vks::VulkanDevice* device, Attachment_Manager* attachmentManager, RTFilterDemo* demo);
-		virtual ~Renderpass_Filter();
 
 
 	};

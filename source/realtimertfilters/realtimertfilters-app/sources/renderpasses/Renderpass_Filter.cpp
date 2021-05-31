@@ -1,10 +1,9 @@
-#include "../headers/Renderpass_Filter.hpp"
+#include "../../headers/renderpasses/Renderpass_Filter.hpp"
 
 namespace rtf
 {
 
-	Renderpass_Filter::Renderpass_Filter(VkInstance instance, vks::VulkanDevice* device, Attachment_Manager* attachment_manager, RTFilterDemo* demo)
-		: Renderpass(instance, device, attachment_manager, demo)
+	Renderpass_Filter::Renderpass_Filter()
 	{
 	}
 
@@ -21,6 +20,14 @@ namespace rtf
 		//std::array<VkAttachmentDescription, 4> attachmentDescs = {};
 
 
+	}
+
+	void Renderpass_Filter::draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount)
+	{
+	}
+
+	void Renderpass_Filter::cleanUp()
+	{
 	}
 
 }

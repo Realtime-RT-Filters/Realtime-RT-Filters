@@ -2,7 +2,7 @@
 #define Renderpass_PostProcess_h
 
 #include "Renderpass.hpp"
-#include "Attachment_Manager.hpp"
+#include "../Attachment_Manager.hpp"
 
 namespace rtf
 {
@@ -16,7 +16,7 @@ namespace rtf
 			ReadWrite
 		};
 
-		RenderpassPostProcess(RTFilterDemo* demo);
+		RenderpassPostProcess();
 
 		void ConfigureShader(const std::string& shadername);
 		void PushAttachment(FrameBufferAttachment* attachment, AttachmentUse use);

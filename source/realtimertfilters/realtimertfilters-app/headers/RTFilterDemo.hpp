@@ -17,14 +17,9 @@
 
 
 #include "Attachment_Manager.hpp"
-#include "Renderpass_Gbuffer.hpp"
+
 #include "SpatioTemporalAccumulation.hpp"
 #include "RaytracingManager.hpp"
-#include "Renderpass_Gui.hpp"
-
-//All Filter render passes here
-#include "Renderpass_Filter.hpp" //Example Renderpass
-#include "Renderpass_PostProcess.hpp"
 
 
 #define ENABLE_VALIDATION true
@@ -40,24 +35,29 @@
 namespace rtf
 {
 	class PathTracerManager;
+	class RenderpassManager;
+
+	class RenderpassGbuffer;
 
 	class RTFilterDemo : public VulkanExampleBase
 	{
 	public:
 		int32_t debugDisplayTarget = 0;
 
-		RenderpassGbuffer* m_RP_GBuffer;
 		SpatioTemporalAccumulation m_spatioTemporalAccumulation;
 		RaytracingManager m_rtManager;
-		PathTracerManager* m_pathTracerManager;
+		PathTracerManager* m_pathTracerManager{};
 		
 		//Attachment manager
-		Attachment_Manager* m_attachment_manager;
-
+		Attachment_Manager* m_attachmentManager;
 
 		//Renderpass
-		Renderpass_Gui* m_renderpass_gui;
-		RenderpassPostProcess* m_GaussPass;
+		friend RenderpassManager;
+		RenderpassManager* m_renderpassManager{};
+
+		// access to attributes
+		friend RenderpassGbuffer;
+
 
 #pragma region helper_structs
 
@@ -96,10 +96,6 @@ namespace rtf
 		// One sampler for the frame buffer color attachments
 		VkSampler m_DefaultColorSampler;
 
-		// Semaphore used to synchronize between offscreen and final scene rendering
-		VkSemaphore m_SemaphoreA = VK_NULL_HANDLE;
-		VkSemaphore m_SemaphoreB = VK_NULL_HANDLE;
-
 		RTFilterDemo();
 
 		~RTFilterDemo();
@@ -109,9 +105,6 @@ namespace rtf
 
 		// Prepare a new framebuffer and attachments for offscreen rendering (G-Buffer)
 		void setupDefaultSampler();
-
-		// Build command buffer for rendering the scene to the offscreen frame buffer attachments
-		void setupSemaphores();
 
 		void loadAssets();
 

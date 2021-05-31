@@ -3,7 +3,7 @@
 cmake_minimum_required (VERSION 3.8)
 
 # FILE Macros for all sources, main source and main headers
-file (GLOB ALL_SOURCES "*.cpp" "sources/*.cpp" "*.inl" "sources/*.inl" "*.h" "*.hpp" "headers/*.h" "headers/*.hpp")
+file (GLOB_RECURSE ALL_SOURCES "*.cpp" "sources/*.cpp" "*.inl" "sources/*.inl" "*.h" "*.hpp" "headers/*.h" "headers/*.hpp")
 set(MAIN_SOURCE realtimertfliters-app.cpp)
 set(MAIN_HEADER realtimertfilters-app.h)
 

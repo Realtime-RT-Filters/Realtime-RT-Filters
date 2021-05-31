@@ -1,15 +1,15 @@
 #ifndef Renderpass_Gui_h
 #define Renderpass_Gui_h
 
-#include "disable_warnings.h"
+#include "../disable_warnings.h"
 #include <VulkanDevice.h>
 #include <vulkanexamplebase.h>
-#include "VulkanglTFModel.h"
-#include "Attachment_Manager.hpp"
+#include "../VulkanglTFModel.h"
+#include "../Attachment_Manager.hpp"
 #include "Renderpass.hpp"
 
 #include "vulkanexamplebase.h"
-
+/*
 namespace rtf
 {
 	/// <summary>
@@ -75,8 +75,6 @@ namespace rtf
 		void prepareRenderpass();
 		void PreparePipelines();
 
-
-
 	public:
 		Renderpass_Gui(VkInstance instance, vks::VulkanDevice* device, Attachment_Manager* attachmentManager, RTFilterDemo* demo, VulkanSwapChain* swapChain, float* timer, int* debugDisplayTarget, Camera* camera);
 		~Renderpass_Gui();
@@ -86,9 +84,7 @@ namespace rtf
 
 
 		virtual void draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount) override;
-
-		virtual void draw(VkQueue queue) override;
 	};
 }
-
+*/
 #endif //Renderpass_Gui_h
