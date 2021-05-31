@@ -46,7 +46,7 @@ void main()
 				outFragcolor.rgb = albedo.aaa;
 				break;
 			case 7:
-				outFragcolor = vec4(1,0,1,1);
+				outFragcolor = vec4(1,0,0,1);
 				outFragcolor.rg = motion;
 				break;
 		}		
