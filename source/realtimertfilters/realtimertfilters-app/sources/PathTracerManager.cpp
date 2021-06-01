@@ -2,6 +2,7 @@
 #include "..\headers\RTFilterDemo.hpp"
 #include "..\data\shaders\glsl\pathTracerShader\binding.glsl"
 
+
 void rtf::PathTracerManager::prepare(uint32_t width, uint32_t height)
 {
 	// Get properties and features
@@ -51,18 +52,21 @@ void rtf::PathTracerManager::prepare(uint32_t width, uint32_t height)
 }
 
 void rtf::PathTracerManager::createRayTracingPipeline() {
-	//Descripor Set = 0
 	std::vector<VkDescriptorSetLayoutBinding> layoutBindingSet = {
-		// Binding 0: Acceleration structure
-		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR , 0),
-		// Binding 1: Storage image
-		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR, 1),
-		// Binding 2: Uniform buffer
-		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR, 2),
-		// Binding 3: Vertex buffer 
+		// Acceleration structure
+		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR , B_ACCELERATIONSTRUCTURE),
+		// Storage image
+		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR,B_IMAGE),
+		//  Uniform buffer
+		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR, B_UBO),
+		// Vertex buffer 
 		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_VERTICES),
-		// Binding 4: Index buffer
+		// Index buffer
 		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_INDICES),
+		//  Material
+		//vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_MATERIALS),
+		//  Textures
+		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_TEXTURES),
 	};
 
 	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI = vks::initializers::descriptorSetLayoutCreateInfo(layoutBindingSet);
@@ -140,12 +144,12 @@ void rtf::PathTracerManager::createRayTracingPipeline() {
 
 void rtf::PathTracerManager::createDescriptorSets()
 {
-	// TODO extend it for Set = 1
 	std::vector<VkDescriptorPoolSize> poolSizes = {
 		{ VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1 },
 		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
 		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2 }
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2 },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 }
 	};
 	VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = vks::initializers::descriptorPoolCreateInfo(poolSizes, 1);
 	VK_CHECK_RESULT(vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, nullptr, &descriptorPool));
@@ -162,30 +166,34 @@ void rtf::PathTracerManager::createDescriptorSets()
 	// The specialized acceleration structure descriptor has to be chained
 	accelerationStructureWrite.pNext = &descriptorAccelerationStructureInfo;
 	accelerationStructureWrite.dstSet = rt_descriptorSet;
-	accelerationStructureWrite.dstBinding = 0;
+	accelerationStructureWrite.dstBinding = B_ACCELERATIONSTRUCTURE;
 	accelerationStructureWrite.descriptorCount = 1;
 	accelerationStructureWrite.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 
 	VkDescriptorImageInfo storageImageDescriptor{ VK_NULL_HANDLE, storageImage.view, VK_IMAGE_LAYOUT_GENERAL };
 	VkDescriptorBufferInfo vertexBufferDescriptor{ m_Scene->vertices.buffer, 0, VK_WHOLE_SIZE };
 	VkDescriptorBufferInfo indexBufferDescriptor{ m_Scene->indices.buffer, 0, VK_WHOLE_SIZE };
-
+	//VkDescriptorBufferInfo materialBufferDescriptor{ getMaterialBuffer(), 0, VK_WHOLE_SIZE };
+	
 	std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
-		// Binding 0: Top level acceleration structure
+		// Top level acceleration structure
 		accelerationStructureWrite,
-		// Binding 1: Ray tracing result image
-		vks::initializers::writeDescriptorSet(rt_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &storageImageDescriptor),
-		// Binding 2: Uniform data
-		vks::initializers::writeDescriptorSet(rt_descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &ubo.descriptor),
-		// Binding 3: Scene vertex buffer
-		vks::initializers::writeDescriptorSet(rt_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3, &vertexBufferDescriptor),
-		// Binding 4: Scene index buffer
-		vks::initializers::writeDescriptorSet(rt_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4, &indexBufferDescriptor),
+		// Ray tracing result image
+		vks::initializers::writeDescriptorSet(rt_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, B_IMAGE, &storageImageDescriptor),
+		// Uniform data
+		vks::initializers::writeDescriptorSet(rt_descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, B_UBO, &ubo.descriptor),
+		// Scene vertex buffer
+		vks::initializers::writeDescriptorSet(rt_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_VERTICES, &vertexBufferDescriptor),
+		// Scene index buffer
+		vks::initializers::writeDescriptorSet(rt_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_INDICES, &indexBufferDescriptor),
+		// Material 
+		//vks::initializers::writeDescriptorSet(rt_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_MATERIALS, &m_Scene->materials.data()->descriptor, m_Scene->materials.size()),
+		// Textures
+		vks::initializers::writeDescriptorSet(rt_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, B_TEXTURES, &m_Scene->textures.data()->descriptor,m_Scene->textures.size())
 	};
 
 	vkUpdateDescriptorSets(device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
 }
-
 
 void rtf::PathTracerManager::createUniformBuffer()
 {
@@ -275,3 +283,4 @@ void rtf::PathTracerManager::buildCommandBuffer(VkCommandBuffer commandBuffer, V
 		VK_IMAGE_LAYOUT_GENERAL,
 		subresourceRange);
 }
+

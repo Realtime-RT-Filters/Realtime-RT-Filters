@@ -22,6 +22,20 @@ namespace rtf {
 			float         temporalAlpha{ 0.1f };
 		} m_pushConstants;
 
+		struct GltfShadeMaterial
+		{
+			glm::vec4 baseColorFactor;
+			int  baseColorTexture;
+			glm::vec3 emissiveFactor;
+		};
+
+		struct PrimMeshInfo
+		{
+			unsigned int indexOffset;
+			unsigned int vertexOffset;
+			int  materialIndex;
+		};
+
 		void setup(
 			RTFilterDemo* rtFilterDemo,
 			VkPhysicalDevice physicalDevice,
@@ -38,13 +52,15 @@ namespace rtf {
 		void cleanup() override;
 		void createRayTracingPipeline() override;
 		void createDescriptorSets() override;
+		VkBuffer getMaterialBuffer();
 		void prepare(uint32_t width, uint32_t height);
+		VkDescriptorImageInfo getTexturesView();
 		void createUniformBuffer() override;
 		void updateUniformBuffers(float timer, Camera* camera) override;
 		void buildCommandBuffer(VkCommandBuffer, VkImage, uint32_t, uint32_t);
-
 	protected:
 		VkDescriptorSetLayout pt_pushConstantDescriptorSetLayout;
+
 	};
 
 }
