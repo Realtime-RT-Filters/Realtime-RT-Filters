@@ -14,6 +14,7 @@ namespace rtf
 		void addRenderpass(std::shared_ptr<Renderpass> renderpass);
 		void prepare(RTFilterDemo* rtFilterDemo);
 		void draw(VkCommandBuffer baseCommandBuffer);
+		void updateUniformBuffer();
 
 	protected:
 		std::vector<VkSemaphore> m_semaphores;

@@ -9,13 +9,13 @@
 #include "Renderpass.hpp"
 
 #include "vulkanexamplebase.h"
-/*
+
 namespace rtf
 {
 	/// <summary>
 	/// Class which acts as final render pass, showing output with UI
 	/// </summary>
-    class Renderpass_Gui : public Renderpass
+    class RenderpassGui : public Renderpass
 	{
 	protected:
 
@@ -34,9 +34,8 @@ namespace rtf
 
 		// Need to know the swapchain
 		VulkanSwapChain* m_swapchain;
-
-
-		VkCommandBuffer m_CmdBuffer = nullptr;
+		std::vector<VkCommandBuffer>* m_commandBuffers{};
+		uint32_t* m_currentBuffer{};
 
 
 		//Old stuff taken from deferred example to allow a render composition
@@ -54,37 +53,33 @@ namespace rtf
 			Light lights[6]{};
 			glm::vec4 viewPos{};
 			int debugDisplayTarget = 0;
-		} m_Comp_UBO;
+		} m_composition_ubo;
 
-		Camera* m_camera;
-		float* m_timer;
+		vks::Buffer m_composition_UBO_buffer;
+
+		Camera* m_camera{};
+		float* m_timer{};
 		int32_t* m_debugDisplayTarget = 0;
 		//End of legacy stuff
 
-
-
 		void prepareUBO();
-		void updateUBO();
-
+		void updateUniformBuffer();
 
 		void setupDescriptorSetLayout();
 		void setupDescriptorPool();
 		void setupDescriptorSet();
 
-
 		void prepareRenderpass();
-		void PreparePipelines();
+		void preparePipelines();
 
 	public:
-		Renderpass_Gui(VkInstance instance, vks::VulkanDevice* device, Attachment_Manager* attachmentManager, RTFilterDemo* demo, VulkanSwapChain* swapChain, float* timer, int* debugDisplayTarget, Camera* camera);
-		~Renderpass_Gui();
+		RenderpassGui();
+		~RenderpassGui();
 
 		void buildCommandBuffer();
 		virtual void prepare() override;
-
-
 		virtual void draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount) override;
 	};
 }
-*/
+
 #endif //Renderpass_Gui_h

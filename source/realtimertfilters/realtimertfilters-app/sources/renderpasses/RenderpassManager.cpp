@@ -72,14 +72,17 @@ namespace rtf
 
 		// fetch command buffers from last renderpass
 		// TODO: uncomment this and make it work..
-		//m_renderpasses.at(m_renderpasses.size() - 1)->draw(m_submitInfo.pCommandBuffers, m_submitInfo.commandBufferCount);
+		m_renderpasses.at(m_renderpasses.size() - 1)->draw(m_submitInfo.pCommandBuffers, m_submitInfo.commandBufferCount);
 
 		// using basic command buffer
-		m_submitInfo.pCommandBuffers = &baseCommandBuffer;
-		m_submitInfo.commandBufferCount = 1;
+		//m_submitInfo.pCommandBuffers = &baseCommandBuffer;
+		//m_submitInfo.commandBufferCount = 1;
 
 		VK_CHECK_RESULT(vkQueueSubmit(m_queue, 1, &m_submitInfo, VK_NULL_HANDLE));
+	}
 
+	void RenderpassManager::updateUniformBuffer()
+	{
 		for (auto& renderpass : m_renderpasses)
 		{
 			renderpass->updateUniformBuffer();

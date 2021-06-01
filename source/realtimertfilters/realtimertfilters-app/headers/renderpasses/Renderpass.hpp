@@ -35,20 +35,19 @@ namespace rtf
 
 	protected:
 		// Vulkan Environment
-		//VkInstance m_Instance;
 		vks::VulkanDevice* m_vulkanDevice;
 		Attachment_Manager* m_attachmentManager;
 
+		VkRenderPass m_renderpass{};
+
 		// Pipeline
-		VkPipeline m_Pipeline;
-		VkPipelineLayout m_PipelineLayout;
-
-		VkRenderPass m_Renderpass;
-
+		VkPipeline m_pipeline{};
+		VkPipelineLayout m_pipelineLayout{};
 
 		//DescriptorSet
-		VkDescriptorPool m_DescriptorPool = nullptr;
-		VkDescriptorSetLayout m_DescriptorSetLayout;
+		VkDescriptorPool m_descriptorPool{};
+		VkDescriptorSetLayout m_descriptorSetLayout{};
+		VkDescriptorSet m_descriptorSet{};
 
 		RTFilterDemo* m_rtFilterDemo{};
 	};

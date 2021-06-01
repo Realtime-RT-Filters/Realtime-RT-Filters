@@ -15,11 +15,12 @@
 #include "vulkanexamplebase.h"
 #include "VulkanglTFModel.h"
 
-
 #include "Attachment_Manager.hpp"
 
 #include "SpatioTemporalAccumulation.hpp"
 #include "RaytracingManager.hpp"
+
+#include <memory>
 
 
 #define ENABLE_VALIDATION true
@@ -38,6 +39,7 @@ namespace rtf
 	class RenderpassManager;
 
 	class RenderpassGbuffer;
+	class RenderpassGui;
 
 	class RTFilterDemo : public VulkanExampleBase
 	{
@@ -55,8 +57,9 @@ namespace rtf
 		friend RenderpassManager;
 		RenderpassManager* m_renderpassManager{};
 
-		// access to attributes
+		// access to attributes for the renderpasses
 		friend RenderpassGbuffer;
+		friend RenderpassGui;
 
 
 #pragma region helper_structs
@@ -73,7 +76,7 @@ namespace rtf
 			Light lights[6]{};
 			glm::vec4 viewPos{};
 			int debugDisplayTarget = 0;
-		} m_Comp_UBO;
+		} m_composition_ubo;
 
 		//struct
 		//{
@@ -90,6 +93,7 @@ namespace rtf
 		VkDescriptorSet m_Comp_DescriptorSet;
 		VkDescriptorSetLayout m_Comp_DescriptorSetLayout;
 		vkglTF::Model m_Scene;
+		std::shared_ptr<RenderpassGui> m_renderpassGui;
 
 #pragma endregion helper_structs
 
@@ -108,29 +112,14 @@ namespace rtf
 
 		void loadAssets();
 
-		void buildCommandBuffers();
+		// called by base class
+		void buildCommandBuffers() override;
 
-		void Comp_SetupDescriptorPool();
+		virtual void prepare() override;
 
-		void Comp_SetupDescriptorSetLayout();
+		virtual void render() override;
 
-		void Comp_SetupDescriptorSet();
-
-		void Comp_PreparePipelines();
-
-		// Prepare and initialize uniform buffer containing shader uniforms
-		void Comp_PrepareUniformBuffers();
-
-		// Update lights and parameters passed to the composition shaders
-		void Comp_UpdateUniformBuffer();
-
-		void draw();
-
-		virtual void prepare();
-
-		virtual void render();
-
-		virtual void OnUpdateUIOverlay(vks::UIOverlay* overlay);
+		virtual void OnUpdateUIOverlay(vks::UIOverlay* overlay) override;
 		
 		std::string getShadersPath2();
 
