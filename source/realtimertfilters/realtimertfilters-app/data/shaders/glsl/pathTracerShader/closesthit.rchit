@@ -9,26 +9,28 @@
 #include "raycommon.glsl"
 #include "sampling.glsl"
 
-hitAttributeEXT vec2 attribs;
+hitAttributeEXT vec2 intersectionPoint;
 
-// clang-format off
 layout(location = 0) rayPayloadInEXT hitPayload prd;
 layout(location = 1) rayPayloadEXT bool isShadowed;
 
-layout(set = 0, binding = 0 ) uniform accelerationStructureEXT topLevelAS;
-layout(set = 0, binding = 3) readonly buffer _InstanceInfo {PrimMeshInfo primInfo[];};
-
-layout(set = 0, binding = B_VERTICES) readonly buffer _VertexBuf { vec4 vertices[];};
-layout(set = 0, binding = B_INDICES) readonly buffer _Indices { uint indices[];};
-layout(set = 0, binding = B_NORMALS) readonly buffer _NormalBuf{ uint normals[];};
-layout(set = 0, binding = B_TEXCOORDS) readonly buffer TextureCoord {float textureCoord[];};
-layout(set = 0, binding = B_MATERIALS) readonly buffer _MaterialBuffer {GltfShadeMaterial materials[];};
-// layout(set = 0, binding = B_TEXTURES) uniform sampler2D texturesMap[]; // all textures
+layout(binding = B_ACCELERATIONSTRUCTURE ) uniform accelerationStructureEXT topLevelAS;
+layout(binding = B_UBO) uniform UBO 
+{
+	mat4 viewInverse;
+	mat4 projInverse;
+	vec4 lightPos;
+	int vertexSize;
+} ubo;
+layout( binding = B_INSTANCEINFO) readonly buffer _InstanceInfo {PrimMeshInfo primInfo[];};
+layout( binding = B_VERTICES) readonly buffer _VertexBuf { vec4 v[];} vertices;
+layout( binding = B_INDICES) readonly buffer _Indices { uint i[];}indices;
+layout( binding = B_MATERIALS) readonly buffer _MaterialBuffer {GltfShadeMaterial m[];} materials;
+layout( binding = B_TEXTURES) uniform sampler2D texturesMap[]; // all textures
 
 layout(push_constant) uniform Constants
 {
   vec4  clearColor;
-  vec3  lightPosition;
   float lightIntensity;
   int   lightType;
   int   frame;
@@ -39,35 +41,29 @@ layout(push_constant) uniform Constants
 }
 pushC;
 
-// Return the vertex position
-// vec3 getVertex(uint index)
-// {
-//   vec3 vp;
-//   vp.x = vertices[3 * index + 0];
-//   vp.y = vertices[3 * index + 1];
-//   vp.z = vertices[3 * index + 2];
-//   return vp;
-// }
+struct Vertex{
+  vec3 pos;
+  vec3 normal;
+  vec2 uv;
+  vec4 color;
+};
 
-vec3 getNormal(uint index)
-{
-  // vec3 vp;
-  vec3 vp = vec3(0,0,0);
-  // vp.x = normals[3 * index + 0];
-  // vp.y = normals[3 * index + 1];
-  // vp.z = normals[3 * index + 2];
-  return vp;
+Vertex getVertex(uint index){
+
+  // The multiplier is the size of the vertex divided by four float components (=16 bytes)
+  const int m = ubo.vertexSize / 16;
+
+	vec4 d0 = vertices.v[m * index + 0];
+	vec4 d1 = vertices.v[m * index + 1];
+	vec4 d2 = vertices.v[m * index + 2];
+
+  Vertex v;
+	v.pos = d0.xyz;
+	v.normal = vec3(d0.w, d1.x, d1.y);
+	v.uv = vec2(d1.z, d1.w);
+	v.color = vec4(d2.xyz, 1.0);
+  return v;
 }
-
-vec2 getTexCoord(uint index)
-{
-  // vec2 vp;
-  // vp.x = texcoord0[2 * index + 0];
-  // vp.y = texcoord0[2 * index + 1];
-  vec2 vp = vec2(0,0);
-  return vp;
-}
-
 
 void main()
 {
@@ -76,12 +72,11 @@ void main()
     prd.radiance = vec3(0);
     prd.normal = vec3(0);
     prd.albedo = vec3(0);
-
     return;
   }
 
   prd.depth++;
-
+  
   // Retrieve the Primitive mesh buffer information
   PrimMeshInfo pinfo = primInfo[gl_InstanceCustomIndexEXT];
 
@@ -91,46 +86,48 @@ void main()
   uint matIndex     = max(0, pinfo.materialIndex);  // material of primitive mesh
 
   // Getting the 3 indices of the triangle (local)
-  ivec3 triangleIndex = ivec3(indices[nonuniformEXT(indexOffset + 0)],  //
-                                indices[nonuniformEXT(indexOffset + 1)],  //
-                                indices[nonuniformEXT(indexOffset + 2)]);
+  ivec3 triangleIndex = ivec3(indices.i[nonuniformEXT(indexOffset + 0)],  
+                                indices.i[nonuniformEXT(indexOffset + 1)],  
+                                indices.i[nonuniformEXT(indexOffset + 2)]);
   triangleIndex += ivec3(vertexOffset);  // (global)
 
-  const vec3 barycentrics = vec3(1.0 - attribs.x - attribs.y, attribs.x, attribs.y);
+  const vec3 barycentrics = vec3(1.0 - intersectionPoint.x - intersectionPoint.y, intersectionPoint.x, intersectionPoint.y);
 
   // Vertex of the triangle
-  const vec3 pos0           = vertices[0].xyz;
-  const vec3 pos1           = vertices[1].xyz;
-  const vec3 pos2           = vertices[2].xyz;
+  Vertex v0 = getVertex(triangleIndex.x);
+  Vertex v1 = getVertex(triangleIndex.y);
+  Vertex v2 = getVertex(triangleIndex.z);
+
+  // Position
+  const vec3 pos0           = v0.pos;
+  const vec3 pos1           = v1.pos;
+  const vec3 pos2           = v2.pos;
   const vec3 position       = pos0 * barycentrics.x + pos1 * barycentrics.y + pos2 * barycentrics.z;
   const vec3 world_position = vec3(gl_ObjectToWorldEXT * vec4(position, 1.0));
 
   // Normal
-  const vec3 nrm0 = getNormal(triangleIndex.x);
-  const vec3 nrm1 = getNormal(triangleIndex.y);
-  const vec3 nrm2 = getNormal(triangleIndex.z);
+  const vec3 nrm0 = v0.normal;
+  const vec3 nrm1 = v1.normal;
+  const vec3 nrm2 = v2.normal;
   vec3 normal = normalize(nrm0 * barycentrics.x + nrm1 * barycentrics.y + nrm2 * barycentrics.z);
   const vec3 world_normal = normalize(vec3(normal * gl_WorldToObjectEXT));
   const vec3 geom_normal  = normalize(cross(pos1 - pos0, pos2 - pos0));
 
   // TexCoord
-  const vec2 uv0       = getTexCoord(triangleIndex.x);
-  const vec2 uv1       = getTexCoord(triangleIndex.y);
-  const vec2 uv2       = getTexCoord(triangleIndex.z);
+  const vec2 uv0       = v0.uv;
+  const vec2 uv1       = v1.uv;;
+  const vec2 uv2       = v2.uv;
   const vec2 texcoord0 = uv0 * barycentrics.x + uv1 * barycentrics.y + uv2 * barycentrics.z;
 
-  // Material of the object
-  // GltfShadeMaterial mat       = materials[nonuniformEXT(matIndex)];
-  // vec3              emittance = mat.emissiveFactor;
-  vec3              emittance = vec3(1,1,1);
+  GltfShadeMaterial mat = materials.m[nonuniformEXT(matIndex)];
+  vec3  emittance = mat.emissiveFactor;
+  vec3  albedo    = mat.pbrBaseColorFactor.xyz;
 
-  // vec3  albedo    = mat.pbrBaseColorFactor.xyz;
-  vec3  albedo    = vec3(1,1,1);
-  // if(mat.pbrBaseColorTexture > -1)
-  // {
-  //   uint txtId = mat.pbrBaseColorTexture;
-  //   albedo *= texture(texturesMap[nonuniformEXT(txtId)], texcoord0).xyz;
-  // }
+  if(mat.pbrBaseColorTexture > -1)
+  {
+    uint txtId = mat.pbrBaseColorTexture;
+    albedo *= texture(texturesMap[nonuniformEXT(txtId)], texcoord0).xyz;
+  }
 
   if(emittance != vec3(0))
   {
@@ -146,11 +143,7 @@ void main()
     for(int i = 0; i < pushC.bounceSamples; i++)
     {
       vec3 origin = world_position;
-      //vec3 rayDirection = reflect(prd.rayDirection, world_normal);
       vec3 direction = sampleLambert(prd.seed, createTBN(world_normal));
-      //vec3 rayDirection = samplePhong(prd.seed, createTBN(reflect(prd.rayDirection, world_normal)), 8.0f);
-      //vec3 rayDirection =  sampleGGX(prd.seed, createTBN(reflect(prd.rayDirection, world_normal)), 0.2f);
-
       prd.attenuation = attenuation;
 
       traceRayEXT(topLevelAS,            // acceleration structure
@@ -170,8 +163,6 @@ void main()
     }
   }
 
-  //indirect /= pushC.bounceSamples;
-
   vec3 direct = vec3(0);
   if (pushC.lightType != -1) // direct lighting
   {
@@ -182,14 +173,14 @@ void main()
 
     if(pushC.lightType == 0) // Point light
     {
-      vec3 lDir      = pushC.lightPosition - world_position;
+      vec3 lDir      = ubo.lightPos.xyz - world_position;
       lightDistance  = length(lDir);
       lightIntensity = pushC.lightIntensity / (lightDistance * lightDistance);
       L              = normalize(lDir);
     }
     else  // Directional light
     {
-      L = normalize(pushC.lightPosition - vec3(0));
+      L = normalize(ubo.lightPos.xyz - vec3(0));
     }
 
     float NdotL = max(0.0, dot(normal, L));

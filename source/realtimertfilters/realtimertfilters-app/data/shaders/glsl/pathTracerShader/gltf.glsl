@@ -1,4 +1,14 @@
 
+#ifdef __cplusplus
+struct GltfShadeMaterial
+{
+  glm::vec4 pbrBaseColorFactor;
+  int  pbrBaseColorTexture;
+  glm::vec3 emissiveFactor;
+};
+#endif
+
+#ifndef __cplusplus
 struct GltfShadeMaterial
 {
   vec4 pbrBaseColorFactor;
@@ -6,14 +16,12 @@ struct GltfShadeMaterial
   vec3 emissiveFactor;
 };
 
-#ifndef __cplusplus
 struct PrimMeshInfo
 {
   uint indexOffset;
   uint vertexOffset;
   int  materialIndex;
 };
-
 
 vec3 computeDiffuse(GltfShadeMaterial mat, vec3 lightDir, vec3 normal)
 {

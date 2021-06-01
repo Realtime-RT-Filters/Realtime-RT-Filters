@@ -9,19 +9,19 @@
 
 layout(location = 0) rayPayloadEXT hitPayload prd;
 
-layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
-layout(binding = 1, set = 0, rgba8) uniform image2D image;
-layout(binding = 2, set = 0) uniform CameraProperties 
+layout(binding = B_ACCELERATIONSTRUCTURE ) uniform accelerationStructureEXT topLevelAS;
+layout(binding = B_IMAGE, rgba8) uniform image2D image;
+layout(binding = B_UBO) uniform CameraProperties 
 {
 	mat4 viewInverse;
 	mat4 projInverse;
 	vec4 lightPos;
+	int vertexSize;
 } cam;
 
 layout(push_constant) uniform Constants
 {
   vec4  clearColor;
-  vec3  lightPosition;
   float lightIntensity;
   int   lightType;
   int   frame;
@@ -35,11 +35,7 @@ pushC;
 void main() 
 {
 
-// ----------
-
 // Initialize the random number
-  vec3 res_normal = vec3(0);
-  vec3 res_albedo = vec3(0);
   vec3 hitValue  = vec3(0);
 
   // Send sampels through every pixel
@@ -47,13 +43,6 @@ void main()
   {
 	// seed for Random Values
     uint seed = tea(gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x, pushC.frame * pushC.samples + smpl);
-    // float r1  = rnd(seed);
-    // float r2  = rnd(seed);
-
-    // Subpixel jitter: send the ray through a different position inside the pixel each time, to provide antialiasing.
-    // vec2 subpixelJitter = mcdata.samples == 1 ? vec2(0.0f, 0.0f) : vec2(r1 - 0.5f, r2 - 0.5f);
-
-    // const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5) + subpixelJitter;
     const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5) ;
     const vec2 inUV        = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
     vec2       d           = inUV * 2.0 - 1.0;
@@ -65,8 +54,6 @@ void main()
     prd.attenuation  = vec3(1.0f);
     prd.seed         = seed;
     prd.depth        = 0;
-    prd.normal       = vec3(0.0f);
-    prd.albedo       = vec3(0.0f);
 
     traceRayEXT(topLevelAS,            // acceleration structure
                 gl_RayFlagsOpaqueEXT,  // rayFlags
@@ -80,13 +67,9 @@ void main()
                 10000.0,               // ray max range
                 0                      // payload (location = 0)
     );
-
-    res_normal = prd.normal;
-    res_albedo = prd.albedo;
     hitValue += prd.radiance;
   }
-
+  // Result
   hitValue /= pushC.samples;
   imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(hitValue, 0.0));
-
 }
