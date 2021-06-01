@@ -895,10 +895,19 @@ bool VulkanExampleBase::initVulkan()
 	}
 
 	// GPU selection
-
 	// Select physical device to be used for the Vulkan example
 	// Defaults to the first device unless specified by command line
 	uint32_t selectedDevice = 0;
+
+	for (uint32_t i = 0; i < gpuCount; i++) {
+		VkPhysicalDeviceProperties deviceProperties;
+		vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
+		std::cout << "Device [" << i << "] : " << deviceProperties.deviceName << std::endl;
+		std::cout << " Type: " << vks::tools::physicalDeviceTypeString(deviceProperties.deviceType) << "\n";
+		std::cout << " API: " << (deviceProperties.apiVersion >> 22) << "." << ((deviceProperties.apiVersion >> 12) & 0x3ff) << "." << (deviceProperties.apiVersion & 0xfff) << "\n";
+		if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+			selectedDevice = i;
+	}
 
 #if !defined(VK_USE_PLATFORM_ANDROID_KHR)
 	// GPU selection via command line argument
