@@ -50,6 +50,8 @@ namespace rtf
 		VkDescriptorSet m_descriptorSet{};
 
 		RTFilterDemo* m_rtFilterDemo{};
+
+		inline VkDevice getLogicalDevice() { return m_vulkanDevice->logicalDevice; }
 	};
 
 	// SharedPtr<Renderpass>
