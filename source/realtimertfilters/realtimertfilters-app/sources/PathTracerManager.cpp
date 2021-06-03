@@ -189,7 +189,7 @@ void rtf::PathTracerManager::createDescriptorSets()
 		// Material 
 		//vks::initializers::writeDescriptorSet(rt_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_MATERIALS, &m_Scene->materials.data()->descriptor, m_Scene->materials.size()),
 		// Textures
-		vks::initializers::writeDescriptorSet(rt_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, B_TEXTURES, &m_Scene->textures.data()->descriptor,m_Scene->textures.size())
+		//vks::initializers::writeDescriptorSet(rt_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, B_TEXTURES, &m_Scene->textures.data()->descriptor,2)
 	};
 
 	vkUpdateDescriptorSets(device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
