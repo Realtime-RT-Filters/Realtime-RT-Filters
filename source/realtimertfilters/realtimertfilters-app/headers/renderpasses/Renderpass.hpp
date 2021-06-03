@@ -51,6 +51,13 @@ namespace rtf
 
 		RTFilterDemo* m_rtFilterDemo{};
 	};
+
+	// SharedPtr<Renderpass>
+	using RenderpassPtr = std::shared_ptr<Renderpass>;
+	// A vector of renderpasses
+	using QueueTemplate = std::vector<RenderpassPtr>;
+	// SharedPtr to a vector of renderpasses
+	using QueueTemplatePtr = std::shared_ptr<QueueTemplate>;
 }
 
 #endif //Renderpass_h

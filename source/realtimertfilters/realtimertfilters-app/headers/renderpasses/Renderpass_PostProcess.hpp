@@ -13,13 +13,14 @@ namespace rtf
 		{
 			ReadOnly,
 			WriteOnly,
-			ReadWrite
+			ReadWrite,
 		};
 
 		RenderpassPostProcess();
 
 		void ConfigureShader(const std::string& shadername);
 		void PushAttachment(FrameBufferAttachment* attachment, AttachmentUse use);
+		void PushAttachment(FrameBufferAttachment* attachment, AttachmentUse use, VkImageLayout initialLayout, VkImageLayout finalLayout);
 
 		virtual void prepare() override;
 		virtual void draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount) override;
@@ -51,6 +52,8 @@ namespace rtf
 		public:
 			FrameBufferAttachment* m_Attachment;
 			AttachmentUse m_Use;
+			VkImageLayout m_InitialLayout;
+			VkImageLayout m_FinalLayout;
 		};
 		std::vector<AttachmentContainer> m_Attachments{};
 		size_t m_CombinedAttachmentCount = 0;

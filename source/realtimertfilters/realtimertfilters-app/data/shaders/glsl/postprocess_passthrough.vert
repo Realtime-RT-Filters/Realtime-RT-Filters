@@ -1,6 +1,7 @@
 #version 450
 
 layout (location = 0) out vec2 outUV;
+//layout (location = 1) out ivec2 screenCoords;
 
 void main() 
 {

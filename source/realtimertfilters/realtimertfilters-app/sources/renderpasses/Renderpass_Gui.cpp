@@ -237,25 +237,25 @@ namespace rtf
 			vks::initializers::descriptorImageInfo(
 				m_rtFilterDemo->m_DefaultColorSampler,
 				m_attachmentManager->getAttachment(Attachment::position)->view,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+				VK_IMAGE_LAYOUT_GENERAL);
 
 		VkDescriptorImageInfo texDescriptorNormal =
 			vks::initializers::descriptorImageInfo(
 				m_rtFilterDemo->m_DefaultColorSampler,
 				m_attachmentManager->getAttachment(Attachment::normal)->view,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+				VK_IMAGE_LAYOUT_GENERAL);
 
 		VkDescriptorImageInfo texDescriptorAlbedo =
 			vks::initializers::descriptorImageInfo(
 				m_rtFilterDemo->m_DefaultColorSampler,
 				m_attachmentManager->getAttachment(Attachment::albedo)->view,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+				VK_IMAGE_LAYOUT_GENERAL);
 
 		VkDescriptorImageInfo texDescriptorMotion =
 			vks::initializers::descriptorImageInfo(
 				m_rtFilterDemo->m_DefaultColorSampler,
 				m_attachmentManager->getAttachment(Attachment::motionvector)->view,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+				VK_IMAGE_LAYOUT_GENERAL);
 
 		// Deferred composition
 		VK_CHECK_RESULT(vkAllocateDescriptorSets(m_vulkanDevice->logicalDevice, &allocInfo, &m_descriptorSet));

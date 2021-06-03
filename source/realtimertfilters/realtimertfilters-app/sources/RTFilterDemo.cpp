@@ -15,6 +15,8 @@
 
 namespace rtf
 {
+#pragma region Constructor & Vulkan Instance Inits
+
 	RTFilterDemo::RTFilterDemo() : VulkanExampleBase(ENABLE_VALIDATION)
 	{
 		title = "RT Filter Demo";
@@ -48,30 +50,6 @@ namespace rtf
 		compiler.CompileAll();
 
 	}
-	RTFilterDemo::~RTFilterDemo()
-	{
-		// Clean up used Vulkan resources
-		// Note : Inherited destructor cleans up resources stored in base class
-
-		vkDestroySampler(device, m_DefaultColorSampler, nullptr);
-
-		// Frame buffer
-		delete m_attachmentManager;
-
-		// Destroy composition view components
-		//vkDestroyPipeline(device, m_Comp_Pipeline, nullptr);
-		//vkDestroyPipelineLayout(device, m_Comp_PipelineLayout, nullptr);
-		//vkDestroyDescriptorSetLayout(device, m_Comp_DescriptorSetLayout, nullptr);
-		//m_Comp_UnformBuffer.destroy();
-
-		if (m_renderpassManager)
-		{
-			delete m_renderpassManager;
-		}
-
-		//Ray tracing destructors
-		m_rtManager.cleanup();
-	}
 
 	// Enable physical device features required for this example
 
@@ -94,8 +72,39 @@ namespace rtf
 		deviceCreatepNextChain = m_pathTracerManager->getEnabledFeatures();
 	}
 
+#pragma endregion
+#pragma region Prepare
 
-	// Prepare a new framebuffer and attachments for offscreen rendering (G-Buffer)
+	void RTFilterDemo::prepare()
+	{
+		const size_t SEMAPHORE_COUNT = 5;
+
+		VulkanExampleBase::prepare();
+
+		std::cout << "loading assets.." << std::endl;
+		loadAssets();
+		std::cout << "done." << std::endl;
+
+		setupDefaultSampler();
+
+		//We create the Attachment manager
+		m_attachmentManager = new Attachment_Manager(&device, vulkanDevice, &physicalDevice, width, height);
+
+		m_renderpassManager = new RenderpassManager();
+		m_renderpassManager->prepare(this, SEMAPHORE_COUNT);
+
+		
+
+		//Ray tracing
+		m_rtManager.setup(this, physicalDevice, vulkanDevice, device, queue, &swapChain, descriptorPool, &camera);
+		m_rtManager.prepare(width, height);
+
+		m_pathTracerManager->setup(this, physicalDevice, vulkanDevice, device, queue, &swapChain, descriptorPool, &camera);
+		m_pathTracerManager->prepare(width, height);
+		//buildCommandBuffers();
+
+		prepared = true;
+	}
 
 	void RTFilterDemo::setupDefaultSampler()
 	{
@@ -132,143 +141,15 @@ namespace rtf
 		m_rtManager.setScene(&m_Scene);
 		m_pathTracerManager->setScene(&m_Scene);
 	}
+
+#pragma endregion
+#pragma region Render
+
 	void RTFilterDemo::buildCommandBuffers()
 	{
 		// ui overlay updated, rebuild gui command buffers
-		m_renderpassGui->buildCommandBuffer();
+		m_renderpassManager->m_RP_Gui->buildCommandBuffer();
 
-		//when ray tracing is turned on, build different command buffer
-		/*if (rt_on)
-		{
-			if (resized)
-			{
-				m_rtManager.handleResize(width, height);
-			}
-
-			VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
-			for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
-			{
-				VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
-				m_rtManager.buildCommandBuffer(drawCmdBuffers[i], swapChain.images[i], width, height);
-				drawUI(drawCmdBuffers[i]);
-				VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
-			}
-		}
-		else if (path_tracer_on) {
-			if (resized)
-			{
-				m_pathTracerManager->handleResize(width, height);
-			}
-
-			VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
-			for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
-			{
-				VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
-				m_pathTracerManager->buildCommandBuffer(drawCmdBuffers[i], swapChain.images[i], width, height);
-				drawUI(drawCmdBuffers[i]);
-				VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
-			}
-		}
-		else
-		{
-
-			if (gui_rp_on) {
-				
-
-			}
-			else {
-
-				VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
-
-				VkClearValue clearValues[2];
-				clearValues[0].color = { { 0.0f, 0.0f, 0.2f, 0.0f } };
-				clearValues[1].depthStencil = { 1.0f, 0 };
-
-				VkRenderPassBeginInfo renderPassBeginInfo = vks::initializers::renderPassBeginInfo();
-				renderPassBeginInfo.renderPass = renderPass;
-				renderPassBeginInfo.renderArea.offset.x = 0;
-				renderPassBeginInfo.renderArea.offset.y = 0;
-				renderPassBeginInfo.renderArea.extent.width = width;
-				renderPassBeginInfo.renderArea.extent.height = height;
-				renderPassBeginInfo.clearValueCount = 2;
-				renderPassBeginInfo.pClearValues = clearValues;
-
-				for (int32_t i = 0; i < drawCmdBuffers.size(); ++i)
-				{
-					renderPassBeginInfo.framebuffer = frameBuffers[i];
-
-					VK_CHECK_RESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo));
-
-					vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-					VkViewport viewport = vks::initializers::viewport((float)width, (float)height, 0.0f, 1.0f);
-					vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
-
-					VkRect2D scissor = vks::initializers::rect2D(width, height, 0, 0);
-					vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
-
-					vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Comp_PipelineLayout, 0, 1, &m_Comp_DescriptorSet, 0, nullptr);
-
-					vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Comp_Pipeline);
-					// Final composition as full screen quad
-					// Note: Also used for debug display if debugDisplayTarget > 0
-					vkCmdDraw(drawCmdBuffers[i], 3, 1, 0, 0);
-
-					drawUI(drawCmdBuffers[i]);
-
-					vkCmdEndRenderPass(drawCmdBuffers[i]);
-
-					VK_CHECK_RESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
-				}
-
-			}
-		}*/
-	}
-
-	void RTFilterDemo::prepare()
-	{
-		VulkanExampleBase::prepare();
-
-		std::cout << "loading assets.." << std::endl;
-		loadAssets();
-		std::cout << "done." << std::endl;
-
-		setupDefaultSampler();
-
-		//We create the Attachment manager
-		m_attachmentManager = new Attachment_Manager(&device, vulkanDevice, &physicalDevice, width, height);
-
-		m_renderpassManager = new RenderpassManager();
-		m_renderpassManager->addRenderpass(std::make_shared<RenderpassGbuffer>());
-
-		auto postProcessing1 = std::make_shared<RenderpassPostProcess>();
-		postProcessing1->ConfigureShader("filter/postprocess_gauss.frag.spv");
-		postProcessing1->PushAttachment(m_attachmentManager->getAttachment(Attachment::albedo), RenderpassPostProcess::AttachmentUse::ReadOnly);
-		postProcessing1->PushAttachment(m_attachmentManager->getAttachment(Attachment::rtoutput), RenderpassPostProcess::AttachmentUse::WriteOnly);
-		//m_renderpassManager->addRenderpass(postProcessing1);
-
-		//GUI Renderpass (final renderpass that renders to the swapchain image)
-		m_renderpassGui = std::make_shared<RenderpassGui>();
-		m_renderpassManager->addRenderpass(m_renderpassGui);
-
-		m_renderpassManager->prepare(this);
-
-		
-
-		//Ray tracing
-		m_rtManager.setup(this, physicalDevice, vulkanDevice, device, queue, &swapChain, descriptorPool, &camera);
-		m_rtManager.prepare(width, height);
-
-		m_pathTracerManager->setup(this, physicalDevice, vulkanDevice, device, queue, &swapChain, descriptorPool, &camera);
-		m_pathTracerManager->prepare(width, height);
-		//buildCommandBuffers();
-
-		//GUI Renderpass
-		//m_renderpass_gui = new RenderpassGui(instance, vulkanDevice, m_attachmentManager, this, &swapChain, &timer, &debugDisplayTarget, &camera);
-		//m_renderpass_gui->prepare();
-
-
-		prepared = true;
 	}
 
 	void RTFilterDemo::render()
@@ -298,16 +179,52 @@ namespace rtf
 		m_rtManager.updateUniformBuffers(timer, &camera);
 		m_pathTracerManager->updateUniformBuffers(timer, &camera);
 	}
+
 	void RTFilterDemo::OnUpdateUIOverlay(vks::UIOverlay* overlay)
 	{
 		if (overlay->header("Settings"))
 		{
+			if (overlay->comboBox("Mode", &m_RenderMode, { "Rasterization Only", "Pathtracer Only", "SVGF", "BMFR" }))
+			{
+				m_renderpassManager->setQueueTemplate(static_cast<SupportedQueueTemplates>(m_RenderMode));
+			}
 			if (overlay->comboBox("Display", &debugDisplayTarget, { "Final composition", "Position", "Normals", "Albedo", "Specular", "Ray Tracing", "Path Tracing", "Motion vectors" }))
 			{
 				//Comp_UpdateUniformBuffer();
 			}
 		}
 	}
+
+#pragma endregion
+#pragma region Cleanup
+
+	RTFilterDemo::~RTFilterDemo()
+	{
+		// Clean up used Vulkan resources
+		// Note : Inherited destructor cleans up resources stored in base class
+
+		vkDestroySampler(device, m_DefaultColorSampler, nullptr);
+
+		// Frame buffer
+		delete m_attachmentManager;
+
+		// Destroy composition view components
+		//vkDestroyPipeline(device, m_Comp_Pipeline, nullptr);
+		//vkDestroyPipelineLayout(device, m_Comp_PipelineLayout, nullptr);
+		//vkDestroyDescriptorSetLayout(device, m_Comp_DescriptorSetLayout, nullptr);
+		//m_Comp_UnformBuffer.destroy();
+
+		if (m_renderpassManager)
+		{
+			delete m_renderpassManager;
+		}
+
+		//Ray tracing destructors
+		m_rtManager.cleanup();
+	}
+
+#pragma endregion
+#pragma region Helper Methods
 
 	std::string RTFilterDemo::getShadersPath2()
 	{
@@ -321,5 +238,6 @@ namespace rtf
 	{
 		return loadShader(getShadersPath() + shadername, stage);
 	}
+#pragma endregion
 }
 

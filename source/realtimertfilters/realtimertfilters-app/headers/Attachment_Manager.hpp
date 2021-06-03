@@ -20,7 +20,7 @@ namespace rtf {
 		rtoutput,
 		filteroutput,
 		history_color,
-
+		scratch_buffer,
 		// add your attachment before this one
 		max_attachments,
 	};
@@ -40,7 +40,7 @@ namespace rtf {
 	class Attachment_Manager
 	{
 		std::vector<std::pair<VkFormat, VkImageUsageFlags>> m_attachmentTypes = {
-			{ VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT }, // position
+			{ VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT}, // position
 			{ VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT }, // normal
 			{ VK_FORMAT_R16G16B16A16_SFLOAT, (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT) }, // albedo
 			{ VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT }, // depth
@@ -49,6 +49,7 @@ namespace rtf {
 			{ VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT }, // rtoutput
 			{ VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT }, // filteroutput
 			{ VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT }, // history_color
+			{ VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT }, // scratch_buffer
 		};
 
 	public:

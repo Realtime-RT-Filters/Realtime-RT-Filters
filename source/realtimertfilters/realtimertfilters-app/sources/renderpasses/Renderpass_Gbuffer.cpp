@@ -58,7 +58,7 @@ namespace rtf
 			attachmentDescriptions[i].stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			attachmentDescriptions[i].stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			attachmentDescriptions[i].initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
-			attachmentDescriptions[i].finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			attachmentDescriptions[i].finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_GENERAL;
 			attachmentDescriptions[i].format = attachments[i]->format;
 		}
 		attachmentDescriptions[ATTACHMENT_COUNT_COLOR].finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // The depth attachment needs a different layout

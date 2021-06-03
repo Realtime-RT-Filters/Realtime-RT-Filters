@@ -10,6 +10,8 @@ namespace rtf
 	RenderpassPostProcess::RenderpassPostProcess()
 	{}
 
+#pragma region Configuration
+
 	void RenderpassPostProcess::ConfigureShader(const std::string& shadername)
 	{
 		m_Shadername = shadername;
@@ -17,8 +19,27 @@ namespace rtf
 
 	void RenderpassPostProcess::PushAttachment(FrameBufferAttachment* attachment, AttachmentUse use)
 	{
-		m_Attachments.push_back(AttachmentContainer{ attachment, use });
+		m_Attachments.push_back(AttachmentContainer{ 
+			attachment, 
+			use, 
+			VkImageLayout::VK_IMAGE_LAYOUT_GENERAL, 
+			VkImageLayout::VK_IMAGE_LAYOUT_GENERAL, 
+		});
 	}
+
+	void RenderpassPostProcess::PushAttachment(FrameBufferAttachment* attachment, AttachmentUse use, VkImageLayout initialLayout, VkImageLayout finalLayout)
+	{
+		m_Attachments.push_back(AttachmentContainer{
+			attachment,
+			use,
+			initialLayout,
+			finalLayout,
+		});
+	}
+
+#pragma endregion
+#pragma region prepare
+
 	void RenderpassPostProcess::prepare()
 	{
 
@@ -64,29 +85,6 @@ namespace rtf
 		buildCommandBuffer();
 	}
 
-	void RenderpassPostProcess::draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount)
-	{
-		out_commandBufferCount = 1;
-		out_commandBuffers = &m_CmdBuffer;
-	}
-
-	void RenderpassPostProcess::cleanUp()
-	{
-		vkDestroyRenderPass(m_vulkanDevice->logicalDevice, m_renderpass, nullptr);
-		vkDestroyPipeline(m_vulkanDevice->logicalDevice, m_pipeline, nullptr);
-		vkDestroyPipelineLayout(m_vulkanDevice->logicalDevice, m_pipelineLayout, nullptr);
-		vkDestroyDescriptorSetLayout(m_vulkanDevice->logicalDevice, m_descriptorSetLayout, nullptr);
-		vkDestroyDescriptorPool(m_vulkanDevice->logicalDevice, m_descriptorPool, nullptr);
-		vkDestroyFramebuffer(m_vulkanDevice->logicalDevice, m_Framebuffer, nullptr);
-
-		// Clean up statics
-		InstanceCount--;
-		Statics = nullptr;
-		if (InstanceCount == 0)
-		{
-			delete GlobalStatics;
-		}
-	}
 	void RenderpassPostProcess::createRenderPass()
 	{
 		std::vector<VkAttachmentDescription> attachmentDescriptions;
@@ -118,18 +116,21 @@ namespace rtf
 				//attachmentDescription.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 				break;
 			}
-			attachmentDescription.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_GENERAL;
-			attachmentDescription.finalLayout = attachmentDescription.initialLayout;
+			attachmentDescription.initialLayout = m_Attachments[i].m_InitialLayout;
+			attachmentDescription.finalLayout = m_Attachments[i].m_FinalLayout;
 			attachmentDescriptions.push_back(attachmentDescription);
 		};
 
-		// Collect attachment references
-		//std::vector<VkAttachmentReference> colorReferences;
+		 //Collect attachment references
+		std::vector<VkAttachmentReference> colorReferences;
 
-		//for (size_t i = 0; i < m_CombinedAttachmentCount; i++)
-		//{
-		//	colorReferences.push_back({ static_cast<uint32_t>(i), attachmentDescriptions[i].initialLayout });
-		//};
+		for (size_t i = 0; i < m_CombinedAttachmentCount; i++)
+		{
+			if (m_Attachments[i].m_Use != AttachmentUse::WriteOnly)
+			{
+				colorReferences.push_back({ static_cast<uint32_t>(i), attachmentDescriptions[i].initialLayout });
+			}
+		};
 
 		// Default render pass setup uses only one subpass
 		VkSubpassDescription subpass = {};
@@ -138,6 +139,8 @@ namespace rtf
 		subpass.colorAttachmentCount = 0;
 		//subpass.pColorAttachments = colorReferences.data();
 		//subpass.colorAttachmentCount = static_cast<uint32_t>(colorReferences.size());
+		subpass.pInputAttachments = colorReferences.data();
+		subpass.inputAttachmentCount = static_cast<uint32_t>(colorReferences.size());
 
 		// Use subpass dependencies for attachment layout transitions
 		std::array<VkSubpassDependency, 2> dependencies;
@@ -173,6 +176,7 @@ namespace rtf
 		renderPassInfo.pDependencies = dependencies.data();
 		VK_CHECK_RESULT(vkCreateRenderPass(m_vulkanDevice->logicalDevice, &renderPassInfo, nullptr, &m_renderpass));
 	}
+
 	void RenderpassPostProcess::setupDescriptorSetLayout()
 	{
 		std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings;
@@ -220,6 +224,7 @@ namespace rtf
 			poolSizes, 1);
 		VK_CHECK_RESULT(vkCreateDescriptorPool(m_vulkanDevice->logicalDevice, &descriptorPoolInfo, nullptr, &m_descriptorPool));
 	}
+
 	void RenderpassPostProcess::setupDescriptorSet()
 	{
 		VkDescriptorSetAllocateInfo allocInfo = vks::initializers::descriptorSetAllocateInfo(m_descriptorPool, &m_descriptorSetLayout, 1);
@@ -240,7 +245,7 @@ namespace rtf
 			//	layout = VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			//	break;
 			//}
-			layout = VkImageLayout::VK_IMAGE_LAYOUT_GENERAL;
+			layout = m_Attachments[i].m_FinalLayout;
 			imageInfos.push_back(vks::initializers::descriptorImageInfo(
 			//	m_rtFilterDemo->m_DefaultColorSampler,
 				nullptr,
@@ -264,6 +269,7 @@ namespace rtf
 
 		vkUpdateDescriptorSets(m_vulkanDevice->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
 	}
+
 	void RenderpassPostProcess::setupPipeline()
 	{
 		VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = vks::initializers::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
@@ -353,6 +359,29 @@ namespace rtf
 
 		VK_CHECK_RESULT(vkBeginCommandBuffer(m_CmdBuffer, &cmdBufInfo));
 
+
+		// Make sure we take our images to VK_Image_View_General
+		//std::vector<VkImageMemoryBarrier> memBarriers;
+		//memBarriers.reserve(m_CombinedAttachmentCount);
+		//for (size_t i = 0; i < m_CombinedAttachmentCount; i++)
+		//{
+		//	VkImageMemoryBarrier memBarrier = vks::initializers::imageMemoryBarrier();
+		//	memBarrier.image = m_Attachments[i].m_Attachment->image;
+		//	memBarrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		//	memBarrier.newLayout = VkImageLayout::VK_IMAGE_LAYOUT_GENERAL;
+		//	memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_WRITE_BIT;
+		//	memBarrier.srcAccessMask = (m_Attachments[i].m_Use == AttachmentUse::ReadWrite || m_Attachments[i].m_Use == AttachmentUse::WriteOnly) ? VkAccessFlagBits::VK_ACCESS_MEMORY_WRITE_BIT : VkAccessFlagBits::VK_ACCESS_MEMORY_READ_BIT;
+		//	memBarriers.push_back(memBarrier);
+		//}
+		//vkCmdPipelineBarrier(m_CmdBuffer,
+		//	VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+		//	VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+		//	VK_FLAGS_NONE,
+		//	0, nullptr,
+		//	0, nullptr,
+		//	m_CombinedAttachmentCount, memBarriers.data()
+		//);
+
 		vkCmdBeginRenderPass(m_CmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		VkViewport viewport = vks::initializers::viewport((float)m_rtFilterDemo->width, (float)m_rtFilterDemo->height, 0.0f, 1.0f);
@@ -374,8 +403,62 @@ namespace rtf
 
 		vkCmdEndRenderPass(m_CmdBuffer);
 
+		// Return to a more optimized image layout
+		//memBarriers.clear();
+		//for (size_t i = 0; i < m_CombinedAttachmentCount; i++)
+		//{
+		//	VkImageMemoryBarrier memBarrier = vks::initializers::imageMemoryBarrier();
+		//	memBarrier.image = m_Attachments[i].m_Attachment->image;
+		//	memBarrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_GENERAL;
+		//	memBarrier.newLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		//	memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_WRITE_BIT;
+		//	memBarrier.srcAccessMask = (m_Attachments[i].m_Use == AttachmentUse::ReadWrite || m_Attachments[i].m_Use == AttachmentUse::WriteOnly) ? VkAccessFlagBits::VK_ACCESS_MEMORY_WRITE_BIT : VkAccessFlagBits::VK_ACCESS_MEMORY_READ_BIT;
+		//	memBarriers.push_back(memBarrier);
+		//}
+		//vkCmdPipelineBarrier(m_CmdBuffer,
+		//	VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+		//	VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+		//	VK_FLAGS_NONE,
+		//	0, nullptr,
+		//	0, nullptr,
+		//	m_CombinedAttachmentCount, memBarriers.data()
+		//);
+
 		VK_CHECK_RESULT(vkEndCommandBuffer(m_CmdBuffer));
 	}
+
+#pragma endregion
+#pragma region draw
+
+	void RenderpassPostProcess::draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount)
+	{
+		out_commandBufferCount = 1;
+		out_commandBuffers = &m_CmdBuffer;
+	}
+
+#pragma endregion
+#pragma region cleanup
+
+	void RenderpassPostProcess::cleanUp()
+	{
+		vkDestroyRenderPass(m_vulkanDevice->logicalDevice, m_renderpass, nullptr);
+		vkDestroyPipeline(m_vulkanDevice->logicalDevice, m_pipeline, nullptr);
+		vkDestroyPipelineLayout(m_vulkanDevice->logicalDevice, m_pipelineLayout, nullptr);
+		vkDestroyDescriptorSetLayout(m_vulkanDevice->logicalDevice, m_descriptorSetLayout, nullptr);
+		vkDestroyDescriptorPool(m_vulkanDevice->logicalDevice, m_descriptorPool, nullptr);
+		vkDestroyFramebuffer(m_vulkanDevice->logicalDevice, m_Framebuffer, nullptr);
+
+		// Clean up statics
+		InstanceCount--;
+		Statics = nullptr;
+		if (InstanceCount == 0)
+		{
+			delete GlobalStatics;
+		}
+	}
+
+#pragma endregion
+#pragma region StaticsContainer
 
 	RenderpassPostProcess::StaticsContainer::StaticsContainer(RTFilterDemo* demo)
 		: m_Device(demo->vulkanDevice), m_ColorSampler_Normalized(demo->m_DefaultColorSampler)
@@ -411,4 +494,6 @@ namespace rtf
 		vkDestroyPipelineCache(m_Device->logicalDevice, m_PipelineCache, nullptr);
 		vkDestroySampler(m_Device->logicalDevice, m_ColorSampler_Standard, nullptr);
 	}
+
+#pragma endregion
 }

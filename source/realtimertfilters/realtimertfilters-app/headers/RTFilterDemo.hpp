@@ -56,6 +56,7 @@ namespace rtf
 		//Renderpass
 		friend RenderpassManager;
 		RenderpassManager* m_renderpassManager{};
+		int32_t m_RenderMode = 0;
 
 		// access to attributes for the renderpasses
 		friend RenderpassGbuffer;
@@ -116,6 +117,9 @@ namespace rtf
 		void buildCommandBuffers() override;
 
 		virtual void prepare() override;
+
+		void prepareRenderpasses();
+		void buildQueueTemplates();
 
 		virtual void render() override;
 
