@@ -19,22 +19,21 @@ namespace rtf
 	}
 
 
-	void Attachment_Manager::createAllAttachments(int width, int height)
+	void Attachment_Manager::createAllAttachments(uint32_t width, uint32_t height)
 	{
 		// Find a suitable depth format
 		VkFormat attDepthFormat;
 		VkBool32 validDepthFormat = vks::tools::getSupportedDepthFormat(*physicalDevice, &attDepthFormat);
 		assert(validDepthFormat);
-		m_attachmentTypes[(int)Attachment::depth].first = attDepthFormat;
+		m_attachmentTypes[(int)Attachment::depth].m_Format = attDepthFormat;
 
 		for (int idx = 0; idx < m_maxAttachmentSize; idx++)
 		{
-			this->createAttachment(
-				m_attachmentTypes.at(idx).first, // VkFormat
-				m_attachmentTypes.at(idx).second, // VkImageUsageFlags
-				&m_attachments[idx],
-				width,
-				height);
+			if (m_attachmentTypes.at(idx).m_Size.width == 0 || m_attachmentTypes.at(idx).m_Size.height == 0)
+			{
+				m_attachmentTypes.at(idx).m_Size = VkExtent2D{ width, height };
+			}
+			this->createAttachment(m_attachmentTypes.at(idx), &m_attachments[idx]);
 		}
 	}
 
@@ -48,19 +47,19 @@ namespace rtf
 	}
 
 	// Create a frame buffer attachment
-	void Attachment_Manager::createAttachment(VkFormat format, VkImageUsageFlags usage, FrameBufferAttachment* attachment, int width, int height)
+	void Attachment_Manager::createAttachment(const AttachmentInitInfo& initInfo, FrameBufferAttachment* attachment)
 	{
 		VkImageAspectFlags aspectMask = 0;
 		VkImageLayout imageLayout;
 
-		attachment->format = format;
+		attachment->format = initInfo.m_Format;
 
-		if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+		if (initInfo.m_UsageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
 		{
 			aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		}
-		if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+		if (initInfo.m_UsageFlags & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
 		{
 			aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
 			imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -70,15 +69,13 @@ namespace rtf
 
 		VkImageCreateInfo image = vks::initializers::imageCreateInfo();
 		image.imageType = VK_IMAGE_TYPE_2D;
-		image.format = format;
-		image.extent.width = width;
-		image.extent.height = height;
-		image.extent.depth = 1;
+		image.format = initInfo.m_Format;
+		image.extent = VkExtent3D{ initInfo.m_Size.width, initInfo.m_Size.height, 1 };
 		image.mipLevels = 1;
 		image.arrayLayers = 1;
 		image.samples = VK_SAMPLE_COUNT_1_BIT;
 		image.tiling = VK_IMAGE_TILING_OPTIMAL;
-		image.usage = usage | VK_IMAGE_USAGE_SAMPLED_BIT;
+		image.usage = initInfo.m_UsageFlags | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 		VkMemoryAllocateInfo memAlloc = vks::initializers::memoryAllocateInfo();
 		VkMemoryRequirements memReqs;
@@ -92,7 +89,7 @@ namespace rtf
 
 		VkImageViewCreateInfo imageView = vks::initializers::imageViewCreateInfo();
 		imageView.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageView.format = format;
+		imageView.format = initInfo.m_Format;
 		imageView.subresourceRange = {};
 		imageView.subresourceRange.aspectMask = aspectMask;
 		imageView.subresourceRange.baseMipLevel = 0;
