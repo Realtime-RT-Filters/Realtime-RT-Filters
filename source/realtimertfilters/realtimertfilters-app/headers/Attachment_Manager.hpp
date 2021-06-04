@@ -50,17 +50,21 @@ namespace rtf {
 	/// </summary>
 	class Attachment_Manager
 	{
+		static const VkImageUsageFlags DEFAULTFLAGS =
+			VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |		// Load into GUI & GBuffer shader with this
+			VkImageUsageFlagBits::VK_IMAGE_USAGE_STORAGE_BIT;				// Use as StorageImage, for RT and Postprocessing Shader
+
 		std::vector<AttachmentInitInfo> m_attachmentTypes = {
-			AttachmentInitInfo(VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT), // position
-			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT ), // normal
-			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT) ), // albedo
+			AttachmentInitInfo(VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS), // position
+			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS), // normal
+			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS), // albedo
 			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT ), // depth
-			AttachmentInitInfo( VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT ), // meshid
-			AttachmentInitInfo( VK_FORMAT_R32G32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT ), // motionvector
-			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT ), // rtoutput
-			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT ), // filteroutput
-			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT ), // history_color
-			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT ), // scratch_buffer
+			AttachmentInitInfo( VK_FORMAT_R32_UINT, DEFAULTFLAGS), // meshid
+			AttachmentInitInfo( VK_FORMAT_R32G32_SFLOAT, DEFAULTFLAGS), // motionvector
+			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS), // rtoutput
+			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS), // filteroutput
+			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS), // history_color
+			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS), // scratch_buffer
 		};
 
 	public:
@@ -73,6 +77,7 @@ namespace rtf {
 
 		void createAttachment(const AttachmentInitInfo& initInfo, FrameBufferAttachment* attachment);
 		FrameBufferAttachment* getAttachment(Attachment);
+		void getAllAttachments(FrameBufferAttachment*& out_arr, size_t& out_count);
 
 		void createAllAttachments(uint32_t width, uint32_t height);
 		void destroyAllAttachments();

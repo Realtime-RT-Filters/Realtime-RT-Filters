@@ -18,6 +18,12 @@ namespace rtf
 		return &m_attachments[(int)attachment];
 	}
 
+	void Attachment_Manager::getAllAttachments(FrameBufferAttachment*& out_arr, size_t& out_count)
+	{
+		out_arr = m_attachments;
+		out_count = (size_t)Attachment::max_attachments;
+	}
+
 
 	void Attachment_Manager::createAllAttachments(uint32_t width, uint32_t height)
 	{

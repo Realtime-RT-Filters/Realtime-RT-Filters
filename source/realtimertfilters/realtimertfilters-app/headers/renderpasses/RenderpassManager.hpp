@@ -7,6 +7,7 @@ namespace rtf
 	class RenderpassGbuffer;
 	class RenderpassGui;
 	class RenderpassPostProcess;
+	class RenderpassClearUnusedAttachments;
 
 	enum class SupportedQueueTemplates : int32_t
 	{
@@ -29,10 +30,15 @@ namespace rtf
 		void updateUniformBuffer();
 
 		// RENDERPASSES ********
+		// m_RP = "Unique" Renderpass
+		// m_RPG = GUI Renderpass (each Queue template gets a separate)
+		// m_RPF = Filter Renderpass
 
 		std::shared_ptr<RenderpassGbuffer> m_RP_GBuffer{};
-		std::shared_ptr<RenderpassGui> m_RP_Gui{};
 		std::shared_ptr<RenderpassPostProcess> m_RPF_Gauss{};
+		
+		std::shared_ptr<RenderpassGui> m_RPG_RasterOnly{};
+		std::shared_ptr<RenderpassGui> m_RPG_PathtracerOnly{};
 
 		std::vector<RenderpassPtr> m_AllRenderpasses{};
 
@@ -43,14 +49,15 @@ namespace rtf
 		QueueTemplatePtr m_QT_SVGF{};
 		QueueTemplatePtr m_QT_BMFR{};
 
+		// The currently active queue template and gui pass
+		QueueTemplatePtr m_QT_Active{};
+		std::shared_ptr<RenderpassGui> m_RPG_Active{};
+
 	protected:
 
 		void prepareRenderpasses(RTFilterDemo* rtFilterDemo);
 		void registerRenderpass(const std::shared_ptr<Renderpass>& renderpass);
 		void buildQueueTemplates();
-
-		// The currently active queue template
-		QueueTemplatePtr m_QT_Active{};
 
 		// SEMAPHORES ********
 

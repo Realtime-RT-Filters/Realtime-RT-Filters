@@ -1,12 +1,8 @@
 #version 450
+#extension GL_KHR_vulkan_glsl : enable
+#extension GL_EXT_nonuniform_qualifier : require
 
-layout (binding = 1) uniform sampler2D samplerposition;
-layout (binding = 2) uniform sampler2D samplerNormal;
-layout (binding = 3) uniform sampler2D samplerAlbedo;
-
-layout (location = 0) in vec2 inUV;
-
-layout (location = 0) out vec4 outFragcolor;
+layout (set = 0, binding = 1) uniform sampler2D attachments[];
 
 struct Light {
 	vec4 position;
@@ -14,41 +10,31 @@ struct Light {
 	float radius;
 };
 
-layout (binding = 4) uniform UBO 
+layout (set = 0, binding = 2) uniform UBO 
 {
 	Light lights[6];
 	vec4 viewPos;
 	int displayDebugTarget;
 } ubo;
 
+layout (location = 0) in vec2 inUV;
+layout (location = 0) out vec4 outFragcolor;
+
 void main() 
 {
-	// Get G-Buffer values
-	vec3 fragPos = texture(samplerposition, inUV).rgb;
-	vec3 normal = texture(samplerNormal, inUV).rgb;
-	vec4 albedo = texture(samplerAlbedo, inUV);
-	
 	// Debug display
 	if (ubo.displayDebugTarget > 0) {
-		switch (ubo.displayDebugTarget) {
-			case 1: 
-				outFragcolor.rgb = fragPos;
-				break;
-			case 2: 
-				outFragcolor.rgb = normal;
-				break;
-			case 3: 
-				outFragcolor.rgb = albedo.rgb;
-				break;
-			case 4: 
-				outFragcolor.rgb = albedo.aaa;
-				break;
-		}		
+		outFragcolor.xyz = texture(attachments[ubo.displayDebugTarget - 1], inUV).xyz;
 		outFragcolor.a = 1.0;
 		return;
 	}
 
 	// Render-target composition
+
+	// Get G-Buffer values
+	vec3 fragPos = texture(attachments[0], inUV).rgb;
+	vec3 normal = texture(attachments[1], inUV).rgb;
+	vec4 albedo = texture(attachments[2], inUV);
 
 	#define lightCount 6
 	#define ambient 0.0

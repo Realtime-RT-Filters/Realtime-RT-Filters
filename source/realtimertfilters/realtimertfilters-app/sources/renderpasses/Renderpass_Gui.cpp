@@ -4,8 +4,7 @@
 namespace rtf
 {
 	RenderpassGui::RenderpassGui()
-	{
-	}
+	{	}
 
 	RenderpassGui::~RenderpassGui()
 	{
@@ -29,29 +28,10 @@ namespace rtf
 		m_currentBuffer = &m_rtFilterDemo->currentBuffer;
 
 		//Get all the needed attachments from the attachment manager
-		m_position = m_attachmentManager->getAttachment(Attachment::position);
-		m_normal = m_attachmentManager->getAttachment(Attachment::normal);
-		m_albedo = m_attachmentManager->getAttachment(Attachment::albedo);
-		m_motionvector = m_attachmentManager->getAttachment(Attachment::motionvector);
-		m_rtoutput = m_attachmentManager->getAttachment(Attachment::rtoutput);
-		m_filteroutput = m_attachmentManager->getAttachment(Attachment::filteroutput);
-
-
-		// Create sampler to sample from the color attachments
-		VkSamplerCreateInfo sampler = vks::initializers::samplerCreateInfo();
-		sampler.magFilter = VK_FILTER_NEAREST;
-		sampler.minFilter = VK_FILTER_NEAREST;
-		sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		sampler.addressModeV = sampler.addressModeU;
-		sampler.addressModeW = sampler.addressModeU;
-		sampler.mipLodBias = 0.0f;
-		sampler.maxAnisotropy = 1.0f;
-		sampler.minLod = 0.0f;
-		sampler.maxLod = 1.0f;
-		sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-		VK_CHECK_RESULT(vkCreateSampler(m_vulkanDevice->logicalDevice, &sampler, nullptr, &colorSampler));
-
+		for (auto& attachment : m_attachments)
+		{
+			attachment.m_Attachment = m_attachmentManager->getAttachment(attachment.m_AttachmentId);
+		}
 
 		//UBO
 		prepareUBO();
@@ -131,13 +111,13 @@ namespace rtf
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			&m_composition_UBO_buffer,
 			sizeof(m_composition_UBO_buffer)));
-		
+
 		// Map persistent
 		//VK_CHECK_RESULT(uniformBuffers.offscreen.map());
 		VK_CHECK_RESULT(m_composition_UBO_buffer.map());
 
 		updateUniformBuffer();
-		
+
 	}
 
 	void RenderpassGui::updateUniformBuffer()
@@ -196,20 +176,15 @@ namespace rtf
 		std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
 			// Binding 0 : Vertex shader uniform buffer
 			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0),
-			// Binding 1 : Position texture target / Scene colormap
-			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-			// Binding 2 : Normals texture target
-			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
-			// Binding 3 : Albedo texture target
-			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
-			// Binding 4 : Fragment shader uniform buffer
-			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 4),
-			// Binding 3 : Albedo texture target
-			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5),
+			// Binding 1 : Attachments array
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, m_attachments.size()),
+			// Binding 2 : Fragment shader uniform buffer
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2)
 		};
 
 		VkDescriptorSetLayoutCreateInfo descriptorLayout = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings);
 		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_vulkanDevice->logicalDevice, &descriptorLayout, nullptr, &m_descriptorSetLayout));
+
 
 		// Shared pipeline layout used by composition
 		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo = vks::initializers::pipelineLayoutCreateInfo(&m_descriptorSetLayout, 1);
@@ -219,8 +194,8 @@ namespace rtf
 	void RenderpassGui::setupDescriptorPool()
 	{
 		std::vector<VkDescriptorPoolSize> poolSizes = {
-			vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8),
-			vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10)
+			vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2),
+			vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_attachments.size())
 		};
 
 		VkDescriptorPoolCreateInfo descriptorPoolInfo = vks::initializers::descriptorPoolCreateInfo(poolSizes, 3);
@@ -232,45 +207,22 @@ namespace rtf
 		std::vector<VkWriteDescriptorSet> writeDescriptorSets;
 		VkDescriptorSetAllocateInfo allocInfo = vks::initializers::descriptorSetAllocateInfo(m_descriptorPool, &m_descriptorSetLayout, 1);
 
-		// Image descriptors for the offscreen color attachments
-		VkDescriptorImageInfo texDescriptorPosition =
-			vks::initializers::descriptorImageInfo(
-				m_rtFilterDemo->m_DefaultColorSampler,
-				m_attachmentManager->getAttachment(Attachment::position)->view,
-				VK_IMAGE_LAYOUT_GENERAL);
-
-		VkDescriptorImageInfo texDescriptorNormal =
-			vks::initializers::descriptorImageInfo(
-				m_rtFilterDemo->m_DefaultColorSampler,
-				m_attachmentManager->getAttachment(Attachment::normal)->view,
-				VK_IMAGE_LAYOUT_GENERAL);
-
-		VkDescriptorImageInfo texDescriptorAlbedo =
-			vks::initializers::descriptorImageInfo(
-				m_rtFilterDemo->m_DefaultColorSampler,
-				m_attachmentManager->getAttachment(Attachment::albedo)->view,
-				VK_IMAGE_LAYOUT_GENERAL);
-
-		VkDescriptorImageInfo texDescriptorMotion =
-			vks::initializers::descriptorImageInfo(
-				m_rtFilterDemo->m_DefaultColorSampler,
-				m_attachmentManager->getAttachment(Attachment::motionvector)->view,
-				VK_IMAGE_LAYOUT_GENERAL);
-
-		// Deferred composition
 		VK_CHECK_RESULT(vkAllocateDescriptorSets(m_vulkanDevice->logicalDevice, &allocInfo, &m_descriptorSet));
+
+		std::vector<VkDescriptorImageInfo> imageInfos{};
+		imageInfos.reserve(m_attachments.size());
+		for (size_t i = 0; i < m_attachments.size(); i++)
+		{
+			imageInfos.push_back(vks::initializers::descriptorImageInfo(m_rtFilterDemo->m_DefaultColorSampler, m_attachments[i].m_Attachment->view, VK_IMAGE_LAYOUT_GENERAL));
+		}
+
 		writeDescriptorSets = {
-			// Binding 1 : Position texture target
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &texDescriptorPosition),
-			// Binding 2 : Normals texture target
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &texDescriptorNormal),
-			// Binding 3 : Albedo texture target
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &texDescriptorAlbedo),
-			// Binding 4 : Fragment shader uniform buffer
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 4, &m_composition_UBO_buffer.descriptor),
-			// Binding 5 : motion buffer vector
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, &texDescriptorMotion),
+			// Binding 1 : Attachment array
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, imageInfos.data(), m_attachments.size()),
+			// Binding 2 : Fragment shader uniform buffer
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &m_composition_UBO_buffer.descriptor),
 		};
+
 		vkUpdateDescriptorSets(m_vulkanDevice->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
 	}
 
@@ -361,6 +313,18 @@ namespace rtf
 		pipelineCI.pVertexInputState = &emptyInputState;
 		VK_CHECK_RESULT(vkCreateGraphicsPipelines(m_vulkanDevice->logicalDevice, nullptr, 1, &pipelineCI, nullptr, &m_pipeline));
 
+	}
+
+	void RenderpassGui::setAttachmentBindings(std::vector<GuiAttachmentBinding> attachmentBindings)
+	{
+		m_attachments = attachmentBindings;
+		m_dropoutOptions.clear();
+		m_dropoutOptions.reserve(m_attachments.size() + 1);
+		m_dropoutOptions.push_back("Rasterization Composed");
+		for (auto& attachment : m_attachments)
+		{
+			m_dropoutOptions.push_back(attachment.m_Displayname);
+		}
 	}
 
 }
