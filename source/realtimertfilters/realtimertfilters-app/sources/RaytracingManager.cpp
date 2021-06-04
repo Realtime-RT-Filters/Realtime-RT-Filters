@@ -51,9 +51,6 @@ namespace rtf
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rt_pipeline);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rt_pipelineLayout, 0, 1, &rt_descriptorSet, 0, 0);
 
-		//upload the matrix to the GPU via pushconstants
-		//vkCmdPushConstants(commandBuffer, rt_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstant), &m_pushConstants);
-
 		VkStridedDeviceAddressRegionKHR emptySbtEntry = {};
 		vkCmdTraceRaysKHR(
 			commandBuffer,
@@ -733,7 +730,7 @@ namespace rtf
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			&ubo,
-			sizeof(uniformData),
+			sizeof(UniformData),
 			&uniformData));
 		VK_CHECK_RESULT(ubo.map());
 
