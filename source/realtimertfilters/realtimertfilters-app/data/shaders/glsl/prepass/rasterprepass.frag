@@ -23,12 +23,20 @@ void main()
 	outPosition = vec4(inWorldPos, 1.0);
 
 	// Calculate normal in tangent space
-	vec3 N = normalize(inNormal);
-	vec3 T = normalize(inTangent);
-	vec3 B = cross(N, T);
-	mat3 TBN = mat3(T, B, N);
-	vec3 tnorm = TBN * normalize(texture(samplerNormalMap, inUV).xyz * 2.0 - vec3(1.0));
-	outNormal = vec4(tnorm, 1.0);
+	vec3 texNormal = texture(samplerNormalMap, inUV).xyz;
+	if (texNormal == vec3(0.0))
+	{
+		outNormal = vec4(inNormal, 0.0);
+	}
+	else
+	{
+		vec3 N = normalize(inNormal);
+		vec3 T = normalize(inTangent);
+		vec3 B = cross(N, T);
+		mat3 TBN = mat3(T, B, N);
+		vec3 tnorm = TBN * normalize(texNormal * 2.0 - vec3(1.0));
+		outNormal = vec4(tnorm, 0.0);
+	}
 
 	// Get albedo. If texture yields full black (probably hasn't been set) and the 
 	vec4 textureColor = texture(samplerColor, inUV);

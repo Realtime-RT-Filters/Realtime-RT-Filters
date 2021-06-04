@@ -1412,6 +1412,54 @@ void vkglTF::Model::loadFromFile(std::string filename, vks::VulkanDevice *device
 			}
 		}
 	}
+
+
+	VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
+	descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	descriptorSetAllocInfo.descriptorPool = descriptorPool;
+	descriptorSetAllocInfo.pSetLayouts = &descriptorSetLayoutImage;
+	descriptorSetAllocInfo.descriptorSetCount = 1;
+	VK_CHECK_RESULT(vkAllocateDescriptorSets(device->logicalDevice, &descriptorSetAllocInfo, &emptyDescriptorSet));
+	std::vector<VkDescriptorImageInfo> imageDescriptors{};
+	std::vector<VkWriteDescriptorSet> writeDescriptorSets{};
+	if (descriptorBindingFlags & DescriptorBindingFlags::ImageBaseColor)
+	{
+		imageDescriptors.push_back(emptyTexture.descriptor);
+		VkWriteDescriptorSet writeDescriptorSet{};
+		writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writeDescriptorSet.descriptorCount = 1;
+		writeDescriptorSet.dstSet = emptyDescriptorSet;
+		writeDescriptorSet.dstBinding = static_cast<uint32_t>(writeDescriptorSets.size());
+		writeDescriptorSet.pImageInfo = &emptyTexture.descriptor;
+		writeDescriptorSets.push_back(writeDescriptorSet);
+	}
+	if (descriptorBindingFlags & DescriptorBindingFlags::ImageNormalMap)
+	{
+		imageDescriptors.push_back(emptyTexture.descriptor);
+		VkWriteDescriptorSet writeDescriptorSet{};
+		writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writeDescriptorSet.descriptorCount = 1;
+		writeDescriptorSet.dstSet = emptyDescriptorSet;
+		writeDescriptorSet.dstBinding = static_cast<uint32_t>(writeDescriptorSets.size());
+		writeDescriptorSet.pImageInfo = &emptyTexture.descriptor;
+		writeDescriptorSets.push_back(writeDescriptorSet);
+	}
+	if (descriptorBindingFlags & DescriptorBindingFlags::MetallicRoughnessMap)
+	{
+		imageDescriptors.push_back(emptyTexture.descriptor);
+		VkWriteDescriptorSet writeDescriptorSet{};
+		writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writeDescriptorSet.descriptorCount = 1;
+		writeDescriptorSet.dstSet = emptyDescriptorSet;
+		writeDescriptorSet.dstBinding = static_cast<uint32_t>(writeDescriptorSets.size());
+		writeDescriptorSet.pImageInfo = &emptyTexture.descriptor;
+		writeDescriptorSets.push_back(writeDescriptorSet);
+	}
+	vkUpdateDescriptorSets(device->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
+
 }
 
 void vkglTF::Model::bindBuffers(VkCommandBuffer commandBuffer)
@@ -1438,8 +1486,12 @@ void vkglTF::Model::drawNode(Node *node, VkCommandBuffer commandBuffer, uint32_t
 				skip = (material.alphaMode != Material::ALPHAMODE_BLEND);
 			}
 			if (!skip) {
-				if (renderFlags & RenderFlags::BindImages) {
+				if (renderFlags & RenderFlags::BindImages && material.descriptorSet != nullptr) {
 					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, bindImageSet, 1, &material.descriptorSet, 0, nullptr);
+				}
+				else
+				{
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, bindImageSet, 1, &emptyDescriptorSet, 0, nullptr);
 				}
 				vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
 			}

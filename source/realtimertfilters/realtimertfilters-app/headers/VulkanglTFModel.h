@@ -251,6 +251,7 @@ namespace vkglTF
 	private:
 		vkglTF::Texture* getTexture(uint32_t index);
 		vkglTF::Texture emptyTexture;
+		VkDescriptorSet emptyDescriptorSet;
 		void createEmptyTexture(VkQueue transferQueue);
 	public:
 		vks::VulkanDevice* device;
