@@ -28,22 +28,21 @@ layout(push_constant) uniform Constants
   int   samples;
   int   bounces;
   int   bounceSamples;
-  float temporalAlpha;
+  // float temporalAlpha;
 }
 pushC;
 
 void main() 
 {
 
-// Initialize the random number
-  // vec3 hitValue  = vec3(0);
+  // Initialize the random number
+  vec3 hitValue  = vec3(0);
 
-  // // Send sampels through every pixel
-  // for (int smpl = 0; smpl < pushC.samples; smpl++)
-  // {
+  // Send sampels
+  for (int smpl = 0; smpl < 20; smpl++)
+  {
 	// // seed for Random Values
-    // int smpl = 0;
-    // uint seed = tea(gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x, pushC.frame * pushC.samples + smpl);
+    uint seed = tea(gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x, pushC.frame * pushC.samples + smpl);
     const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5) ;
     const vec2 inUV        = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
     vec2       d           = inUV * 2.0 - 1.0;
@@ -52,11 +51,13 @@ void main()
     vec4 target            = cam.projInverse * vec4(d.x, d.y, 1, 1);
     vec4 direction         = cam.viewInverse * vec4(normalize(target.xyz/ target.w), 0);
 
-    // prd.attenuation  = vec3(1.0f);
-    // prd.seed         = seed;
-    // prd.depth        = 0;
+    prd.attenuation  = vec3(1.0f);
+    prd.seed         = seed;
+    prd.depth        = 0;
+    prd.normal       = vec3(0.0f);
+    prd.albedo       = vec3(0.0f);
+    prd.radiance     =  vec3(0.0f);
 
-    
     uint rayFlags     = gl_RayFlagsOpaqueEXT;
     uint cullMask     = 0xff;
     float tmin        = 0.001;
@@ -74,10 +75,10 @@ void main()
                 tmax,               // ray max range
                 0                      // payload (location = 0)
     );
-    // hitValue += 1;
-    // hitValue += prd.radiance;
-  // }
+    hitValue += prd.radiance;
+  }
   // Result
-  // hitValue /= pushC.samples;
+  hitValue /= pushC.samples;
+  // imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(hitValue, 0.0));
   imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(prd.albedo, 0.0));
 }
