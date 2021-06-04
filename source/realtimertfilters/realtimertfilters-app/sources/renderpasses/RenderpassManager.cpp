@@ -3,7 +3,6 @@
 #include "../../headers/renderpasses/Renderpass_Gbuffer.hpp"
 #include "../../headers/renderpasses/Renderpass_PostProcess.hpp"
 #include "../../headers/renderpasses/Renderpass_Gui.hpp"
-#include "../../headers/renderpasses/Renderpass_ClearUnusedAttachments.hpp"
 #include "../../headers/RTFilterDemo.hpp"
 
 namespace rtf
