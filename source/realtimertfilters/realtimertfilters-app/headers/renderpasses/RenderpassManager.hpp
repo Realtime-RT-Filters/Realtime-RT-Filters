@@ -7,6 +7,7 @@ namespace rtf
 	class RenderpassGbuffer;
 	class RenderpassGui;
 	class RenderpassPostProcess;
+	class RenderpassPathTracer;
 
 	enum class SupportedQueueTemplates : int32_t
 	{
@@ -33,6 +34,7 @@ namespace rtf
 		std::shared_ptr<RenderpassGbuffer> m_RP_GBuffer{};
 		std::shared_ptr<RenderpassGui> m_RP_Gui{};
 		std::shared_ptr<RenderpassPostProcess> m_RPF_Gauss{};
+		std::shared_ptr<RenderpassPathTracer> m_PT{};
 
 		std::vector<RenderpassPtr> m_AllRenderpasses{};
 

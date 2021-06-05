@@ -3,6 +3,7 @@
 #include "../../headers/renderpasses/Renderpass_Gbuffer.hpp"
 #include "../../headers/renderpasses/Renderpass_PostProcess.hpp"
 #include "../../headers/renderpasses/Renderpass_Gui.hpp"
+#include "../../headers/renderpasses/Renderpass_PathTracer.hpp"
 #include "../../headers/RTFilterDemo.hpp"
 
 namespace rtf
@@ -77,6 +78,10 @@ namespace rtf
 		m_RP_Gui = std::make_shared<RenderpassGui>();
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RP_Gui));
 
+		// Path Tracer Pass
+		m_PT = std::make_shared<RenderpassPathTracer>();
+		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassPathTracer>(m_PT));
+		
 		// SET RTFILTERDEMO AND PREPARE RENDERPASSES
 		for (auto& renderpass : m_AllRenderpasses)
 		{

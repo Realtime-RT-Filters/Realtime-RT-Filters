@@ -40,6 +40,7 @@ namespace rtf
 
 	class RenderpassGbuffer;
 	class RenderpassGui;
+	class RenderpassPathTracer;
 
 	class RTFilterDemo : public VulkanExampleBase
 	{
@@ -61,6 +62,7 @@ namespace rtf
 		// access to attributes for the renderpasses
 		friend RenderpassGbuffer;
 		friend RenderpassGui;
+		friend RenderpassPathTracer;
 
 
 #pragma region helper_structs
