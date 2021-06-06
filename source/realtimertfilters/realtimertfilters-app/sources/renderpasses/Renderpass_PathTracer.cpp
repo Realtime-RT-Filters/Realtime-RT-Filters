@@ -87,7 +87,7 @@ namespace rtf
 			//  Material
 			//vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_MATERIALS),
 			//  Textures
-			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_TEXTURES),
+			//vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_TEXTURES),
 		};
 
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI = vks::initializers::descriptorSetLayoutCreateInfo(layoutBindingSet);
@@ -328,6 +328,7 @@ namespace rtf
 		bufferCreateInfo.size = size;
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 		VK_CHECK_RESULT(vkCreateBuffer(m_vulkanDevice->logicalDevice, &bufferCreateInfo, nullptr, &scratchBuffer.handle));
+
 		VkMemoryRequirements memoryRequirements{};
 		vkGetBufferMemoryRequirements(m_vulkanDevice->logicalDevice, scratchBuffer.handle, &memoryRequirements);
 		VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo{};
@@ -339,7 +340,9 @@ namespace rtf
 		memoryAllocateInfo.allocationSize = memoryRequirements.size;
 		memoryAllocateInfo.memoryTypeIndex = m_vulkanDevice->getMemoryType(memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 		VK_CHECK_RESULT(vkAllocateMemory(m_vulkanDevice->logicalDevice, &memoryAllocateInfo, nullptr, &scratchBuffer.memory));
+
 		VK_CHECK_RESULT(vkBindBufferMemory(m_vulkanDevice->logicalDevice, scratchBuffer.handle, scratchBuffer.memory, 0));
+
 		// Buffer device address
 		VkBufferDeviceAddressInfoKHR bufferDeviceAddresInfo{};
 		bufferDeviceAddresInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
@@ -469,7 +472,7 @@ namespace rtf
 			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2 },
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 }
+			//{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 }
 		};
 		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = vks::initializers::descriptorPoolCreateInfo(poolSizes, 1);
 		VK_CHECK_RESULT(vkCreateDescriptorPool(m_vulkanDevice->logicalDevice, &descriptorPoolCreateInfo, nullptr, &m_descriptorPool));

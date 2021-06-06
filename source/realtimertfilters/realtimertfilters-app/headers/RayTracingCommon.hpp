@@ -57,7 +57,7 @@ namespace rtf
 			glm::vec4 lightPos;
 			int32_t vertexSize;
 		}m_uniformData;
-		vks::Buffer m_uniformBufferObject;
+		vks::Buffer m_uniformBufferObject{};
 
 		struct PushConstant{
 			glm::vec4	  clearColor;
