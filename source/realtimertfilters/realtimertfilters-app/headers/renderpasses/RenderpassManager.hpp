@@ -38,6 +38,8 @@ namespace rtf
 
 		std::shared_ptr<RenderpassGui> m_RPG_RasterOnly{};
 		std::shared_ptr<RenderpassGui> m_RPG_PathtracerOnly{};
+		std::shared_ptr<RenderpassGui> m_RPG_SVGF{};
+		std::shared_ptr<RenderpassGui> m_RPG_BMFR{};
 
 		std::vector<RenderpassPtr> m_AllRenderpasses{};
 

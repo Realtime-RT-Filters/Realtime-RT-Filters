@@ -1,7 +1,9 @@
 #ifndef __RAY_COMMON
 #define __RAY_COMMON
-#include "RTFilterDemo.hpp"
+//#include "RTFilterDemo.hpp"
 
+#include <vulkanexamplebase.h>
+#include "VulkanglTFModel.h"
 
 namespace rtf
 {

@@ -27,11 +27,11 @@ namespace rtf
 			break;
 		case SupportedQueueTemplates::SVGF:
 			m_QT_Active = m_QT_SVGF;
-			m_RPG_Active = m_RPG_PathtracerOnly;
+			m_RPG_Active = m_RPG_SVGF;
 			break;
 		case SupportedQueueTemplates::BMFR:
 			m_QT_Active = m_QT_BMFR;
-			m_RPG_Active = m_RPG_PathtracerOnly;
+			m_RPG_Active = m_RPG_BMFR;
 			break;
 		}
 	}
@@ -88,6 +88,33 @@ namespace rtf
 			});
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_RasterOnly));
 
+		// GUI Pass (PathtracerOnly)
+		m_RPG_PathtracerOnly = std::make_shared<RenderpassGui>();
+		m_RPG_PathtracerOnly->setAttachmentBindings({
+			GuiAttachmentBinding(Attachment::position, std::string("GBuffer::Position")),
+			GuiAttachmentBinding(Attachment::normal, std::string("GBuffer::Normal")),
+			GuiAttachmentBinding(Attachment::albedo, std::string("GBuffer::Albedo"))
+			});
+		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_PathtracerOnly));
+
+		// GUI Pass (SVGF)
+		m_RPG_SVGF = std::make_shared<RenderpassGui>();
+		m_RPG_SVGF->setAttachmentBindings({
+			GuiAttachmentBinding(Attachment::position, std::string("GBuffer::Position")),
+			GuiAttachmentBinding(Attachment::normal, std::string("GBuffer::Normal")),
+			GuiAttachmentBinding(Attachment::albedo, std::string("GBuffer::Albedo"))
+			});
+		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_SVGF));
+
+		// GUI Pass (BMFR)
+		m_RPG_BMFR = std::make_shared<RenderpassGui>();
+		m_RPG_BMFR->setAttachmentBindings({
+			GuiAttachmentBinding(Attachment::position, std::string("GBuffer::Position")),
+			GuiAttachmentBinding(Attachment::normal, std::string("GBuffer::Normal")),
+			GuiAttachmentBinding(Attachment::albedo, std::string("GBuffer::Albedo"))
+			});
+		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_BMFR));
+
 		// Path Tracer Pass
 		m_PT = std::make_shared<RenderpassPathTracer>();
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassPathTracer>(m_PT));
@@ -127,7 +154,7 @@ namespace rtf
 		// TODO Add Pathtracer Renderpass
 		// TODO Add SVGF Renderpasses
 
-		m_QT_PathtracerOnly->push_back(m_RPG_PathtracerOnly);
+		m_QT_SVGF->push_back(m_RPG_SVGF);
 
 		// BMFR
 		m_QT_BMFR = std::make_shared<QueueTemplate>();
@@ -136,7 +163,7 @@ namespace rtf
 		// TODO Add Pathtracer Renderpass
 		// TODO Add BMFR Renderpasses
 
-		m_QT_PathtracerOnly->push_back(m_RPG_PathtracerOnly);
+		m_QT_BMFR->push_back(m_RPG_BMFR);
 	}
 
 #pragma endregion

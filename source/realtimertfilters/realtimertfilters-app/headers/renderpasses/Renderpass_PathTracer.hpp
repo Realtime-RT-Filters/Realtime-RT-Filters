@@ -7,6 +7,8 @@
 
 namespace rtf
 {
+	struct FrameBufferAttachment;
+
 	class RenderpassPathTracer : public Renderpass, public RayTracingComponent
 	{
 	public:

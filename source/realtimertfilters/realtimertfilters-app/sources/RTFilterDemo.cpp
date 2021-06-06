@@ -263,7 +263,7 @@ namespace rtf
 			{
 				m_renderpassManager->setQueueTemplate(static_cast<SupportedQueueTemplates>(m_RenderMode));
 			}
-			if (overlay->comboBox("Display", &debugDisplayTarget, { "Final composition", "Position", "Normals", "Albedo", "Specular", "Ray Tracing", "Path Tracing", "Motion vectors" }))
+			if (overlay->comboBox("Display", &debugDisplayTarget, m_renderpassManager->m_RPG_Active->getDropoutOptions()))
 			{
 				//Comp_UpdateUniformBuffer();
 			}

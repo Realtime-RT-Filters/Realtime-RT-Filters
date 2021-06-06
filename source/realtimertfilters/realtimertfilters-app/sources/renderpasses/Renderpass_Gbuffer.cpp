@@ -62,6 +62,7 @@ namespace rtf
 			attachmentDescriptions[i].format = attachments[i]->format;
 		}
 		attachmentDescriptions[ATTACHMENT_COUNT_COLOR].finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // The depth attachment needs a different layout
+		attachmentDescriptions[ATTACHMENT_COUNT_COLOR].stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
 
 																												 // Preparing attachment reference structs
 		VkAttachmentReference attachmentReferences_Color[ATTACHMENT_COUNT_COLOR] = {};
