@@ -33,10 +33,8 @@ namespace rtf
 	}
 
 	void RenderpassPathTracer::draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount) {
-		// TODO Check
-		m_rtFilterDemo->submitInfo.commandBufferCount = 1;
-		m_rtFilterDemo->submitInfo.pCommandBuffers = &out_commandBuffers[m_rtFilterDemo->currentBuffer];
-		VK_CHECK_RESULT(vkQueueSubmit(m_queue, 1, &m_rtFilterDemo->submitInfo, VK_NULL_HANDLE));
+		out_commandBufferCount = 1;
+		out_commandBuffers = &m_rtFilterDemo->drawCmdBuffers[m_rtFilterDemo->currentBuffer];
 	}
 
 	void RenderpassPathTracer::cleanUp() {
