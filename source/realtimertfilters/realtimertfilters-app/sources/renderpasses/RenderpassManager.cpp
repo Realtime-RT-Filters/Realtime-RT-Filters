@@ -19,15 +19,19 @@ namespace rtf
 		{
 		case SupportedQueueTemplates::RasterizationOnly:
 			m_QT_Active = m_QT_RasterizationOnly;
+			m_RPG_Active = m_RPG_RasterOnly;
 			break;
 		case SupportedQueueTemplates::PathtracerOnly:
 			m_QT_Active = m_QT_PathtracerOnly;
+			m_RPG_Active = m_RPG_PathtracerOnly;
 			break;
 		case SupportedQueueTemplates::SVGF:
 			m_QT_Active = m_QT_SVGF;
+			m_RPG_Active = m_RPG_PathtracerOnly;
 			break;
 		case SupportedQueueTemplates::BMFR:
 			m_QT_Active = m_QT_BMFR;
+			m_RPG_Active = m_RPG_PathtracerOnly;
 			break;
 		}
 	}
@@ -56,7 +60,7 @@ namespace rtf
 
 		prepareRenderpasses(rtFilterDemo);
 		buildQueueTemplates();
-		m_QT_Active = m_QT_RasterizationOnly;
+		setQueueTemplate(SupportedQueueTemplates::RasterizationOnly);
 	}
 
 	void RenderpassManager::prepareRenderpasses(RTFilterDemo* rtFilterDemo)
@@ -74,9 +78,15 @@ namespace rtf
 		m_RPF_Gauss->PushAttachment(rtFilterDemo->m_attachmentManager->getAttachment(Attachment::position), RenderpassPostProcess::AttachmentUse::WriteOnly);
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassPostProcess>(m_RPF_Gauss));
 
-		// GUI Pass
-		m_RP_Gui = std::make_shared<RenderpassGui>();
-		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RP_Gui));
+		// GUI Pass (RasterizerOnly)
+		m_RPG_RasterOnly = std::make_shared<RenderpassGui>();
+		m_RPG_RasterOnly->setAttachmentBindings({
+			GuiAttachmentBinding(Attachment::position, std::string("GBuffer::Position")),
+			GuiAttachmentBinding(Attachment::normal, std::string("GBuffer::Normal")),
+			GuiAttachmentBinding(Attachment::albedo, std::string("GBuffer::Albedo")),
+			GuiAttachmentBinding(Attachment::motionvector, std::string("GBuffer::Motion"))
+			});
+		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_RasterOnly));
 
 		// Path Tracer Pass
 		m_PT = std::make_shared<RenderpassPathTracer>();
@@ -100,7 +110,7 @@ namespace rtf
 		// RasterizationOnly
 		m_QT_RasterizationOnly = std::make_shared<QueueTemplate>();
 		m_QT_RasterizationOnly->push_back(m_RP_GBuffer);
-		m_QT_RasterizationOnly->push_back(m_RP_Gui);
+		m_QT_RasterizationOnly->push_back(m_RPG_RasterOnly);
 
 		// PathtracerOnly
 		m_QT_PathtracerOnly = std::make_shared<QueueTemplate>();
@@ -108,7 +118,7 @@ namespace rtf
 
 		// TODO Add Pathtracer Renderpass
 
-		m_QT_PathtracerOnly->push_back(m_RP_Gui);
+		m_QT_PathtracerOnly->push_back(m_RPG_PathtracerOnly);
 
 		// SVGF
 		m_QT_SVGF = std::make_shared<QueueTemplate>();
@@ -117,7 +127,7 @@ namespace rtf
 		// TODO Add Pathtracer Renderpass
 		// TODO Add SVGF Renderpasses
 
-		m_QT_SVGF->push_back(m_RP_Gui);
+		m_QT_PathtracerOnly->push_back(m_RPG_PathtracerOnly);
 
 		// BMFR
 		m_QT_BMFR = std::make_shared<QueueTemplate>();
@@ -126,7 +136,7 @@ namespace rtf
 		// TODO Add Pathtracer Renderpass
 		// TODO Add BMFR Renderpasses
 
-		m_QT_BMFR->push_back(m_RP_Gui);
+		m_QT_PathtracerOnly->push_back(m_RPG_PathtracerOnly);
 	}
 
 #pragma endregion

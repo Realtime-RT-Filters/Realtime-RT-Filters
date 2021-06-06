@@ -12,6 +12,17 @@
 
 namespace rtf
 {
+	class GuiAttachmentBinding
+	{
+	public:
+		Attachment m_AttachmentId{};
+		FrameBufferAttachment* m_Attachment = nullptr;
+		std::string m_Displayname = "Generic Attachment";
+
+		GuiAttachmentBinding() = default;
+		GuiAttachmentBinding(Attachment attachmentId, std::string& display) : m_AttachmentId(attachmentId), m_Displayname(display) {}
+	};
+
 	/// <summary>
 	/// Class which acts as final render pass, showing output with UI
 	/// </summary>
@@ -19,15 +30,9 @@ namespace rtf
 	{
 	protected:
 
-		
-		FrameBufferAttachment* m_position, * m_normal, * m_albedo, * m_motionvector, * m_rtoutput, * m_filteroutput;
-		
-		VkDescriptorSet descriptorSetInputAttachments;
+		std::vector<GuiAttachmentBinding> m_attachments{};
+		std::vector<std::string> m_dropoutOptions{};
 
-
-
-		// One sampler for the frame buffer color attachments
-		VkSampler colorSampler;
 
 		vkglTF::Model* m_Scene = nullptr;
 
@@ -72,9 +77,13 @@ namespace rtf
 		void prepareRenderpass();
 		void preparePipelines();
 
+
 	public:
 		RenderpassGui();
 		~RenderpassGui();
+
+		void setAttachmentBindings(std::vector<GuiAttachmentBinding> attachmentBindings);
+		inline std::vector<std::string> getDropoutOptions() { return m_dropoutOptions; }
 
 		void buildCommandBuffer();
 		virtual void prepare() override;

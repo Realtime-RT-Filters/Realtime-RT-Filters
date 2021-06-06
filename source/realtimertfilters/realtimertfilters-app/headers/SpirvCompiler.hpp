@@ -177,7 +177,7 @@ namespace rtf
 
 			bool compileResult = callGlslCompiler(shaderFileInfo);
 
-			if (m_Verbose && compileResult)
+			if (compileResult)
 			{
 				std::cout << "compiled: " << shaderFileInfo << std::endl;
 			}

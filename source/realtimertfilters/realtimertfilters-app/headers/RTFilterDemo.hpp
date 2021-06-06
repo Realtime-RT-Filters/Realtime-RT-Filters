@@ -48,8 +48,6 @@ namespace rtf
 		int32_t debugDisplayTarget = 0;
 
 		SpatioTemporalAccumulation m_spatioTemporalAccumulation;
-		RaytracingManager m_rtManager;
-		PathTracerManager* m_pathTracerManager{};
 		
 		//Attachment manager
 		Attachment_Manager* m_attachmentManager;
@@ -109,6 +107,9 @@ namespace rtf
 
 		// Enable physical device features required for this example
 		virtual void getEnabledFeatures();
+		VkPhysicalDeviceAccelerationStructureFeaturesKHR* getEnabledFeaturesRayTracing();
+
+		void enableExtensions(std::vector<const char*>& enabledDeviceExtensions);
 
 		// Prepare a new framebuffer and attachments for offscreen rendering (G-Buffer)
 		void setupDefaultSampler();
@@ -123,6 +124,7 @@ namespace rtf
 		void prepareRenderpasses();
 		void buildQueueTemplates();
 
+
 		virtual void render() override;
 
 		virtual void OnUpdateUIOverlay(vks::UIOverlay* overlay) override;
@@ -136,6 +138,18 @@ namespace rtf
 		bool gui_rp_on = false;
 
 		VkPipelineShaderStageCreateInfo LoadShader(std::string shadername, VkShaderStageFlagBits stage);
+
+		// Available features and properties
+		VkPhysicalDeviceRayTracingPipelinePropertiesKHR  rayTracingPipelineProperties{};
+
+		VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{};
+		VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{};
+		VkPhysicalDeviceVulkan12Features vulkan12Features;
+
+		// Enabled features and properties
+		VkPhysicalDeviceRayTracingPipelineFeaturesKHR enabledRayTracingPipelineFeatures{};
+		VkPhysicalDeviceAccelerationStructureFeaturesKHR enabledAccelerationStructureFeatures{};
+		VkPhysicalDeviceVulkan12Features enabledPhysicalDeviceVulkan12Features{};
 
 	};
 }

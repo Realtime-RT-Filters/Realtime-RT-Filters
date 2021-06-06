@@ -14,7 +14,7 @@ namespace rtf
 	/// <summary>
 	/// Abstract class to serve as a base for all renderpasses
 	/// </summary>
-	class Renderpass // abstract is MS specific
+	class Renderpass
 	{
 	public:
 		

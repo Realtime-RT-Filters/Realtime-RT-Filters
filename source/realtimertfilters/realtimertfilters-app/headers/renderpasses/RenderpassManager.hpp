@@ -36,6 +36,9 @@ namespace rtf
 		std::shared_ptr<RenderpassPostProcess> m_RPF_Gauss{};
 		std::shared_ptr<RenderpassPathTracer> m_PT{};
 
+		std::shared_ptr<RenderpassGui> m_RPG_RasterOnly{};
+		std::shared_ptr<RenderpassGui> m_RPG_PathtracerOnly{};
+
 		std::vector<RenderpassPtr> m_AllRenderpasses{};
 
 		// QUEUETEMPLATES ********
@@ -45,14 +48,16 @@ namespace rtf
 		QueueTemplatePtr m_QT_SVGF{};
 		QueueTemplatePtr m_QT_BMFR{};
 
+		// The currently active queue template
+		QueueTemplatePtr m_QT_Active{};
+		std::shared_ptr<RenderpassGui> m_RPG_Active{};
+
 	protected:
 
 		void prepareRenderpasses(RTFilterDemo* rtFilterDemo);
 		void registerRenderpass(const std::shared_ptr<Renderpass>& renderpass);
 		void buildQueueTemplates();
 
-		// The currently active queue template
-		QueueTemplatePtr m_QT_Active{};
 
 		// SEMAPHORES ********
 

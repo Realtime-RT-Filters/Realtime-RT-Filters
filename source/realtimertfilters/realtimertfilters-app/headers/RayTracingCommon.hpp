@@ -92,16 +92,6 @@ namespace rtf
 		PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR;
 		PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR;
 
-		// Available features and properties
-		VkPhysicalDeviceRayTracingPipelinePropertiesKHR  rayTracingPipelineProperties{};
-		VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{};
-		VkPhysicalDeviceVulkan12Features physicalDeviceVulkan12Features;
-
-		// Enabled features and properties
-		VkPhysicalDeviceRayTracingPipelineFeaturesKHR enabledRayTracingPipelineFeatures{};
-		VkPhysicalDeviceAccelerationStructureFeaturesKHR enabledAccelerationStructureFeatures{};
-		VkPhysicalDeviceVulkan12Features enabledPhysicalDeviceVulkan12Features;
-
 	};
 }
 

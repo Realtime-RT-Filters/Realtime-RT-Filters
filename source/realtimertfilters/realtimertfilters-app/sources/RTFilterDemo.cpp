@@ -33,14 +33,12 @@ namespace rtf
 		// required for debugprintf in shaders
 		enabledDeviceExtensions.push_back(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME);
 
+
 		enabledInstanceExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 		enabledInstanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 		apiVersion = VK_API_VERSION_1_2;
 
-		m_rtManager.enableExtensions(enabledDeviceExtensions);
-
-		m_pathTracerManager = new PathTracerManager();
-		m_pathTracerManager->enableExtensions(enabledDeviceExtensions);
+		enableExtensions(enabledDeviceExtensions);
 
 #ifdef _WIN32
 		SpirvCompiler compiler(getShadersPathW(), getShadersPathW());
@@ -68,8 +66,90 @@ namespace rtf
 		{
 			enabledFeatures.vertexPipelineStoresAndAtomics = VK_TRUE;
 		}
-		
-		deviceCreatepNextChain = m_pathTracerManager->getEnabledFeatures();
+
+		deviceCreatepNextChain = getEnabledFeaturesRayTracing();
+	}
+
+	VkPhysicalDeviceAccelerationStructureFeaturesKHR* RTFilterDemo::getEnabledFeaturesRayTracing()
+	{
+		// Get properties and features for Ray Tracer
+		rayTracingPipelineProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+		rayTracingPipelineProperties.pNext = nullptr;
+		VkPhysicalDeviceProperties2 deviceProperties2{};
+		deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+		deviceProperties2.pNext = &rayTracingPipelineProperties;
+		vkGetPhysicalDeviceProperties2(physicalDevice, &deviceProperties2);
+
+		vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+		vulkan12Features.pNext = nullptr;
+		rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+		rayTracingPipelineFeatures.pNext = &vulkan12Features;
+		accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+		accelerationStructureFeatures.pNext = &rayTracingPipelineFeatures;
+
+		VkPhysicalDeviceFeatures2 deviceFeatures2{};
+		deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		deviceFeatures2.pNext = &accelerationStructureFeatures;
+		vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
+
+		if (vulkan12Features.runtimeDescriptorArray != VK_TRUE) {
+			throw std::runtime_error("RTFilterDemo::getEnabledFeaturesRayTracing: missing runtimeDescriptorArray feature");
+		}
+		if (vulkan12Features.bufferDeviceAddress != VK_TRUE) {
+			throw std::runtime_error("RTFilterDemo::getEnabledFeaturesRayTracing: missing bufferDeviceAddress feature");
+		}
+		if (vulkan12Features.descriptorIndexing != VK_TRUE) {
+			throw std::runtime_error("RTFilterDemo::getEnabledFeaturesRayTracing: missing descriptorIndexing feature");
+		}
+		if (vulkan12Features.shaderSampledImageArrayNonUniformIndexing != VK_TRUE) {
+			throw std::runtime_error("RTFilterDemo::getEnabledFeaturesRayTracing: missing shaderSampledImageArrayNonUniformIndexing feature");
+		}
+
+		// Enable features required for ray tracing using feature chaining via pNext		
+		enabledPhysicalDeviceVulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+		enabledPhysicalDeviceVulkan12Features.runtimeDescriptorArray = VK_TRUE;
+		enabledPhysicalDeviceVulkan12Features.bufferDeviceAddress = VK_TRUE;
+		enabledPhysicalDeviceVulkan12Features.descriptorIndexing = VK_TRUE;
+		enabledPhysicalDeviceVulkan12Features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+		enabledPhysicalDeviceVulkan12Features.pNext = nullptr;
+
+		if (rayTracingPipelineFeatures.rayTracingPipeline != VK_TRUE) {
+			throw std::runtime_error("RTFilterDemo::getEnabledFeaturesRayTracing: missing rayTracingPipeline feature");
+		}
+
+		enabledRayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+		enabledRayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
+		enabledRayTracingPipelineFeatures.pNext = &enabledPhysicalDeviceVulkan12Features;
+
+		if (accelerationStructureFeatures.accelerationStructure != VK_TRUE) {
+			throw std::runtime_error("RTFilterDemo::getEnabledFeaturesRayTracing: missing accelerationStructure feature");
+		}
+
+		enabledAccelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+		enabledAccelerationStructureFeatures.accelerationStructure = VK_TRUE;
+		enabledAccelerationStructureFeatures.pNext = &enabledRayTracingPipelineFeatures;
+
+		return &enabledAccelerationStructureFeatures;
+	}
+
+	void RTFilterDemo::enableExtensions(std::vector<const char*>& enabledDeviceExtensions)
+	{
+		// Ray tracing related extensions required by this sample
+
+		enabledDeviceExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+		enabledDeviceExtensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+
+		// Required by VK_KHR_acceleration_structure
+		enabledDeviceExtensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+		enabledDeviceExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+		enabledDeviceExtensions.push_back(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
+
+		// Required for VK_KHR_ray_tracing_pipeline
+		enabledDeviceExtensions.push_back(VK_KHR_SPIRV_1_4_EXTENSION_NAME);
+
+		// Required by VK_KHR_spirv_1_4
+		enabledDeviceExtensions.push_back(VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME);
+
 	}
 
 #pragma endregion
@@ -93,14 +173,12 @@ namespace rtf
 		m_renderpassManager = new RenderpassManager();
 		m_renderpassManager->prepare(this, SEMAPHORE_COUNT);
 
-		
-
 		//Ray tracing
-		m_rtManager.setup(this, physicalDevice, vulkanDevice, device, queue, &swapChain, descriptorPool, &camera);
+		/*m_rtManager.setup(this, physicalDevice, vulkanDevice, device, queue, &swapChain, descriptorPool, &camera);
 		m_rtManager.prepare(width, height);
 
 		m_pathTracerManager->setup(this, physicalDevice, vulkanDevice, device, queue, &swapChain, descriptorPool, &camera);
-		m_pathTracerManager->prepare(width, height);
+		m_pathTracerManager->prepare(width, height);*/
 		//buildCommandBuffers();
 
 		prepared = true;
@@ -138,8 +216,8 @@ namespace rtf
 		//m_Scene.loadFromFile(getAssetPath() + "glTF-Sample-Models/2.0/Sponza/glTF/Sponza.gltf", vulkanDevice, queue, glTFLoadingFlags);
 		m_Scene.loadFromFile(getAssetPath() + MODEL_NAME, vulkanDevice, queue, glTFLoadingFlags);
 		//m_Scene.loadFromFile(getAssetPath() + "models/armor/armor.gltf", vulkanDevice, queue, glTFLoadingFlags);
-		m_rtManager.setScene(&m_Scene);
-		m_pathTracerManager->setScene(&m_Scene);
+		//m_rtManager.setScene(&m_Scene);
+		//m_pathTracerManager->setScene(&m_Scene);
 	}
 
 #pragma endregion
@@ -148,7 +226,7 @@ namespace rtf
 	void RTFilterDemo::buildCommandBuffers()
 	{
 		// ui overlay updated, rebuild gui command buffers
-		m_renderpassManager->m_RP_Gui->buildCommandBuffer();
+		m_renderpassManager->m_RPG_Active->buildCommandBuffer();
 
 	}
 
@@ -168,16 +246,13 @@ namespace rtf
 			submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
 			VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
 		}
-		else
-		{
-			// submit the renderpasses one after another
-			m_renderpassManager->draw(drawCmdBuffers[currentBuffer]);
-		}
+		// submit the renderpasses one after another
+		m_renderpassManager->draw(drawCmdBuffers[currentBuffer]);
 		VulkanExampleBase::submitFrame();
 
 		m_renderpassManager->updateUniformBuffer();
-		m_rtManager.updateUniformBuffers(timer, &camera);
-		m_pathTracerManager->updateUniformBuffers(timer, &camera);
+		//m_rtManager.updateUniformBuffers(timer, &camera);
+		//m_pathTracerManager->updateUniformBuffers(timer, &camera);
 	}
 
 	void RTFilterDemo::OnUpdateUIOverlay(vks::UIOverlay* overlay)
@@ -220,7 +295,7 @@ namespace rtf
 		}
 
 		//Ray tracing destructors
-		m_rtManager.cleanup();
+		//m_rtManager.cleanup();
 	}
 
 #pragma endregion

@@ -141,6 +141,8 @@ namespace rtf
 		//subpass.colorAttachmentCount = static_cast<uint32_t>(colorReferences.size());
 		subpass.pInputAttachments = colorReferences.data();
 		subpass.inputAttachmentCount = static_cast<uint32_t>(colorReferences.size());
+		subpass.pInputAttachments = nullptr;
+		subpass.inputAttachmentCount = 0;
 
 		// Use subpass dependencies for attachment layout transitions
 		std::array<VkSubpassDependency, 2> dependencies;
