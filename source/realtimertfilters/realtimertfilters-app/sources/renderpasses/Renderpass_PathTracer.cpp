@@ -275,7 +275,6 @@ namespace rtf
 
 		// Init Push Constant
 		m_pushConstant.clearColor = glm::vec4{ 0.0f, 0.0f, 0.0f, 0.0f };
-		m_pushConstant.lightPosition = glm::vec3{ 0.f, 4.5f, 0.f };
 		m_pushConstant.lightIntensity = 10.0f;
 		m_pushConstant.frame = 0;
 		m_pushConstant.samples = 2;

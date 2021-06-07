@@ -59,7 +59,6 @@ namespace rtf
 
 		struct PushConstant{
 			glm::vec4	  clearColor;
-			glm::vec3	  lightPosition;
 			float         lightIntensity;
 			int           lightType; // -1: off, 0: point, 1: infinite
 			int           frame;
