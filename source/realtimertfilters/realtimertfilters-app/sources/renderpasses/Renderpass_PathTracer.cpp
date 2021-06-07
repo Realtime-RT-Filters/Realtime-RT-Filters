@@ -582,8 +582,8 @@ namespace rtf
 		// Recreate image
 		//createStorageImage(m_swapChain->colorFormat, { width, height, 1 });
 		// Update descriptor
-		VkDescriptorImageInfo storageImageDescriptor{ VK_NULL_HANDLE, m_storageImage.view, VK_IMAGE_LAYOUT_GENERAL };
-		VkWriteDescriptorSet resultImageWrite = vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &storageImageDescriptor);
+		VkDescriptorImageInfo storageImageDescriptor{ VK_NULL_HANDLE, m_Rtoutput->view, VK_IMAGE_LAYOUT_GENERAL };
+		VkWriteDescriptorSet resultImageWrite = vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, B_IMAGE, &storageImageDescriptor);
 		vkUpdateDescriptorSets(m_vulkanDevice->logicalDevice, 1, &resultImageWrite, 0, VK_NULL_HANDLE);
 	}
 
@@ -621,9 +621,11 @@ namespace rtf
 			height,
 			1);
 		vkEndCommandBuffer(m_commandBuffer);
+
+
 		// Prepare ray tracing output image as transfer source
 		//vks::tools::setImageLayout(
-		//	commandBuffer,
+		//	m_commandBuffer,
 		//	m_storageImage.image,
 		//	VK_IMAGE_LAYOUT_GENERAL,
 		//	VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -666,11 +668,11 @@ namespace rtf
 	void RenderpassPathTracer::createStorageImage(VkFormat format, VkExtent3D extent)
 	{
 		// Release ressources if image is to be recreated
-		if (m_storageImage.image != VK_NULL_HANDLE) {
-			vkDestroyImageView(m_vulkanDevice->logicalDevice, m_storageImage.view, nullptr);
-			vkDestroyImage(m_vulkanDevice->logicalDevice, m_storageImage.image, nullptr);
-			vkFreeMemory(m_vulkanDevice->logicalDevice, m_storageImage.memory, nullptr);
-			m_storageImage = {};
+		if (m_Rtoutput->image != VK_NULL_HANDLE) {
+			vkDestroyImageView(m_vulkanDevice->logicalDevice, m_Rtoutput->view, nullptr);
+			vkDestroyImage(m_vulkanDevice->logicalDevice, m_Rtoutput->image, nullptr);
+			vkFreeMemory(m_vulkanDevice->logicalDevice, m_Rtoutput->mem, nullptr);
+			m_Rtoutput = nullptr;
 		}
 
 		VkImageCreateInfo image = vks::initializers::imageCreateInfo();
@@ -683,15 +685,15 @@ namespace rtf
 		image.tiling = VK_IMAGE_TILING_OPTIMAL;
 		image.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 		image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		VK_CHECK_RESULT(vkCreateImage(m_vulkanDevice->logicalDevice, &image, nullptr, &m_storageImage.image));
+		VK_CHECK_RESULT(vkCreateImage(m_vulkanDevice->logicalDevice, &image, nullptr, &m_Rtoutput->image));
 
 		VkMemoryRequirements memReqs;
-		vkGetImageMemoryRequirements(m_vulkanDevice->logicalDevice, m_storageImage.image, &memReqs);
+		vkGetImageMemoryRequirements(m_vulkanDevice->logicalDevice, m_Rtoutput->image, &memReqs);
 		VkMemoryAllocateInfo memoryAllocateInfo = vks::initializers::memoryAllocateInfo();
 		memoryAllocateInfo.allocationSize = memReqs.size;
 		memoryAllocateInfo.memoryTypeIndex = m_vulkanDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-		VK_CHECK_RESULT(vkAllocateMemory(m_vulkanDevice->logicalDevice, &memoryAllocateInfo, nullptr, &m_storageImage.memory));
-		VK_CHECK_RESULT(vkBindImageMemory(m_vulkanDevice->logicalDevice, m_storageImage.image, m_storageImage.memory, 0));
+		VK_CHECK_RESULT(vkAllocateMemory(m_vulkanDevice->logicalDevice, &memoryAllocateInfo, nullptr, &m_Rtoutput->mem));
+		VK_CHECK_RESULT(vkBindImageMemory(m_vulkanDevice->logicalDevice, m_Rtoutput->image, m_Rtoutput->mem, 0));
 
 		VkImageViewCreateInfo colorImageView = vks::initializers::imageViewCreateInfo();
 		colorImageView.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -702,11 +704,11 @@ namespace rtf
 		colorImageView.subresourceRange.levelCount = 1;
 		colorImageView.subresourceRange.baseArrayLayer = 0;
 		colorImageView.subresourceRange.layerCount = 1;
-		colorImageView.image = m_storageImage.image;
-		VK_CHECK_RESULT(vkCreateImageView(m_vulkanDevice->logicalDevice, &colorImageView, nullptr, &m_storageImage.view));
+		colorImageView.image = m_Rtoutput->image;
+		VK_CHECK_RESULT(vkCreateImageView(m_vulkanDevice->logicalDevice, &colorImageView, nullptr, &m_Rtoutput->view));
 
 		VkCommandBuffer cmdBuffer = m_vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
-		vks::tools::setImageLayout(cmdBuffer, m_storageImage.image,
+		vks::tools::setImageLayout(cmdBuffer, m_Rtoutput->image,
 			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_GENERAL,
 			{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
@@ -715,9 +717,9 @@ namespace rtf
 
 	void RenderpassPathTracer::deleteStorageImage()
 	{
-		vkDestroyImageView(m_vulkanDevice->logicalDevice, m_storageImage.view, nullptr);
-		vkDestroyImage(m_vulkanDevice->logicalDevice, m_storageImage.image, nullptr);
-		vkFreeMemory(m_vulkanDevice->logicalDevice, m_storageImage.memory, nullptr);
+		vkDestroyImageView(m_vulkanDevice->logicalDevice, m_Rtoutput->view, nullptr);
+		vkDestroyImage(m_vulkanDevice->logicalDevice, m_Rtoutput->image, nullptr);
+		vkFreeMemory(m_vulkanDevice->logicalDevice, m_Rtoutput->mem, nullptr);
 	}
 	
 }

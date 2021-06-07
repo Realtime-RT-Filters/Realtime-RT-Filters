@@ -36,12 +36,12 @@ namespace rtf
 			VkBuffer buffer;
 		}m_bottomLevelAS, m_topLevelAS;
 
-		struct StorageImage {
-			VkDeviceMemory memory = VK_NULL_HANDLE;
-			VkImage image = VK_NULL_HANDLE;
-			VkImageView view = VK_NULL_HANDLE;
-			VkFormat format;
-		}m_storageImage;
+		//struct StorageImage {
+		//	VkDeviceMemory memory = VK_NULL_HANDLE;
+		//	VkImage image = VK_NULL_HANDLE;
+		//	VkImageView view = VK_NULL_HANDLE;
+		//	VkFormat format;
+		//}m_storageImage;
 
 		struct ShaderBindingTables {
 			ShaderBindingTable raygen;
