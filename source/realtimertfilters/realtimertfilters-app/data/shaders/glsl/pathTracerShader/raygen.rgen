@@ -34,12 +34,11 @@ pushC;
 
 void main() 
 {
-
   // Initialize the random number
   vec3 hitValue  = vec3(0);
 
   // Send sampels
-  for (int smpl = 0; smpl < 20; smpl++)
+  for (int smpl = 0; smpl < pushC.samples; smpl++)
   {
 	// // seed for Random Values
     uint seed = tea(gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x, pushC.frame * pushC.samples + smpl);
@@ -56,7 +55,6 @@ void main()
     prd.depth        = 0;
     prd.normal       = vec3(0.0f);
     prd.albedo       = vec3(0.0f);
-    prd.radiance     =  vec3(0.0f);
 
     uint rayFlags     = gl_RayFlagsOpaqueEXT;
     uint cullMask     = 0xff;
@@ -64,15 +62,15 @@ void main()
     float tmax        = 10000.0;
 
     traceRayEXT(topLevelAS,            // acceleration structure
-                rayFlags,  // rayFlags
-                cullMask,                  // cullMask
+                rayFlags,               // rayFlags
+                cullMask,              // cullMask
                 0,                     // sbtRecordOffset
                 0,                     // sbtRecordStride
                 0,                     // missIndex
                 origin.xyz,            // ray origin
-                tmin,                 // ray min range
+                tmin,                  // ray min range
                 direction.xyz,         // ray direction
-                tmax,               // ray max range
+                tmax,                 // ray max range
                 0                      // payload (location = 0)
     );
     hitValue += prd.radiance;
@@ -80,5 +78,7 @@ void main()
   // Result
   hitValue /= pushC.samples;
   // imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(hitValue, 0.0));
-  imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(prd.albedo, 0.0));
+  // vec4 red = vec4(1,0,0,0);
+  // imageStore(image, ivec2(gl_LaunchIDEXT.xy), red);
+  imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(hitValue, 0.5f));
 }

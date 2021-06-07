@@ -583,7 +583,7 @@ namespace rtf
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, 0);
 
 		//upload the matrix to the GPU via pushconstants
-		vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstant), &m_pushConstant);
+		vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(PushConstant), &m_pushConstant);
 
 		VkStridedDeviceAddressRegionKHR emptySbtEntry = {};
 		vkCmdTraceRaysKHR(

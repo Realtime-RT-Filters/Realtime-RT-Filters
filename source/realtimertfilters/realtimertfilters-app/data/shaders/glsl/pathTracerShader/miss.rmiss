@@ -6,8 +6,6 @@ layout(location = 0) rayPayloadInEXT hitPayload prd;
 
 void main()
 {
-  // prd.radiance = vec3(0);
-  // prd.depth    = 100;
-  // prd.albedo = vec3(1,0,0);
-  prd.albedo = vec3(0,  0,  0.2);
+  prd.radiance = vec3(0); // Not light -> Black
+  prd.depth    = 100; // no recursive calc. anymore
 }

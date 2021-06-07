@@ -38,7 +38,7 @@ layout(push_constant) uniform Constants
   int   lightType;
   int   frame;
   int   samples;
-  int   maxBounces;
+  int   bounces;
   int   bounceSamples;
   float temporalAlpha;
 }
@@ -77,10 +77,6 @@ Vertex getVertex(uint index){
   return v;
 }
 
-bool isBouncingFinished(){
-  return prd.depth > pushC.maxBounces;
-}
-
 void initGeometryHitPoint(GeometryHitPoint hitpoint){
   // Index of vertices
   ivec3 index = ivec3(indices.i[3 * gl_PrimitiveID], indices.i[3 * gl_PrimitiveID + 1], indices.i[3 * gl_PrimitiveID + 2]);
@@ -109,7 +105,7 @@ vec3 getAlbedoColorOfMesh(){
 vec3 calculateIndirectLight(GeometryHitPoint hitpoint){
   vec3 attenuation = prd.attenuation * getAlbedoColorOfMesh() / M_PI;
   vec3 indirect = vec3(0);
-  { // indirect lighting
+  { 
     for(int i = 0; i < pushC.bounceSamples; i++)
     {
       vec3 origin = hitpoint.pos_world;
@@ -125,7 +121,7 @@ vec3 calculateIndirectLight(GeometryHitPoint hitpoint){
                   0.001,                 // ray min range
                   direction,             // ray direction
                   10000.0,               // ray max range
-                  0                      // payload (location = 0)
+                  0                      // payload (location = 0) prd
       );
       indirect += prd.radiance;
     }
@@ -169,7 +165,7 @@ vec3 calculateDirectLight(GeometryHitPoint hitpoint){
                   0.001,           // ray min range
                   L,               // ray direction
                   lightDistance,   // ray max range
-                  2                // payload (location = 1)
+                  2                // payload (location = 2) shadow
       );
       if(isShadowed)
       {
@@ -179,6 +175,10 @@ vec3 calculateDirectLight(GeometryHitPoint hitpoint){
     }
   }
   return direct;
+}
+
+bool isBouncingFinished(){
+  return prd.depth > pushC.bounces;
 }
 
 void main()
@@ -191,46 +191,27 @@ void main()
     return;
   }
   prd.depth++;
+  // Temporary vars
+  vec3 emittance = vec3(.1,0,0);
 
-  // hit point of geometry init  
+  // Hit point of geometry init  
   GeometryHitPoint hitpoint;
   initGeometryHitPoint(hitpoint);
 
-	// Basic lighting 
-	vec3 lightVector = normalize(ubo.lightPos.xyz);
-	float dot_product = max(dot(lightVector, hitpoint.normal), 0.2);
-	prd.albedo = getAlbedoColorOfMesh() * dot_product;
+  if(emittance != vec3(0))
+  {
+    prd.radiance = emittance;
+    prd.normal   = hitpoint.normal_world;
+    prd.albedo   = getAlbedoColorOfMesh();
+    return;
+  }
 
-  // Shadow casting
-	float tmin = 0.001;
-	float tmax = 10000.0;
-	vec3 origin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
-  
-  // vec3 indirectLight = calculateIndirectLight(hitpoint);
-  // vec3 directLight = calculateDirectLight(hitpoint);
+  vec3 attenuation = prd.attenuation *  prd.albedo  / M_PI;
 
-  // prd.radiance = (indirectLight + directLight) * 0.1;
-  // prd.normal   = hitpoint.normal_world;
-  // prd.albedo   = getAlbedoColorOfMesh();
-  // Test simple light
-	isShadowed = true;  
-  traceRayEXT(
-      topLevelAS,
-      gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT, 
-      0xFF, 
-      1, 
-      0, 
-      1, 
-      origin, 
-      tmin, 
-      lightVector, 
-      tmax, 
-      2
-      );
-	if (isShadowed) {
-			prd.albedo  *= 0.3;
-	}
+  vec3 indirectLight = calculateIndirectLight(hitpoint);
+  vec3 directLight = calculateDirectLight(hitpoint);
 
-
-
+  prd.radiance = (indirectLight + directLight) * attenuation;
+  prd.normal   = hitpoint.normal_world;
+  prd.albedo   = getAlbedoColorOfMesh();
 }
