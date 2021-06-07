@@ -8,6 +8,7 @@ namespace rtf
 	{
 		// Init push Constant
 		initData();
+		prepareAttachement();
 
 		// Get the function pointers required for ray tracing
 		vkGetBufferDeviceAddressKHR = reinterpret_cast<PFN_vkGetBufferDeviceAddressKHR>(vkGetDeviceProcAddr(m_vulkanDevice->logicalDevice, "vkGetBufferDeviceAddressKHR"));
@@ -161,6 +162,60 @@ namespace rtf
 		VK_CHECK_RESULT(vkCreateRayTracingPipelinesKHR(m_vulkanDevice->logicalDevice, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &rayTracingPipelineCI, nullptr, &m_pipeline));
 	}
 
+	void RenderpassPathTracer::createDescriptorSets()
+	{
+		std::vector<VkDescriptorPoolSize> poolSizes = {
+			{ VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2 },
+			//{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 }
+		};
+		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = vks::initializers::descriptorPoolCreateInfo(poolSizes, 1);
+		VK_CHECK_RESULT(vkCreateDescriptorPool(m_vulkanDevice->logicalDevice, &descriptorPoolCreateInfo, nullptr, &m_descriptorPool));
+
+		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = vks::initializers::descriptorSetAllocateInfo(m_descriptorPool, &m_descriptorSetLayout, 1);
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(m_vulkanDevice->logicalDevice, &descriptorSetAllocateInfo, &m_descriptorSet));
+
+		VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelerationStructureInfo = vks::initializers::writeDescriptorSetAccelerationStructureKHR();
+		descriptorAccelerationStructureInfo.accelerationStructureCount = 1;
+		descriptorAccelerationStructureInfo.pAccelerationStructures = &m_topLevelAS.handle;
+
+		VkWriteDescriptorSet accelerationStructureWrite{};
+		accelerationStructureWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		// The specialized acceleration structure descriptor has to be chained
+		accelerationStructureWrite.pNext = &descriptorAccelerationStructureInfo;
+		accelerationStructureWrite.dstSet = m_descriptorSet;
+		accelerationStructureWrite.dstBinding = B_ACCELERATIONSTRUCTURE;
+		accelerationStructureWrite.descriptorCount = 1;
+		accelerationStructureWrite.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+
+		VkDescriptorImageInfo storageImageDescriptor{ VK_NULL_HANDLE, m_Rtoutput->view, VK_IMAGE_LAYOUT_GENERAL };
+		VkDescriptorBufferInfo vertexBufferDescriptor{ m_Scene->vertices.buffer, 0, VK_WHOLE_SIZE };
+		VkDescriptorBufferInfo indexBufferDescriptor{ m_Scene->indices.buffer, 0, VK_WHOLE_SIZE };
+		//VkDescriptorBufferInfo materialBufferDescriptor{ getMaterialBuffer(), 0, VK_WHOLE_SIZE };
+
+		std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
+			// Top level acceleration structure
+			accelerationStructureWrite,
+			// Ray tracing result image
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, B_IMAGE, &storageImageDescriptor),
+			// Uniform data
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, B_UBO, &m_uniformBufferObject.descriptor),
+			// Scene vertex buffer
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_VERTICES, &vertexBufferDescriptor),
+			// Scene index buffer
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_INDICES, &indexBufferDescriptor),
+			// Material 
+			//vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_MATERIALS, &m_Scene->materials.data()->descriptor, m_Scene->materials.size()),
+			// Textures
+			//vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, B_TEXTURES, &m_Scene->textures.data()->descriptor,2)
+		};
+		vkUpdateDescriptorSets(m_vulkanDevice->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
+	}
+
+
+
 	void RenderpassPathTracer::createShaderBindingTables()
 	{
 		const uint32_t handleSize = m_rtFilterDemo->rayTracingPipelineProperties.shaderGroupHandleSize;
@@ -225,6 +280,16 @@ namespace rtf
 		m_pushConstant.samples = 2;
 		m_pushConstant.bounces = 2;
 		m_pushConstant.bounceSamples = 2;
+	}
+
+	void RenderpassPathTracer::prepareAttachement() {
+		//m_position, * m_normal, * m_albedo, * m_motionvector, * m_rtoutput, * m_filteroutput;
+		m_PositionAttachment = m_attachmentManager->getAttachment(Attachment::position);
+		m_NormalAttachment = m_attachmentManager->getAttachment(Attachment::normal);
+		m_AlbedoAttachment = m_attachmentManager->getAttachment(Attachment::albedo);
+		m_MotionAttachment = m_attachmentManager->getAttachment(Attachment::motionvector);
+		m_Rtoutput = m_attachmentManager->getAttachment(Attachment::rtoutput);
+		m_Filteroutput= m_attachmentManager->getAttachment(Attachment::filteroutput);
 	}
 
 	/*
@@ -461,58 +526,6 @@ namespace rtf
 
 		deleteScratchBuffer(scratchBuffer);
 		instancesBuffer.destroy();
-	}
-
-	void RenderpassPathTracer::createDescriptorSets()
-	{
-		std::vector<VkDescriptorPoolSize> poolSizes = {
-			{ VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1 },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2 },
-			//{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 }
-		};
-		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = vks::initializers::descriptorPoolCreateInfo(poolSizes, 1);
-		VK_CHECK_RESULT(vkCreateDescriptorPool(m_vulkanDevice->logicalDevice, &descriptorPoolCreateInfo, nullptr, &m_descriptorPool));
-
-		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = vks::initializers::descriptorSetAllocateInfo(m_descriptorPool, &m_descriptorSetLayout, 1);
-		VK_CHECK_RESULT(vkAllocateDescriptorSets(m_vulkanDevice->logicalDevice, &descriptorSetAllocateInfo, &m_descriptorSet));
-
-		VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelerationStructureInfo = vks::initializers::writeDescriptorSetAccelerationStructureKHR();
-		descriptorAccelerationStructureInfo.accelerationStructureCount = 1;
-		descriptorAccelerationStructureInfo.pAccelerationStructures = &m_topLevelAS.handle;
-
-		VkWriteDescriptorSet accelerationStructureWrite{};
-		accelerationStructureWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		// The specialized acceleration structure descriptor has to be chained
-		accelerationStructureWrite.pNext = &descriptorAccelerationStructureInfo;
-		accelerationStructureWrite.dstSet = m_descriptorSet;
-		accelerationStructureWrite.dstBinding = B_ACCELERATIONSTRUCTURE;
-		accelerationStructureWrite.descriptorCount = 1;
-		accelerationStructureWrite.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-
-		VkDescriptorImageInfo storageImageDescriptor{ VK_NULL_HANDLE, m_storageImage.view, VK_IMAGE_LAYOUT_GENERAL };
-		VkDescriptorBufferInfo vertexBufferDescriptor{ m_Scene->vertices.buffer, 0, VK_WHOLE_SIZE };
-		VkDescriptorBufferInfo indexBufferDescriptor{ m_Scene->indices.buffer, 0, VK_WHOLE_SIZE };
-		//VkDescriptorBufferInfo materialBufferDescriptor{ getMaterialBuffer(), 0, VK_WHOLE_SIZE };
-
-		std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
-			// Top level acceleration structure
-			accelerationStructureWrite,
-			// Ray tracing result image
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, B_IMAGE, &storageImageDescriptor),
-			// Uniform data
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, B_UBO, &m_uniformBufferObject.descriptor),
-			// Scene vertex buffer
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_VERTICES, &vertexBufferDescriptor),
-			// Scene index buffer
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_INDICES, &indexBufferDescriptor),
-			// Material 
-			//vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_MATERIALS, &m_Scene->materials.data()->descriptor, m_Scene->materials.size()),
-			// Textures
-			//vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, B_TEXTURES, &m_Scene->textures.data()->descriptor,2)
-		};
-		vkUpdateDescriptorSets(m_vulkanDevice->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
 	}
 
 	void RenderpassPathTracer::createAccelerationStructure(AccelerationStructure& accelerationStructure, VkAccelerationStructureTypeKHR type, VkAccelerationStructureBuildSizesInfoKHR buildSizeInfo)

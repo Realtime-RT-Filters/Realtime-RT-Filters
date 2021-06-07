@@ -116,8 +116,8 @@ namespace rtf
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_BMFR));
 
 		// Path Tracer Pass
-		m_PT = std::make_shared<RenderpassPathTracer>();
-		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassPathTracer>(m_PT));
+		m_RP_PT = std::make_shared<RenderpassPathTracer>();
+		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassPathTracer>(m_RP_PT));
 		
 		// SET RTFILTERDEMO AND PREPARE RENDERPASSES
 		for (auto& renderpass : m_AllRenderpasses)

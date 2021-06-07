@@ -23,6 +23,7 @@ namespace rtf
 	protected:
 		// Init 
 		void initData();
+		void prepareAttachement();
 		
 		// Build
 		void buildCommandBuffer(VkCommandBuffer commandBuffer, VkImage swapchainImage, uint32_t width, uint32_t height);
@@ -47,13 +48,13 @@ namespace rtf
 
 		// Helper 
 		VkStridedDeviceAddressRegionKHR getSbtEntryStridedDeviceAddressRegion(VkBuffer, uint32_t);
-		void enableExtensions(std::vector<const char*>& enabledDeviceExtensions);
 		//VkPhysicalDeviceAccelerationStructureFeaturesKHR* getEnabledFeatures();
 		void handleResize(uint32_t width, uint32_t height);
 		uint64_t getBufferDeviceAddress(VkBuffer buffer);
 
 	private:
-		FrameBufferAttachment* m_position, * m_normal, * m_albedo, * m_motionvector, * m_rtoutput, * m_filteroutput;
+		FrameBufferAttachment* m_PositionAttachment, * m_NormalAttachment, * m_AlbedoAttachment, * m_MotionAttachment, * m_Rtoutput, * m_Filteroutput;
+
 		float m_timer{};
 	};
 }
