@@ -168,7 +168,7 @@ namespace rtf
 		setupDefaultSampler();
 
 		//We create the Attachment manager
-		m_attachmentManager = new Attachment_Manager(&device, vulkanDevice, &physicalDevice, width, height);
+		m_attachmentManager = new Attachment_Manager(vulkanDevice, queue, width, height);
 
 		m_renderpassManager = new RenderpassManager();
 		m_renderpassManager->prepare(this, SEMAPHORE_COUNT);
