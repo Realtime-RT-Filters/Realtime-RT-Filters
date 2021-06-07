@@ -133,8 +133,6 @@ namespace rtf
 
 		std::wstring getShadersPathW();
 
-		bool rt_on = false;
-		bool path_tracer_on = false;
 		bool gui_rp_on = false;
 
 		VkPipelineShaderStageCreateInfo LoadShader(std::string shadername, VkShaderStageFlagBits stage);
