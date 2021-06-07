@@ -93,6 +93,7 @@ namespace rtf
 		m_RPG_PathtracerOnly->setAttachmentBindings({
 			GuiAttachmentBinding(Attachment::position, std::string("GBuffer::Position")),
 			GuiAttachmentBinding(Attachment::normal, std::string("GBuffer::Normal")),
+			GuiAttachmentBinding(Attachment::rtoutput, std::string("GBuffer::Rtoutput")),
 			GuiAttachmentBinding(Attachment::albedo, std::string("GBuffer::Albedo"))
 			});
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_PathtracerOnly));
@@ -144,7 +145,7 @@ namespace rtf
 		m_QT_PathtracerOnly->push_back(m_RP_GBuffer);
 
 		// TODO Add Pathtracer Renderpass
-
+		m_QT_PathtracerOnly->push_back(m_RP_PT);
 		m_QT_PathtracerOnly->push_back(m_RPG_PathtracerOnly);
 
 		// SVGF

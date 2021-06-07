@@ -14,10 +14,6 @@ namespace rtf
 		{
 			this->m_queue = queue;
 		}
-		void setSwapChain(VulkanSwapChain* chain)
-		{
-			this->m_swapChain = chain;
-		}
 
 	protected:
 		// ================ Struct types ================
@@ -78,7 +74,6 @@ namespace rtf
 		std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroups{};
 
 		VkQueue m_queue{};
-		VulkanSwapChain* m_swapChain{};
 		Camera* m_camera{};
 		// set via setter after scene loaded
 		vkglTF::Model* m_Scene{};

@@ -234,18 +234,7 @@ namespace rtf
 	{
 		if (!prepared)
 			return;
-
-		rt_on = debugDisplayTarget == 5;
-		path_tracer_on = debugDisplayTarget == 6;
-
 		VulkanExampleBase::prepareFrame();
-		if (rt_on || path_tracer_on)
-		{
-			// command buffers are built differently for rt.
-			submitInfo.commandBufferCount = 1;
-			submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
-			VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-		}
 		// submit the renderpasses one after another
 		m_renderpassManager->draw(drawCmdBuffers[currentBuffer]);
 		VulkanExampleBase::submitFrame();
