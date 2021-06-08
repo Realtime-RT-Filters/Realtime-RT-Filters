@@ -58,13 +58,13 @@ namespace rtf
 		vks::Buffer m_uniformBufferObject{};
 
 		struct PushConstant{
-			glm::vec4	  clearColor;
-			float         lightIntensity;
-			int           lightType; // -1: off, 0: point, 1: infinite
-			int           frame;
-			int           samples;
-			int           bounces;
-			int           bounceSamples;
+			glm::vec4	  clearColor = glm::vec4(0.0);
+			float         lightIntensity = 15.f;
+			int           lightType = 0; // -1: off, 0: point, 1: infinite
+			int           frame = 0;
+			int           samples = 1;
+			int           bounces = 3;
+			int           bounceSamples = 1;
 		}m_pushConstant;
 
 		// ================ Struct types END ================

@@ -26,7 +26,7 @@ namespace rtf
 		void prepareAttachement();
 		
 		// Build
-		void buildCommandBuffer( uint32_t width, uint32_t height);
+		void buildCommandBuffer();
 		
 		// Create Methods
 		void createStorageImage(VkFormat format, VkExtent3D extent);
@@ -46,6 +46,8 @@ namespace rtf
 		void deleteScratchBuffer(ScratchBuffer&);
 		void deleteAccelerationStructure(AccelerationStructure&);
 
+		void updatePushConstants();
+
 		// Helper 
 		VkStridedDeviceAddressRegionKHR getSbtEntryStridedDeviceAddressRegion(VkBuffer, uint32_t);
 		//VkPhysicalDeviceAccelerationStructureFeaturesKHR* getEnabledFeatures();
@@ -55,7 +57,7 @@ namespace rtf
 	private:
 		FrameBufferAttachment* m_PositionAttachment, * m_NormalAttachment, * m_AlbedoAttachment, * m_MotionAttachment, * m_Rtoutput, * m_Filteroutput;
 		float m_timer{};
-		VkCommandBuffer m_commandBuffer;
+		VkCommandBuffer m_commandBuffer{};
 	};
 }
 

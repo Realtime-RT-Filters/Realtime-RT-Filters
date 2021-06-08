@@ -31,10 +31,11 @@ namespace rtf
 		createRayTracingPipeline();
 		createShaderBindingTables();
 		createDescriptorSets();
-		buildCommandBuffer(m_rtFilterDemo->width, m_rtFilterDemo->height);
+		buildCommandBuffer();
 	}
 
 	void RenderpassPathTracer::draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount) {
+		buildCommandBuffer();
 		out_commandBufferCount = 1;
 		out_commandBuffers = &m_commandBuffer;
 	}
@@ -70,6 +71,18 @@ namespace rtf
 		vkFreeMemory(m_vulkanDevice->logicalDevice, accelerationStructure.memory, nullptr);
 		vkDestroyBuffer(m_vulkanDevice->logicalDevice, accelerationStructure.buffer, nullptr);
 		vkDestroyAccelerationStructureKHR(m_vulkanDevice->logicalDevice, accelerationStructure.handle, nullptr);
+	}
+
+	void RenderpassPathTracer::updatePushConstants()
+	{
+		uint32_t frameNumber = m_rtFilterDemo->frameCounter;
+		//m_pushConstant.clearColor;
+		//m_pushConstant.lightIntensity;
+		//m_pushConstant.lightType;
+		m_pushConstant.frame = frameNumber;
+		//m_pushConstant.samples;
+		//m_pushConstant.bounces;
+		//m_pushConstant.bounceSamples;
 	}
 
 	void RenderpassPathTracer::createRayTracingPipeline() {
@@ -279,7 +292,7 @@ namespace rtf
 		m_pushConstant.frame = 0;
 		m_pushConstant.samples = 2;
 		m_pushConstant.bounces = 2;
-		m_pushConstant.bounceSamples = 2;
+		m_pushConstant.bounceSamples = 1;
 	}
 
 	void RenderpassPathTracer::prepareAttachement() {
@@ -586,9 +599,12 @@ namespace rtf
 		vkUpdateDescriptorSets(m_vulkanDevice->logicalDevice, 1, &resultImageWrite, 0, VK_NULL_HANDLE);
 	}
 
-	void RenderpassPathTracer::buildCommandBuffer(uint32_t width, uint32_t height)
+	void RenderpassPathTracer::buildCommandBuffer()
 	{
-		m_commandBuffer = m_vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, false);
+		if (m_commandBuffer == nullptr)
+		{
+			m_commandBuffer = m_vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, false);
+		}
 		/*
 			Dispatch the ray tracing commands
 		*/
@@ -616,43 +632,10 @@ namespace rtf
 			&m_shaderBindingTables.miss.stridedDeviceAddressRegion,
 			&m_shaderBindingTables.hit.stridedDeviceAddressRegion,
 			&emptySbtEntry,
-			width,
-			height,
+			m_rtFilterDemo->width,
+			m_rtFilterDemo->height,
 			1);
 		vkEndCommandBuffer(m_commandBuffer);
-
-
-		// Prepare ray tracing output image as transfer source
-		//vks::tools::setImageLayout(
-		//	m_commandBuffer,
-		//	m_storageImage.image,
-		//	VK_IMAGE_LAYOUT_GENERAL,
-		//	VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-		//	subresourceRange);
-
-	/*	VkImageCopy copyRegion{};
-		copyRegion.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
-		copyRegion.srcOffset = { 0, 0, 0 };
-		copyRegion.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
-		copyRegion.dstOffset = { 0, 0, 0 };
-		copyRegion.extent = { width, height, 1 };*/
-		//vkCmdCopyImage(m_commandBuffer, m_Rtoutput->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapchainImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
-
-		// Transition swap chain image back for presentation
-	/*	vks::tools::setImageLayout(
-			commandBuffer,
-			swapchainImage,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-			subresourceRange);*/
-
-		// Transition ray tracing output image back to general layout
-		/*vks::tools::setImageLayout(
-			commandBuffer,
-			m_storageImage.image,
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			VK_IMAGE_LAYOUT_GENERAL,
-			subresourceRange);*/
 	}
 
 
