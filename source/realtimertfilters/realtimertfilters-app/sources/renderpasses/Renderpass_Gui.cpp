@@ -167,6 +167,9 @@ namespace rtf
 
 		m_composition_ubo.debugDisplayTarget = *m_debugDisplayTarget;
 
+		m_composition_ubo.enableComposition = (m_enableComposition) ?  1 : 0;
+
+
 		memcpy(m_composition_UBO_buffer.mapped, &m_composition_ubo, sizeof(m_composition_ubo));
 	}
 
@@ -320,7 +323,10 @@ namespace rtf
 		m_attachments = attachmentBindings;
 		m_dropoutOptions.clear();
 		m_dropoutOptions.reserve(m_attachments.size() + 1);
-		m_dropoutOptions.push_back("Rasterization Composed");
+		if (m_enableComposition)
+		{
+			m_dropoutOptions.push_back("Rasterization Composed");
+		}
 		for (auto& attachment : m_attachments)
 		{
 			m_dropoutOptions.push_back(attachment.m_Displayname);

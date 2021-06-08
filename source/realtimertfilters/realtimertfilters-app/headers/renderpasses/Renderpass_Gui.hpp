@@ -28,6 +28,8 @@ namespace rtf
 	/// </summary>
     class RenderpassGui : public Renderpass
 	{
+	public:
+		bool m_enableComposition = true;
 	protected:
 
 		std::vector<GuiAttachmentBinding> m_attachments{};
@@ -58,6 +60,7 @@ namespace rtf
 			Light lights[6]{};
 			glm::vec4 viewPos{};
 			int debugDisplayTarget = 0;
+			int enableComposition = 0;
 		} m_composition_ubo;
 
 		vks::Buffer m_composition_UBO_buffer;

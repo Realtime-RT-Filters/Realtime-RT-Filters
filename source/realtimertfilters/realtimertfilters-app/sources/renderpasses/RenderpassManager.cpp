@@ -90,10 +90,9 @@ namespace rtf
 
 		// GUI Pass (PathtracerOnly)
 		m_RPG_PathtracerOnly = std::make_shared<RenderpassGui>();
+		m_RPG_PathtracerOnly->m_enableComposition = false;
 		m_RPG_PathtracerOnly->setAttachmentBindings({
-			GuiAttachmentBinding(Attachment::position, std::string("GBuffer::Position")),
-			GuiAttachmentBinding(Attachment::normal, std::string("GBuffer::Normal")),
-			GuiAttachmentBinding(Attachment::rtoutput, std::string("GBuffer::Rtoutput")),
+			GuiAttachmentBinding(Attachment::rtoutput, std::string("RT Output")),
 			GuiAttachmentBinding(Attachment::albedo, std::string("GBuffer::Albedo"))
 			});
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_PathtracerOnly));

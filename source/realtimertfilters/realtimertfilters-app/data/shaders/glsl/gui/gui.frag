@@ -15,6 +15,7 @@ layout (set = 0, binding = 2) uniform UBO
 	Light lights[6];
 	vec4 viewPos;
 	int displayDebugTarget;
+	int enableComposition;
 } ubo;
 
 layout (location = 0) in vec2 inUV;
@@ -22,6 +23,12 @@ layout (location = 0) out vec4 outFragcolor;
 
 void main() 
 {
+	if (ubo.enableComposition <= 0)
+	{
+		outFragcolor.xyz = texture(attachments[ubo.displayDebugTarget], inUV).xyz;
+		outFragcolor.a = 1.0;
+		return;
+	}
 	// Debug display
 	if (ubo.displayDebugTarget > 0) {
 		outFragcolor.xyz = texture(attachments[ubo.displayDebugTarget - 1], inUV).xyz;
