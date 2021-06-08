@@ -110,7 +110,7 @@ namespace rtf
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			&m_composition_UBO_buffer,
-			sizeof(m_composition_UBO_buffer)));
+			sizeof(m_composition_ubo)));
 
 		// Map persistent
 		//VK_CHECK_RESULT(uniformBuffers.offscreen.map());
@@ -171,6 +171,7 @@ namespace rtf
 
 
 		memcpy(m_composition_UBO_buffer.mapped, &m_composition_ubo, sizeof(m_composition_ubo));
+
 	}
 
 	void RenderpassGui::setupDescriptorSetLayout()
