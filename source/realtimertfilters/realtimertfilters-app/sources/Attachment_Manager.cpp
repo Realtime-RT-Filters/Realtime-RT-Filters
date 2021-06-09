@@ -28,7 +28,7 @@ namespace rtf
 		VkFormat attDepthFormat;
 		VkBool32 validDepthFormat = vks::tools::getSupportedDepthFormat(m_vulkanDevice->physicalDevice, &attDepthFormat);
 		assert(validDepthFormat);
-		m_attachmentTypes[(int)Attachment::depth].m_Format = attDepthFormat;
+		//m_attachmentTypes[(int)Attachment::depth].m_Format = attDepthFormat;
 
 		for (int idx = 0; idx < m_maxAttachmentSize; idx++)
 		{
@@ -73,7 +73,7 @@ namespace rtf
 		}
 		if (initInfo.m_UsageFlags & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
 		{
-			aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+			aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT /*| VK_IMAGE_ASPECT_STENCIL_BIT*/;
 		}
 
 		assert(aspectMask > 0);

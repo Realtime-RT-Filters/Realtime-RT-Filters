@@ -116,6 +116,7 @@ namespace rtf
 		enabledPhysicalDeviceVulkan12Features.bufferDeviceAddress = VK_TRUE;
 		enabledPhysicalDeviceVulkan12Features.descriptorIndexing = VK_TRUE;
 		enabledPhysicalDeviceVulkan12Features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+		enabledPhysicalDeviceVulkan12Features.separateDepthStencilLayouts = VK_TRUE;
 		enabledPhysicalDeviceVulkan12Features.pNext = nullptr;
 
 		if (rayTracingPipelineFeatures.rayTracingPipeline != VK_TRUE)

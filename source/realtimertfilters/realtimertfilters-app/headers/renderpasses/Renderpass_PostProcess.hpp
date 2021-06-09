@@ -3,33 +3,33 @@
 
 #include "Renderpass.hpp"
 #include "../Attachment_Manager.hpp"
+#include "../AttachmentBinding.hpp"
+#include "../ManagedUBO.hpp"
 
 namespace rtf
 {
+
 	class RenderpassPostProcess : public Renderpass
 	{
 	public:
-		enum class AttachmentUse
-		{
-			ReadOnly,
-			WriteOnly,
-			ReadWrite,
-		};
 
 		RenderpassPostProcess();
 
 		void ConfigureShader(const std::string& shadername);
-		void PushAttachment(FrameBufferAttachment* attachment, AttachmentUse use);
-		void PushAttachment(FrameBufferAttachment* attachment, AttachmentUse use, VkImageLayout initialLayout, VkImageLayout finalLayout);
+		void PushAttachment(const AttachmentBinding& attachmentbinding);
+		void PushUBO(UBOPtr& ubo);
 
 		virtual void prepare() override;
 		virtual void draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount) override;
 		virtual void cleanUp() override;
 
-		class StaticsContainer 
+		/// <summary>
+		/// Manages static information to be used by all postprocess renderpasses
+		/// </summary>
+		class StaticsContainer
 		{
 		public:
-			VkSampler m_ColorSampler_Standard = nullptr;
+			VkSampler m_ColorSampler_Direct = nullptr;
 			VkSampler m_ColorSampler_Normalized = nullptr;
 			VkPipelineShaderStageCreateInfo m_VertexPassthroughShader{};
 			VkPipelineCache m_PipelineCache = nullptr;
@@ -47,22 +47,20 @@ namespace rtf
 		bool m_IsPrepared = false;
 
 		std::string m_Shadername;
-		struct AttachmentContainer
-		{
-		public:
-			FrameBufferAttachment* m_Attachment;
-			AttachmentUse m_Use;
-			VkImageLayout m_InitialLayout;
-			VkImageLayout m_FinalLayout;
-		};
-		std::vector<AttachmentContainer> m_Attachments{};
-		size_t m_CombinedAttachmentCount = 0;
+		std::vector<AttachmentBinding> m_AttachmentBindings{};
+		inline size_t getAttachmentCount() { return m_AttachmentBindings.size(); }
+
 
 		StaticsContainer* Statics = nullptr;
 
 		VkFramebuffer m_Framebuffer = nullptr;
-		VkDescriptorSet m_AttachmentDescriptorSet = nullptr;
 		VkCommandBuffer m_CmdBuffer = nullptr;
+
+		// [0] = Attachments/Storage Images, [1] = UBOs
+		uint32_t DESCRIPTORSET_IMAGES = 0;
+		uint32_t DESCRIPTORSET_UBOS = 1;
+		VkDescriptorSetLayout m_descriptorSetLayouts[2]{};
+		VkDescriptorSet m_descriptorSets[2]{};
 
 		struct PushConstantsContainer
 		{
@@ -71,12 +69,17 @@ namespace rtf
 		};
 		PushConstantsContainer m_PushConstants{};
 
+		virtual bool preprocessAttachmentBindings();
 		virtual void createRenderPass();
 		virtual void setupDescriptorSetLayout();
 		virtual void setupDescriptorSet();
 		virtual void setupPipeline();
 		virtual void setupFramebuffer();
 		virtual void buildCommandBuffer();
+
+		std::vector<UBOPtr> m_UBOs{};
+		inline size_t getUboCount() { return m_UBOs.size(); }
+
 	};
 }
 

@@ -8,8 +8,31 @@
 
 namespace rtf
 {
+	class UBOInterface
+	{
+	public:
+		virtual void	prepare() = 0;
+		virtual void	update() = 0;
+		virtual void	destroy() = 0;
+		virtual size_t	getUBOSize() const = 0;
+		virtual void*	getUBOData() = 0;
+
+		virtual void writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t binding, VkWriteDescriptorSet& dest) const = 0;
+		virtual VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t binding) const = 0;
+
+		template<typename T_UBO>
+		T_UBO& getUBO() 
+		{ 
+			assert(sizeof(T_UBO) == getUBOSize());
+			T_UBO* data = reinterpret_cast<T_UBO*>(getUBOData()); 
+			return *data;
+		}
+	};
+
+	using UBOPtr = std::shared_ptr<UBOInterface>;
+
 	template<typename T_UBO>
-	class ManagedUBO
+	class ManagedUBO : public UBOInterface
 	{
 	protected:
 		vks::VulkanDevice* m_vulkanDevice;
@@ -27,12 +50,14 @@ namespace rtf
 
 		inline T_UBO& UBO() { return m_UBO; }
 
-		inline virtual void prepare();
-		inline virtual void update();
-		inline virtual void destroy();
+		inline virtual void prepare() override;
+		inline virtual void update() override;
+		inline virtual void destroy() override;
+		inline virtual size_t getUBOSize() const override;
+		inline virtual void* getUBOData() override;
 
-		inline virtual void writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t binding, VkWriteDescriptorSet& dest);
-		inline virtual VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t binding);
+		inline virtual void writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t binding, VkWriteDescriptorSet& dest) const override;
+		inline virtual VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t binding) const override;
 	};
 
 	using UBO_SceneInfo = ManagedUBO<S_Sceneinfo>::Ptr;
@@ -73,7 +98,17 @@ namespace rtf
 		m_buffer.destroy();
 	}
 	template<typename T_UBO>
-	inline void ManagedUBO<T_UBO>::writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t binding, VkWriteDescriptorSet& dest)
+	inline size_t ManagedUBO<T_UBO>::getUBOSize() const
+	{
+		return sizeof(T_UBO);
+	}
+	template<typename T_UBO>
+	inline void* ManagedUBO<T_UBO>::getUBOData()
+	{
+		return &m_UBO;
+	}
+	template<typename T_UBO>
+	inline void ManagedUBO<T_UBO>::writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t binding, VkWriteDescriptorSet& dest) const
 	{
 		dest.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		dest.dstSet = descriptorSet;
@@ -83,7 +118,7 @@ namespace rtf
 		dest.descriptorCount = 1;
 	}
 	template<typename T_UBO>
-	inline VkWriteDescriptorSet ManagedUBO<T_UBO>::writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t binding)
+	inline VkWriteDescriptorSet ManagedUBO<T_UBO>::writeDescriptorSet(VkDescriptorSet descriptorSet, uint32_t binding) const
 	{
 		VkWriteDescriptorSet result{};
 		writeDescriptorSet(descriptorSet, binding, result);

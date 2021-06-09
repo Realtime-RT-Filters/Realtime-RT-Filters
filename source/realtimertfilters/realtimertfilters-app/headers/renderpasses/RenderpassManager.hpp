@@ -33,8 +33,11 @@ namespace rtf
 
 		std::shared_ptr<RenderpassGbuffer> m_RP_GBuffer{};
 		std::shared_ptr<RenderpassGui> m_RP_Gui{};
+		std::shared_ptr<RenderpassPathTracer> m_PT{};
+		
 		std::shared_ptr<RenderpassPostProcess> m_RPF_Gauss{};
 		std::shared_ptr<RenderpassPathTracer> m_RP_PT{};
+		std::shared_ptr<RenderpassPostProcess> m_RPF_DepthTest{};
 
 		std::shared_ptr<RenderpassGui> m_RPG_RasterOnly{};
 		std::shared_ptr<RenderpassGui> m_RPG_PathtracerOnly{};

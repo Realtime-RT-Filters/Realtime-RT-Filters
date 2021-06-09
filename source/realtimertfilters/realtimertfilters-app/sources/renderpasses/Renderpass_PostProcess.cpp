@@ -8,7 +8,8 @@ namespace rtf
 	uint32_t InstanceCount;
 
 	RenderpassPostProcess::RenderpassPostProcess()
-	{}
+	{
+	}
 
 #pragma region Configuration
 
@@ -17,24 +18,14 @@ namespace rtf
 		m_Shadername = shadername;
 	}
 
-	void RenderpassPostProcess::PushAttachment(FrameBufferAttachment* attachment, AttachmentUse use)
+	void RenderpassPostProcess::PushAttachment(const AttachmentBinding& attachmentbinding)
 	{
-		m_Attachments.push_back(AttachmentContainer{ 
-			attachment, 
-			use, 
-			VkImageLayout::VK_IMAGE_LAYOUT_GENERAL, 
-			VkImageLayout::VK_IMAGE_LAYOUT_GENERAL, 
-		});
+		m_AttachmentBindings.push_back(attachmentbinding);
 	}
 
-	void RenderpassPostProcess::PushAttachment(FrameBufferAttachment* attachment, AttachmentUse use, VkImageLayout initialLayout, VkImageLayout finalLayout)
+	void RenderpassPostProcess::PushUBO(UBOPtr& ubo)
 	{
-		m_Attachments.push_back(AttachmentContainer{
-			attachment,
-			use,
-			initialLayout,
-			finalLayout,
-		});
+		m_UBOs.push_back(ubo);
 	}
 
 #pragma endregion
@@ -45,28 +36,8 @@ namespace rtf
 
 		// Assure the object has been properly configured
 		assert(!m_Shadername.empty());
-		m_CombinedAttachmentCount = m_Attachments.size();
 
-		bool hasInput = false;
-		bool hasOutput = false;
-		for (int i = 0; i < m_CombinedAttachmentCount; i++)
-		{
-			switch (m_Attachments[i].m_Use)
-			{
-			case AttachmentUse::ReadOnly:
-				hasInput = true;
-				break;
-			case AttachmentUse::WriteOnly:
-				hasOutput = true;
-				break;
-			case AttachmentUse::ReadWrite:
-				hasInput = true;
-				hasOutput = true;
-				break;
-			}
-		}
-		assert(hasInput);
-		assert(hasOutput);
+		assert(preprocessAttachmentBindings());
 
 		// Fetch our statics
 		if (GlobalStatics == nullptr)
@@ -85,64 +56,40 @@ namespace rtf
 		buildCommandBuffer();
 	}
 
+	bool RenderpassPostProcess::preprocessAttachmentBindings()
+	{
+		bool hasOutput = false;
+
+		for (auto& attachmentBinding : m_AttachmentBindings)
+		{
+			if (attachmentBinding.m_Attachment == nullptr)
+			{
+				attachmentBinding.resolveAttachment(m_vulkanDevice, m_attachmentManager);
+			}
+			if (attachmentBinding.writeAccess())
+			{
+				hasOutput = true;
+			}
+		}
+
+		return hasOutput;
+	}
+
 	void RenderpassPostProcess::createRenderPass()
 	{
 		std::vector<VkAttachmentDescription> attachmentDescriptions;
+		std::vector<VkAttachmentReference> inputReferences;
+		std::vector<VkAttachmentReference> outputReferences;
 
-		VkAttachmentDescription attachmentDescription{};
-		attachmentDescription.flags = 0;
-		attachmentDescription.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-		attachmentDescription.stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		attachmentDescription.stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		for (size_t i = 0; i < m_Attachments.size(); i++)
-		{
-			attachmentDescription.format = m_Attachments[i].m_Attachment->format;
-
-			switch (m_Attachments[i].m_Use)
-			{
-			case AttachmentUse::ReadOnly:
-				attachmentDescription.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_LOAD;
-				attachmentDescription.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE;
-				//attachmentDescription.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-				break;
-			case AttachmentUse::WriteOnly:
-				attachmentDescription.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-				attachmentDescription.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
-				//attachmentDescription.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-				break;
-			case AttachmentUse::ReadWrite:
-				attachmentDescription.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_LOAD;
-				attachmentDescription.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
-				//attachmentDescription.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-				break;
-			}
-			attachmentDescription.initialLayout = m_Attachments[i].m_InitialLayout;
-			attachmentDescription.finalLayout = m_Attachments[i].m_FinalLayout;
-			attachmentDescriptions.push_back(attachmentDescription);
-		};
-
-		 //Collect attachment references
-		std::vector<VkAttachmentReference> colorReferences;
-
-		for (size_t i = 0; i < m_CombinedAttachmentCount; i++)
-		{
-			if (m_Attachments[i].m_Use != AttachmentUse::WriteOnly)
-			{
-				colorReferences.push_back({ static_cast<uint32_t>(i), attachmentDescriptions[i].initialLayout });
-			}
-		};
+		AttachmentBinding::FillAttachmentDescriptionStructures(attachmentDescriptions, inputReferences, outputReferences, m_AttachmentBindings.data(), getAttachmentCount());
 
 		// Default render pass setup uses only one subpass
 		VkSubpassDescription subpass = {};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.pColorAttachments = nullptr;
-		subpass.colorAttachmentCount = 0;
-		//subpass.pColorAttachments = colorReferences.data();
-		//subpass.colorAttachmentCount = static_cast<uint32_t>(colorReferences.size());
-		subpass.pInputAttachments = colorReferences.data();
-		subpass.inputAttachmentCount = static_cast<uint32_t>(colorReferences.size());
-		subpass.pInputAttachments = nullptr;
-		subpass.inputAttachmentCount = 0;
+		subpass.pColorAttachments = outputReferences.data();
+		subpass.colorAttachmentCount = outputReferences.size();
+		subpass.pInputAttachments = inputReferences.data();
+		subpass.inputAttachmentCount = inputReferences.size();
 
 		// Use subpass dependencies for attachment layout transitions
 		std::array<VkSubpassDependency, 2> dependencies;
@@ -150,26 +97,21 @@ namespace rtf
 		dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependencies[0].dstSubpass = 0;
 		dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		//dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependencies[0].dstStageMask = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 		dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-		//dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		dependencies[0].dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+		dependencies[0].dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 		dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
 		dependencies[1].srcSubpass = 0;
 		dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-		//dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependencies[1].srcStageMask = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 		dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		//dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		dependencies[1].srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+		dependencies[1].srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 		dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
 		dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
 		// Create render pass
-		VkRenderPassCreateInfo renderPassInfo = {};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		VkRenderPassCreateInfo renderPassInfo = vks::initializers::renderPassCreateInfo();
 		renderPassInfo.pAttachments = attachmentDescriptions.data();
 		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachmentDescriptions.size());
 		renderPassInfo.subpassCount = 1;
@@ -181,23 +123,25 @@ namespace rtf
 
 	void RenderpassPostProcess::setupDescriptorSetLayout()
 	{
-		std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings;
-		setLayoutBindings.reserve(m_CombinedAttachmentCount);
-		for (uint32_t i = 0; i < m_CombinedAttachmentCount; i++)
+		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo;
+
+		AttachmentBinding::CreateDescriptorSetLayout(getLogicalDevice(), m_descriptorSetLayouts[DESCRIPTORSET_IMAGES], m_AttachmentBindings.data(), getAttachmentCount());
+		if (getUboCount() > 0)
 		{
-			setLayoutBindings.push_back(vks::initializers::descriptorSetLayoutBinding(
-				//VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-				VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT,
-				i
-			));
+			std::vector<VkDescriptorSetLayoutBinding> bindings{};
+			bindings.reserve(getUboCount());
+			for (auto& ubo : m_UBOs)
+			{
+				bindings.push_back(vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, bindings.size()));
+			}
+			auto ci = vks::initializers::descriptorSetLayoutCreateInfo(bindings);
+			VK_CHECK_RESULT(vkCreateDescriptorSetLayout(getLogicalDevice(), &ci, nullptr, &m_descriptorSetLayouts[DESCRIPTORSET_UBOS]));
+			pPipelineLayoutCreateInfo = vks::initializers::pipelineLayoutCreateInfo(m_descriptorSetLayouts, 2);
 		}
-
-		VkDescriptorSetLayoutCreateInfo descriptorLayout = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings);
-		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_vulkanDevice->logicalDevice, &descriptorLayout, nullptr, &m_descriptorSetLayout));
-
-		// Shared pipeline layout used by composition
-		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo = vks::initializers::pipelineLayoutCreateInfo(&m_descriptorSetLayout, 1);
+		else
+		{
+			pPipelineLayoutCreateInfo = vks::initializers::pipelineLayoutCreateInfo(m_descriptorSetLayouts, 1);
+		}
 
 		//setup push constants
 		VkPushConstantRange push_constant;
@@ -213,63 +157,40 @@ namespace rtf
 
 		VK_CHECK_RESULT(vkCreatePipelineLayout(m_vulkanDevice->logicalDevice, &pPipelineLayoutCreateInfo, nullptr, &m_pipelineLayout));
 
-		std::vector<VkDescriptorPoolSize> poolSizes;
-		poolSizes.reserve(1);
-		poolSizes.push_back(VkDescriptorPoolSize
-			{
-				VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-				static_cast<uint32_t>(m_CombinedAttachmentCount)
-			});
+		std::vector<VkDescriptorPoolSize> poolsizes{};
+		AttachmentBinding::FillPoolSizesVector(poolsizes, m_AttachmentBindings.data(), getAttachmentCount());
+		
+		uint32_t maxSets = 1;
+		if (getUboCount() > 0)
+		{
+			poolsizes.push_back(VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(getUboCount())});
+			maxSets = 2;
+		}
 
-		VkDescriptorPoolCreateInfo descriptorPoolInfo = vks::initializers::descriptorPoolCreateInfo(
-			//{ vks::initializers::descriptorPoolSize(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_CombinedAttachmentCount) }, 1);
-			poolSizes, 1);
-		VK_CHECK_RESULT(vkCreateDescriptorPool(m_vulkanDevice->logicalDevice, &descriptorPoolInfo, nullptr, &m_descriptorPool));
+		VkDescriptorPoolCreateInfo poolCI = vks::initializers::descriptorPoolCreateInfo(poolsizes, maxSets);
+
+		VK_CHECK_RESULT(vkCreateDescriptorPool(getLogicalDevice(), &poolCI, nullptr, &m_descriptorPool));
 	}
 
 	void RenderpassPostProcess::setupDescriptorSet()
 	{
-		VkDescriptorSetAllocateInfo allocInfo = vks::initializers::descriptorSetAllocateInfo(m_descriptorPool, &m_descriptorSetLayout, 1);
-		vkAllocateDescriptorSets(m_vulkanDevice->logicalDevice, &allocInfo, &m_AttachmentDescriptorSet);
+		uint32_t descriptorSetCount = (getUboCount() > 0) ? 2U : 1U;
+		VkDescriptorSetAllocateInfo allocInfo = vks::initializers::descriptorSetAllocateInfo(m_descriptorPool, m_descriptorSetLayouts, descriptorSetCount);
+		vkAllocateDescriptorSets(m_vulkanDevice->logicalDevice, &allocInfo, m_descriptorSets);
 
-		std::vector<VkDescriptorImageInfo> imageInfos;
-		imageInfos.reserve(m_CombinedAttachmentCount);
-		for (size_t i = 0; i < m_CombinedAttachmentCount; i++)
+		std::vector<VkDescriptorImageInfo> imageInfos{};
+		std::vector<VkWriteDescriptorSet> writes{};
+		AttachmentBinding::FillWriteDescriptorSetStructures(imageInfos, writes, m_AttachmentBindings.data(), getAttachmentCount(),
+			m_descriptorSets[DESCRIPTORSET_IMAGES], Statics->m_ColorSampler_Direct, Statics->m_ColorSampler_Normalized);
+
+		uint32_t binding = 0;
+		for (auto& ubo : m_UBOs)
 		{
-			VkImageLayout layout;
-			//switch (m_Attachments[i].m_Use)
-			//{
-			//case AttachmentUse::ReadOnly:
-			//	layout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			//	break;
-			//case AttachmentUse::WriteOnly:
-			//case AttachmentUse::ReadWrite:
-			//	layout = VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			//	break;
-			//}
-			layout = m_Attachments[i].m_FinalLayout;
-			imageInfos.push_back(vks::initializers::descriptorImageInfo(
-			//	m_rtFilterDemo->m_DefaultColorSampler,
-				nullptr,
-				m_Attachments[i].m_Attachment->view,
-				layout
-			));
+			ubo->writeDescriptorSet(m_descriptorSets[DESCRIPTORSET_UBOS], binding);
+			binding++;
 		}
 
-		std::vector<VkWriteDescriptorSet> writeDescriptorSets;
-		writeDescriptorSets.reserve(m_CombinedAttachmentCount);
-		for (size_t i = 0; i < m_CombinedAttachmentCount; i++)
-		{
-			writeDescriptorSets.push_back(vks::initializers::writeDescriptorSet(
-				m_AttachmentDescriptorSet,
-				//VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-				static_cast<uint32_t>(i),
-				&imageInfos[i]
-			));
-		}
-
-		vkUpdateDescriptorSets(m_vulkanDevice->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
+		vkUpdateDescriptorSets(getLogicalDevice(), writes.size(), writes.data(), 0, nullptr);
 	}
 
 	void RenderpassPostProcess::setupPipeline()
@@ -277,12 +198,15 @@ namespace rtf
 		VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = vks::initializers::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 		VkPipelineRasterizationStateCreateInfo rasterizationState = vks::initializers::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
 		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates;
-		blendAttachmentStates.reserve(m_CombinedAttachmentCount);
-		for (size_t i = 0; i < m_CombinedAttachmentCount; i++)
+		for (size_t i = 0; i < getAttachmentCount(); i++)
 		{
-			blendAttachmentStates.push_back(vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE));
+			const AttachmentBinding& attachment = m_AttachmentBindings[i];
+			if (attachment.m_Bind == AttachmentBinding::BindType::Sampled && attachment.writeAccess())
+			{
+				blendAttachmentStates.push_back(vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE));
+			}
 		}
-		VkPipelineColorBlendStateCreateInfo colorBlendState = vks::initializers::pipelineColorBlendStateCreateInfo(m_CombinedAttachmentCount, blendAttachmentStates.data());
+		VkPipelineColorBlendStateCreateInfo colorBlendState = vks::initializers::pipelineColorBlendStateCreateInfo(blendAttachmentStates.size(), blendAttachmentStates.data());
 		VkPipelineDepthStencilStateCreateInfo depthStencilState = vks::initializers::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
 		VkPipelineViewportStateCreateInfo viewportState = vks::initializers::pipelineViewportStateCreateInfo(1, 1, 0);
 		VkPipelineMultisampleStateCreateInfo multisampleState = vks::initializers::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT, 0);
@@ -314,10 +238,13 @@ namespace rtf
 	void RenderpassPostProcess::setupFramebuffer()
 	{
 		std::vector<VkImageView> attachmentViews;
-		attachmentViews.reserve(m_CombinedAttachmentCount);
-		for (size_t i = 0; i < m_CombinedAttachmentCount; i++)
+		attachmentViews.reserve(getAttachmentCount());
+		for (auto& attachment : m_AttachmentBindings)
 		{
-			attachmentViews.push_back(m_Attachments[i].m_Attachment->view);
+			if (attachment.usesAttachmentDescription())
+			{
+				attachmentViews.push_back(attachment.m_ImageView);
+			}
 		}
 
 		VkExtent2D size = m_attachmentManager->GetSize();
@@ -327,7 +254,7 @@ namespace rtf
 		fbufCreateInfo.pNext = NULL;
 		fbufCreateInfo.renderPass = m_renderpass;
 		fbufCreateInfo.pAttachments = attachmentViews.data();
-		fbufCreateInfo.attachmentCount = static_cast<uint32_t>(m_CombinedAttachmentCount);
+		fbufCreateInfo.attachmentCount = static_cast<uint32_t>(attachmentViews.size());
 		fbufCreateInfo.width = size.width;
 		fbufCreateInfo.height = size.height;
 		fbufCreateInfo.layers = 1;
@@ -342,6 +269,15 @@ namespace rtf
 		}
 
 		VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
+		VK_CHECK_RESULT(vkBeginCommandBuffer(m_CmdBuffer, &cmdBufInfo));
+
+		for (const AttachmentBinding& attachment : m_AttachmentBindings)
+		{
+			if (attachment.requireImageTransition())
+			{
+				attachment.makeImageTransition(m_CmdBuffer);
+			}
+		}
 
 		VkClearValue clearValues[2];
 		clearValues[0].color = { { 0.0f, 0.0f, 0.2f, 0.0f } };
@@ -353,36 +289,13 @@ namespace rtf
 		renderPassBeginInfo.renderArea.offset.y = 0;
 		renderPassBeginInfo.renderArea.extent.width = m_rtFilterDemo->width;
 		renderPassBeginInfo.renderArea.extent.height = m_rtFilterDemo->height;
-		renderPassBeginInfo.clearValueCount = 2;
+		renderPassBeginInfo.clearValueCount = 0;
 		renderPassBeginInfo.pClearValues = clearValues;
 
 
 		renderPassBeginInfo.framebuffer = m_Framebuffer;
 
-		VK_CHECK_RESULT(vkBeginCommandBuffer(m_CmdBuffer, &cmdBufInfo));
 
-
-		// Make sure we take our images to VK_Image_View_General
-		//std::vector<VkImageMemoryBarrier> memBarriers;
-		//memBarriers.reserve(m_CombinedAttachmentCount);
-		//for (size_t i = 0; i < m_CombinedAttachmentCount; i++)
-		//{
-		//	VkImageMemoryBarrier memBarrier = vks::initializers::imageMemoryBarrier();
-		//	memBarrier.image = m_Attachments[i].m_Attachment->image;
-		//	memBarrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		//	memBarrier.newLayout = VkImageLayout::VK_IMAGE_LAYOUT_GENERAL;
-		//	memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_WRITE_BIT;
-		//	memBarrier.srcAccessMask = (m_Attachments[i].m_Use == AttachmentUse::ReadWrite || m_Attachments[i].m_Use == AttachmentUse::WriteOnly) ? VkAccessFlagBits::VK_ACCESS_MEMORY_WRITE_BIT : VkAccessFlagBits::VK_ACCESS_MEMORY_READ_BIT;
-		//	memBarriers.push_back(memBarrier);
-		//}
-		//vkCmdPipelineBarrier(m_CmdBuffer,
-		//	VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-		//	VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-		//	VK_FLAGS_NONE,
-		//	0, nullptr,
-		//	0, nullptr,
-		//	m_CombinedAttachmentCount, memBarriers.data()
-		//);
 
 		vkCmdBeginRenderPass(m_CmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -392,7 +305,8 @@ namespace rtf
 		VkRect2D scissor = vks::initializers::rect2D(m_rtFilterDemo->width, m_rtFilterDemo->height, 0, 0);
 		vkCmdSetScissor(m_CmdBuffer, 0, 1, &scissor);
 
-		vkCmdBindDescriptorSets(m_CmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_AttachmentDescriptorSet, 0, nullptr);
+		uint32_t descriptorSetCount = (getUboCount() > 0) ? 2U : 1U;
+		vkCmdBindDescriptorSets(m_CmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, descriptorSetCount, m_descriptorSets, 0, nullptr);
 
 		vkCmdBindPipeline(m_CmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
@@ -404,27 +318,6 @@ namespace rtf
 		vkCmdDraw(m_CmdBuffer, 3, 1, 0, 0);
 
 		vkCmdEndRenderPass(m_CmdBuffer);
-
-		// Return to a more optimized image layout
-		//memBarriers.clear();
-		//for (size_t i = 0; i < m_CombinedAttachmentCount; i++)
-		//{
-		//	VkImageMemoryBarrier memBarrier = vks::initializers::imageMemoryBarrier();
-		//	memBarrier.image = m_Attachments[i].m_Attachment->image;
-		//	memBarrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_GENERAL;
-		//	memBarrier.newLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		//	memBarrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_WRITE_BIT;
-		//	memBarrier.srcAccessMask = (m_Attachments[i].m_Use == AttachmentUse::ReadWrite || m_Attachments[i].m_Use == AttachmentUse::WriteOnly) ? VkAccessFlagBits::VK_ACCESS_MEMORY_WRITE_BIT : VkAccessFlagBits::VK_ACCESS_MEMORY_READ_BIT;
-		//	memBarriers.push_back(memBarrier);
-		//}
-		//vkCmdPipelineBarrier(m_CmdBuffer,
-		//	VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-		//	VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-		//	VK_FLAGS_NONE,
-		//	0, nullptr,
-		//	0, nullptr,
-		//	m_CombinedAttachmentCount, memBarriers.data()
-		//);
 
 		VK_CHECK_RESULT(vkEndCommandBuffer(m_CmdBuffer));
 	}
@@ -489,12 +382,12 @@ namespace rtf
 		sampler.maxLod = 0.0f;
 		sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		sampler.unnormalizedCoordinates = VK_TRUE;
-		VK_CHECK_RESULT(vkCreateSampler(m_Device->logicalDevice, &sampler, nullptr, &m_ColorSampler_Standard));
+		VK_CHECK_RESULT(vkCreateSampler(m_Device->logicalDevice, &sampler, nullptr, &m_ColorSampler_Direct));
 	}
 	RenderpassPostProcess::StaticsContainer::~StaticsContainer()
 	{
 		vkDestroyPipelineCache(m_Device->logicalDevice, m_PipelineCache, nullptr);
-		vkDestroySampler(m_Device->logicalDevice, m_ColorSampler_Standard, nullptr);
+		vkDestroySampler(m_Device->logicalDevice, m_ColorSampler_Direct, nullptr);
 	}
 
 #pragma endregion

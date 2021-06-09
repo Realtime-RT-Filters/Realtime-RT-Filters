@@ -74,9 +74,21 @@ namespace rtf
 		// Gauss Postprocess
 		m_RPF_Gauss = std::make_shared<RenderpassPostProcess>();
 		m_RPF_Gauss->ConfigureShader("filter/postprocess_gauss.frag.spv");
-		m_RPF_Gauss->PushAttachment(rtFilterDemo->m_attachmentManager->getAttachment(Attachment::albedo), RenderpassPostProcess::AttachmentUse::ReadOnly);
-		m_RPF_Gauss->PushAttachment(rtFilterDemo->m_attachmentManager->getAttachment(Attachment::position), RenderpassPostProcess::AttachmentUse::WriteOnly);
+		m_RPF_Gauss->PushAttachment(AttachmentBinding(Attachment::albedo, AttachmentBinding::AccessMode::ReadOnly));
+		m_RPF_Gauss->PushAttachment(AttachmentBinding(Attachment::filteroutput, AttachmentBinding::AccessMode::WriteOnly));
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassPostProcess>(m_RPF_Gauss));
+
+		// Depthtest Postprocess
+		m_RPF_DepthTest = std::make_shared<RenderpassPostProcess>();
+		m_RPF_DepthTest->ConfigureShader("filter/postprocess_depthTest.frag.spv");
+		AttachmentBinding depth(Attachment::depth, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled);
+		depth.m_AspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT;
+		depth.m_PreLayout = VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		//depth.m_WorkLayout = VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+		//depth.m_PostLayout = VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+		m_RPF_DepthTest->PushAttachment(depth);
+		m_RPF_DepthTest->PushAttachment(AttachmentBinding(Attachment::filteroutput, AttachmentBinding::AccessMode::WriteOnly, AttachmentBinding::BindType::Sampled));
+		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassPostProcess>(m_RPF_DepthTest));
 
 		// GUI Pass (RasterizerOnly)
 		m_RPG_RasterOnly = std::make_shared<RenderpassGui>();
@@ -85,7 +97,8 @@ namespace rtf
 			GuiAttachmentBinding(Attachment::position, std::string("GBuffer::Position")),
 			GuiAttachmentBinding(Attachment::normal, std::string("GBuffer::Normal")),
 			GuiAttachmentBinding(Attachment::albedo, std::string("GBuffer::Albedo")),
-			GuiAttachmentBinding(Attachment::motionvector, std::string("GBuffer::Motion"))
+			GuiAttachmentBinding(Attachment::motionvector, std::string("GBuffer::Motion")),
+			GuiAttachmentBinding(Attachment::filteroutput, std::string("Filter Output"))
 			});
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_RasterOnly));
 
@@ -143,6 +156,7 @@ namespace rtf
 		// RasterizationOnly
 		m_QT_RasterizationOnly = std::make_shared<QueueTemplate>();
 		m_QT_RasterizationOnly->push_back(m_RP_GBuffer);
+		m_QT_RasterizationOnly->push_back(m_RPF_Gauss);
 		m_QT_RasterizationOnly->push_back(m_RPG_RasterOnly);
 
 		// PathtracerOnly
