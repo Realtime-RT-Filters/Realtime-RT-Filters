@@ -35,6 +35,7 @@ namespace rtf
 	}
 
 	void RenderpassPathTracer::draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount) {
+		updatePushConstants();
 		buildCommandBuffer();
 		out_commandBufferCount = 1;
 		out_commandBuffers = &m_commandBuffer;
@@ -78,7 +79,7 @@ namespace rtf
 		//m_pushConstant.clearColor;
 		//m_pushConstant.lightIntensity;
 		//m_pushConstant.lightType;
-		m_pathtracerconfig.Frame = frameNumber;
+		m_pathtracerconfig.Frame++;
 		//m_pushConstant.samples;
 		//m_pushConstant.bounces;
 		//m_pushConstant.bounceSamples;

@@ -18,7 +18,7 @@ struct S_Light
 	glm::vec3	Color;
 	float		RadiantFlux;
 
-	S_Light() : Position(), Color(0.33333f), Type(1.f), RadiantFlux(1.f) {}
+	S_Light() : Position(), Color(0.6f), Type(1.f), RadiantFlux(1.f) {}
 };
 
 #else
