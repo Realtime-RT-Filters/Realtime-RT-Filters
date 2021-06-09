@@ -29,7 +29,8 @@ namespace rtf
     class RenderpassGui : public Renderpass
 	{
 	public:
-		bool m_enableComposition = true;
+		bool m_allowComposition = false;
+		bool m_usePathtracing = false;
 	protected:
 
 		std::vector<GuiAttachmentBinding> m_attachments{};
@@ -47,31 +48,6 @@ namespace rtf
 
 		//Old stuff taken from deferred example to allow a render composition
 		vks::Buffer m_Buffer;
-
-		struct Light
-		{
-			glm::vec4 position{};
-			glm::vec3 color{};
-			float radius = 0.f;
-		};
-
-		struct
-		{
-			Light lights[6]{};
-			glm::vec4 viewPos{};
-			int debugDisplayTarget = 0;
-			int enableComposition = 0;
-		} m_composition_ubo;
-
-		vks::Buffer m_composition_UBO_buffer;
-
-		Camera* m_camera{};
-		float* m_timer{};
-		int32_t* m_debugDisplayTarget = 0;
-		//End of legacy stuff
-
-		void prepareUBO();
-		void updateUniformBuffer();
 
 		void setupDescriptorSetLayout();
 		void setupDescriptorPool();

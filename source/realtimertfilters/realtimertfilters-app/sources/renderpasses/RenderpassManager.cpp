@@ -80,6 +80,7 @@ namespace rtf
 
 		// GUI Pass (RasterizerOnly)
 		m_RPG_RasterOnly = std::make_shared<RenderpassGui>();
+		m_RPG_RasterOnly->m_allowComposition = true;
 		m_RPG_RasterOnly->setAttachmentBindings({
 			GuiAttachmentBinding(Attachment::position, std::string("GBuffer::Position")),
 			GuiAttachmentBinding(Attachment::normal, std::string("GBuffer::Normal")),
@@ -90,7 +91,8 @@ namespace rtf
 
 		// GUI Pass (PathtracerOnly)
 		m_RPG_PathtracerOnly = std::make_shared<RenderpassGui>();
-		m_RPG_PathtracerOnly->m_enableComposition = false;
+		m_RPG_PathtracerOnly->m_allowComposition = false;
+		m_RPG_PathtracerOnly->m_usePathtracing = true;
 		m_RPG_PathtracerOnly->setAttachmentBindings({
 			GuiAttachmentBinding(Attachment::rtoutput, std::string("RT Output")),
 			GuiAttachmentBinding(Attachment::albedo, std::string("GBuffer::Albedo"))
@@ -99,6 +101,8 @@ namespace rtf
 
 		// GUI Pass (SVGF)
 		m_RPG_SVGF = std::make_shared<RenderpassGui>();
+		m_RPG_SVGF->m_allowComposition = false;
+		m_RPG_SVGF->m_usePathtracing = true;
 		m_RPG_SVGF->setAttachmentBindings({
 			GuiAttachmentBinding(Attachment::position, std::string("GBuffer::Position")),
 			GuiAttachmentBinding(Attachment::normal, std::string("GBuffer::Normal")),
@@ -108,6 +112,8 @@ namespace rtf
 
 		// GUI Pass (BMFR)
 		m_RPG_BMFR = std::make_shared<RenderpassGui>();
+		m_RPG_BMFR->m_allowComposition = false;
+		m_RPG_BMFR->m_usePathtracing = true;
 		m_RPG_BMFR->setAttachmentBindings({
 			GuiAttachmentBinding(Attachment::position, std::string("GBuffer::Position")),
 			GuiAttachmentBinding(Attachment::normal, std::string("GBuffer::Normal")),

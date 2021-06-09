@@ -22,6 +22,7 @@
 
 #include <memory>
 
+#include "ManagedUBO.hpp"
 
 #define ENABLE_VALIDATION true
 
@@ -42,13 +43,11 @@ namespace rtf
 	class RenderpassGui;
 	class RenderpassPathTracer;
 
+	using PFN_FilterDemoGui = void (RTFilterDemo::*)(vks::UIOverlay* overlay);
+
 	class RTFilterDemo : public VulkanExampleBase
 	{
 	public:
-		int32_t debugDisplayTarget = 0;
-
-		SpatioTemporalAccumulation m_spatioTemporalAccumulation;
-		
 		//Attachment manager
 		Attachment_Manager* m_attachmentManager;
 
@@ -62,41 +61,20 @@ namespace rtf
 		friend RenderpassGui;
 		friend RenderpassPathTracer;
 
+#pragma region Scene/Shared UBO
 
-#pragma region helper_structs
+		vkglTF::Model m_Scene{};
 
-		struct Light
-		{
-			glm::vec4 position{};
-			glm::vec3 color{};
-			float radius = 0.f;
-		};
+		int32_t m_enabledLightCount = 1;
+		bool m_animateLights[UBO_SCENEINFO_LIGHT_COUNT]{};
 
-		struct
-		{
-			Light lights[6]{};
-			glm::vec4 viewPos{};
-			int debugDisplayTarget = 0;
-		} m_composition_ubo;
+		UBO_SceneInfo m_UBO_SceneInfo{};
+		UBO_Guibase m_UBO_Guibase{};
+		
+		bool m_ShowSceneControls = false;
+		bool m_ShowPathtracerControls = false;
 
-		//struct
-		//{
-		//	vks::Buffer composition;
-		//} m_Comp_UnformBuffer;
-		vks::Buffer m_Comp_UnformBuffer;
-
-		//struct
-		//{
-		//	VkPipeline composition;
-		//} m_Comp_Pipeline;
-		VkPipeline m_Comp_Pipeline;
-		VkPipelineLayout m_Comp_PipelineLayout;
-		VkDescriptorSet m_Comp_DescriptorSet;
-		VkDescriptorSetLayout m_Comp_DescriptorSetLayout;
-		vkglTF::Model m_Scene;
-		std::shared_ptr<RenderpassGui> m_renderpassGui;
-
-#pragma endregion helper_structs
+#pragma endregion
 
 		// One sampler for the frame buffer color attachments
 		VkSampler m_DefaultColorSampler;
@@ -121,16 +99,16 @@ namespace rtf
 
 		virtual void prepare() override;
 
-		void prepareRenderpasses();
-		void buildQueueTemplates();
-
-
 		virtual void render() override;
 
-		virtual void OnUpdateUIOverlay(vks::UIOverlay* overlay) override;
-		
-		std::string getShadersPath2();
+		virtual void setupUBOs();
+		virtual void updateUBOs();
 
+		virtual void OnUpdateUIOverlay(vks::UIOverlay* overlay) override;
+		virtual void ResetGUIState();
+		virtual void SceneControlUIOverlay(vks::UIOverlay* overlay);
+		virtual void PathtracerConfigUIOverlay(vks::UIOverlay* overlay);
+		
 		std::wstring getShadersPathW();
 
 		bool gui_rp_on = false;
@@ -150,6 +128,7 @@ namespace rtf
 		VkPhysicalDeviceVulkan12Features enabledPhysicalDeviceVulkan12Features{};
 
 	};
+
 }
 
 #endif //RTFilterDemo_h

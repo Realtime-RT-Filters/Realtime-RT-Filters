@@ -12,6 +12,7 @@
 //All Filter render passes here
 #include "../headers/renderpasses/Renderpass_Filter.hpp" //Example Renderpass
 #include "../headers/renderpasses/Renderpass_PostProcess.hpp"
+#include "../headers/renderpasses/Renderpass_PathTracer.hpp"
 
 namespace rtf
 {
@@ -92,16 +93,20 @@ namespace rtf
 		deviceFeatures2.pNext = &accelerationStructureFeatures;
 		vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
 
-		if (vulkan12Features.runtimeDescriptorArray != VK_TRUE) {
+		if (vulkan12Features.runtimeDescriptorArray != VK_TRUE)
+		{
 			throw std::runtime_error("RTFilterDemo::getEnabledFeaturesRayTracing: missing runtimeDescriptorArray feature");
 		}
-		if (vulkan12Features.bufferDeviceAddress != VK_TRUE) {
+		if (vulkan12Features.bufferDeviceAddress != VK_TRUE)
+		{
 			throw std::runtime_error("RTFilterDemo::getEnabledFeaturesRayTracing: missing bufferDeviceAddress feature");
 		}
-		if (vulkan12Features.descriptorIndexing != VK_TRUE) {
+		if (vulkan12Features.descriptorIndexing != VK_TRUE)
+		{
 			throw std::runtime_error("RTFilterDemo::getEnabledFeaturesRayTracing: missing descriptorIndexing feature");
 		}
-		if (vulkan12Features.shaderSampledImageArrayNonUniformIndexing != VK_TRUE) {
+		if (vulkan12Features.shaderSampledImageArrayNonUniformIndexing != VK_TRUE)
+		{
 			throw std::runtime_error("RTFilterDemo::getEnabledFeaturesRayTracing: missing shaderSampledImageArrayNonUniformIndexing feature");
 		}
 
@@ -113,7 +118,8 @@ namespace rtf
 		enabledPhysicalDeviceVulkan12Features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
 		enabledPhysicalDeviceVulkan12Features.pNext = nullptr;
 
-		if (rayTracingPipelineFeatures.rayTracingPipeline != VK_TRUE) {
+		if (rayTracingPipelineFeatures.rayTracingPipeline != VK_TRUE)
+		{
 			throw std::runtime_error("RTFilterDemo::getEnabledFeaturesRayTracing: missing rayTracingPipeline feature");
 		}
 
@@ -121,7 +127,8 @@ namespace rtf
 		enabledRayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
 		enabledRayTracingPipelineFeatures.pNext = &enabledPhysicalDeviceVulkan12Features;
 
-		if (accelerationStructureFeatures.accelerationStructure != VK_TRUE) {
+		if (accelerationStructureFeatures.accelerationStructure != VK_TRUE)
+		{
 			throw std::runtime_error("RTFilterDemo::getEnabledFeaturesRayTracing: missing accelerationStructure feature");
 		}
 
@@ -169,6 +176,8 @@ namespace rtf
 
 		//We create the Attachment manager
 		m_attachmentManager = new Attachment_Manager(vulkanDevice, queue, width, height);
+
+		setupUBOs();
 
 		m_renderpassManager = new RenderpassManager();
 		m_renderpassManager->prepare(this, SEMAPHORE_COUNT);
@@ -234,30 +243,197 @@ namespace rtf
 	{
 		if (!prepared)
 			return;
+		updateUBOs();
+		m_renderpassManager->updateUniformBuffer();
+
 		VulkanExampleBase::prepareFrame();
 		// submit the renderpasses one after another
 		m_renderpassManager->draw(drawCmdBuffers[currentBuffer]);
 		VulkanExampleBase::submitFrame();
 
-		m_renderpassManager->updateUniformBuffer();
 		//m_rtManager.updateUniformBuffers(timer, &camera);
 		//m_pathTracerManager->updateUniformBuffers(timer, &camera);
 	}
 
+	void RTFilterDemo::setupUBOs()
+	{
+		m_UBO_SceneInfo = std::make_shared<ManagedUBO<S_Sceneinfo>>(vulkanDevice);
+		m_UBO_SceneInfo->prepare();
+
+		S_Sceneinfo& sceneubo = m_UBO_SceneInfo->UBO();
+
+		m_animateLights[0] = false;
+		sceneubo.Lights[0].Color = glm::vec3(0.333f);
+		sceneubo.Lights[0].RadiantFlux = 15.f;
+		sceneubo.Lights[0].Position = glm::vec3(0.0f, -2.f, 5.f);
+
+		for (int i = 1; i < UBO_SCENEINFO_LIGHT_COUNT; i++)
+		{
+			m_animateLights[i] = true;
+			sceneubo.Lights[i].Color = glm::normalize(glm::vec3((i * 29) % 11, (i * 29) % 7, (i * 31) % 11));
+			sceneubo.Lights[i].RadiantFlux = 15.f;
+			sceneubo.Lights[i].Position = glm::vec3(0.f, i * -1.5f, 0.f);
+			sceneubo.Lights[i].Type = (i < m_enabledLightCount) ? 1.0 : -1.0;
+		}
+
+		m_UBO_Guibase = std::make_shared<ManagedUBO<S_Guibase>>(vulkanDevice);
+		m_UBO_Guibase->prepare();
+
+		updateUBOs();
+	}
+
+	void RTFilterDemo::updateUBOs()
+	{
+		S_Sceneinfo& ubo = m_UBO_SceneInfo->UBO();
+		for (int i = 0; i < m_enabledLightCount; i++)
+		{
+			S_Light& light = ubo.Lights[i];
+			if (m_animateLights[i])
+			{
+				float offset = i * (UBO_SCENEINFO_LIGHT_COUNT / 360.f);
+				ubo.Lights[i].Position.x = sin(glm::radians(360.0f * timer + offset)) *  (i % 4 + 1) * 2.0f;
+				ubo.Lights[i].Position.z = cos(glm::radians(360.0f * timer + offset)) * ((i + 2) % 3 + 1) * 2.0f;
+			}
+		}
+
+		// Current view position
+		ubo.ViewPos = camera.position * glm::vec3(-1.0f, 1.0f, -1.0f);
+
+		// Matrices
+		ubo.ViewMatPrev = ubo.ViewMat;
+		ubo.ProjMatPrev = ubo.ProjMat;
+		ubo.ViewMat = camera.matrices.view;
+		ubo.ProjMat = camera.matrices.perspective;
+		ubo.ViewMatInverse = glm::inverse(camera.matrices.view);
+		ubo.ProjMatInverse = glm::inverse(camera.matrices.perspective);
+
+		m_UBO_SceneInfo->update();
+		m_UBO_Guibase->update();
+	}
+
 	void RTFilterDemo::OnUpdateUIOverlay(vks::UIOverlay* overlay)
 	{
-		if (overlay->header("Settings"))
+		S_Guibase& guiubo = m_UBO_Guibase->UBO();
+		if (overlay->header("Display"))
 		{
 			if (overlay->comboBox("Mode", &m_RenderMode, { "Rasterization Only", "Pathtracer Only", "SVGF", "BMFR" }))
 			{
 				m_renderpassManager->setQueueTemplate(static_cast<SupportedQueueTemplates>(m_RenderMode));
+				ResetGUIState();
 			}
-			if (overlay->comboBox("Display", &debugDisplayTarget, m_renderpassManager->m_RPG_Active->getDropoutOptions()))
+			bool doComposition = guiubo.DoComposition > 0;
+			if (m_renderpassManager->m_RPG_Active->m_allowComposition)
 			{
-				//Comp_UpdateUniformBuffer();
+				if (overlay->checkBox("Do Composition", &doComposition))
+				{
+					guiubo.DoComposition = (doComposition) ? 1U : 0U;
+				}
+			}
+			else
+			{
+				doComposition = false;
+			}
+
+			int32_t attachmentIndex = static_cast<int32_t>(guiubo.AttachmentIndex);
+			std::vector<std::string>& dropoutoptions = m_renderpassManager->m_RPG_Active->getDropoutOptions();
+			if (attachmentIndex > dropoutoptions.size() - 1)
+			{
+				attachmentIndex = 0;
+			}
+			if (!doComposition && overlay->comboBox("Attachment Index", &attachmentIndex, dropoutoptions))
+			{
+				m_UBO_Guibase->UBO().AttachmentIndex = static_cast<uint>(attachmentIndex);
+			}
+		}
+		SceneControlUIOverlay(overlay);
+		PathtracerConfigUIOverlay(overlay);
+	}
+
+	void RTFilterDemo::ResetGUIState()
+	{
+		S_Guibase& guiubo = m_UBO_Guibase->UBO();
+		guiubo.DoComposition = (m_renderpassManager->m_RPG_Active->m_allowComposition) ? 1 : 0;
+		guiubo.AttachmentIndex = 0;
+	}
+
+	void RTFilterDemo::SceneControlUIOverlay(vks::UIOverlay* overlay)
+	{
+		S_Sceneinfo& ubo = m_UBO_SceneInfo->UBO();
+		overlay->checkBox("Show Scene Controls", &m_ShowSceneControls);
+		if (m_ShowSceneControls)
+		{
+			if (overlay->sliderInt("Light Sources", &m_enabledLightCount, 1, UBO_SCENEINFO_LIGHT_COUNT))
+			{
+				for (int i = 0; i < UBO_SCENEINFO_LIGHT_COUNT; i++)
+				{
+					if (i < m_enabledLightCount)
+					{
+						ubo.Lights[i].Type = abs(ubo.Lights[i].Type);
+					}
+					else
+					{
+						ubo.Lights[i].Type = abs(ubo.Lights[i].Type) * -1;
+					}
+				}
+			}
+			for (int i = 0; i < m_enabledLightCount; i++)
+			{
+				std::string temp = std::string("Light #") + std::to_string(i);
+				if (overlay->header(temp.data()))
+				{
+					S_Light& light = ubo.Lights[i];
+					int32_t type = static_cast<int32_t>(light.Type) - 1;
+					if (overlay->comboBox("Type", &type, { "Point", "Directional" }))
+					{
+						light.Type = type + 1;
+					}
+					if (light.Type == 1.0) // Directional Light
+					{
+						overlay->inputFloat("Pos X", &light.Position.x, 0.2f, 1);
+						overlay->inputFloat("Pos Y", &light.Position.y, 0.2f, 1);
+						overlay->inputFloat("Pos Z", &light.Position.z, 0.2f, 1);
+					}
+					else
+					{
+						overlay->inputFloat("Dir X", &light.Position.x, 0.2f, 1);
+						overlay->inputFloat("Dir Y", &light.Position.y, 0.2f, 1);
+						overlay->inputFloat("Dir Z", &light.Position.z, 0.2f, 1);
+						light.Position = glm::normalize(light.Position);
+					}
+					overlay->inputFloat("Color R", &light.Color.r, 0.2f, 1);
+					overlay->inputFloat("Color G", &light.Color.g, 0.2f, 1);
+					overlay->inputFloat("Color B", &light.Color.b, 0.2f, 1);
+					light.Color = glm::normalize(light.Color);
+					overlay->inputFloat("Power", &light.RadiantFlux, 0.05f, 1);
+					overlay->checkBox("Animate", &m_animateLights[i]);
+				}
 			}
 		}
 	}
+
+	void RTFilterDemo::PathtracerConfigUIOverlay(vks::UIOverlay* overlay)
+	{
+		if (!m_renderpassManager->m_RPG_Active->m_usePathtracing)
+		{
+			return;
+		}
+		overlay->checkBox("Show Pathtracer Controls", &m_ShowPathtracerControls);
+		if (m_ShowPathtracerControls)
+		{
+			SPC_PathtracerConfig& pathtracerConfig = m_renderpassManager->m_RP_PT->m_pathtracerconfig;
+			int32_t samplesPerPixel = static_cast<int32_t>(pathtracerConfig.PrimarySamplesPerPixel);
+			int32_t bounceDepth = static_cast<int32_t>(pathtracerConfig.MaxBounceDepth);
+			int32_t samplesPerBounce = static_cast<int32_t>(pathtracerConfig.SecondarySamplesPerBounce);
+			overlay->sliderInt("Samples per Pixel", &samplesPerPixel, 1, 16);
+			overlay->sliderInt("Bounce Depth", &bounceDepth, 1, 6);
+			overlay->sliderInt("Samples per Bounce", &samplesPerBounce, 1, 8);
+			pathtracerConfig.PrimarySamplesPerPixel = static_cast<uint>(samplesPerPixel);
+			pathtracerConfig.MaxBounceDepth = static_cast<uint>(bounceDepth);
+			pathtracerConfig.SecondarySamplesPerBounce = static_cast<uint>(samplesPerBounce);
+		}
+	}
+
+
 
 #pragma endregion
 #pragma region Cleanup
@@ -290,10 +466,6 @@ namespace rtf
 #pragma endregion
 #pragma region Helper Methods
 
-	std::string RTFilterDemo::getShadersPath2()
-	{
-		return getShadersPath();
-	}
 	std::wstring RTFilterDemo::getShadersPathW()
 	{
 		return getAssetPathW() + L"shaders/glsl/";

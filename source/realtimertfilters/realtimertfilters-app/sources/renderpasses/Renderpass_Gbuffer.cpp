@@ -13,10 +13,8 @@ namespace rtf
 	void RenderpassGbuffer::prepare()
 	{
 		m_Scene = &(m_rtFilterDemo->m_Scene);
-		m_camera = &m_rtFilterDemo->camera;
 		prepareAttachments();
 		prepareRenderpass();
-		prepareUBOs();
 		setupDescriptorSetLayout();
 		preparePipeline();
 		setupDescriptorPool();
@@ -139,29 +137,10 @@ namespace rtf
 		vkDestroyPipeline(m_vulkanDevice->logicalDevice, m_pipeline, nullptr);
 		vkDestroyPipelineLayout(m_vulkanDevice->logicalDevice, m_pipelineLayout, nullptr);
 		vkDestroyDescriptorSetLayout(m_vulkanDevice->logicalDevice, m_descriptorSetLayout, nullptr);
-		m_Buffer.destroy();
 		vkDestroyRenderPass(m_vulkanDevice->logicalDevice, m_renderpass, nullptr);
 		vkDestroyPipelineCache(m_vulkanDevice->logicalDevice, m_PipelineCache, nullptr);
 	}
 
-
-	void RenderpassGbuffer::prepareUBOs()
-	{
-		// Offscreen vertex shader
-		VK_CHECK_RESULT(m_vulkanDevice->createBuffer(
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			&m_Buffer,
-			sizeof(m_UBO)));
-
-		// Map persistent
-		VK_CHECK_RESULT(m_Buffer.map());
-	}
-	void RenderpassGbuffer::updateUniformBuffer()
-	{
-		UBO_GBuffer_PushCamera(m_UBO, *m_camera);
-		memcpy(m_Buffer.mapped, &m_UBO, sizeof(m_UBO));
-	}
 
 	void RenderpassGbuffer::setupDescriptorPool()
 	{
@@ -191,7 +170,7 @@ namespace rtf
 		VK_CHECK_RESULT(vkAllocateDescriptorSets(m_vulkanDevice->logicalDevice, &allocInfoOffscreen, &m_DescriptorSetScene));
 		writeDescriptorSets = {
 			// Binding 0: Vertex shader uniform buffer
-			vks::initializers::writeDescriptorSet(m_DescriptorSetScene, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &m_Buffer.descriptor),
+			m_rtFilterDemo->m_UBO_SceneInfo->writeDescriptorSet(m_DescriptorSetScene, 0)
 		};
 		vkUpdateDescriptorSets(m_vulkanDevice->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
 	}
@@ -301,15 +280,5 @@ namespace rtf
 		colorBlendState.pAttachments = blendAttachmentStates.data();
 
 		VK_CHECK_RESULT(vkCreateGraphicsPipelines(m_vulkanDevice->logicalDevice, m_PipelineCache, 1, &pipelineCI, nullptr, &m_pipeline));
-	}
-
-	void UBO_GBuffer_PushCamera(UBO_GBuffer& ubo, Camera& camera)
-	{
-		ubo.old_projection = ubo.projection;
-		ubo.old_view = ubo.view;
-		ubo.old_model = ubo.model;
-		ubo.projection = camera.matrices.perspective;
-		ubo.view = camera.matrices.view;
-		ubo.model = glm::mat4(1.0f);
 	}
 }

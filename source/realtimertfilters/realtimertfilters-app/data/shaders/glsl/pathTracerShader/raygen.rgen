@@ -6,19 +6,23 @@
 #include "binding.glsl"
 #include "raycommon.glsl"
 #include "sampling.glsl"
-#include "pushconstant.glsl"
 
 layout(location = 0) rayPayloadEXT S_HitPayload prd;
 
 layout(binding = B_ACCELERATIONSTRUCTURE) uniform accelerationStructureEXT topLevelAS;
 layout(binding = B_IMAGE, rgba16f) uniform image2D image;
-layout(binding = B_UBO) uniform CameraProperties
-{
-	mat4 viewInverse;
-	mat4 projInverse;
-	vec4 lightPos;
-	int vertexSize;
-} cam;
+
+#define BIND_SCENEINFO B_UBO
+#define PUSHC_PATHTRACERCONFIG 0
+#include "../ubo_definitions.glsl"
+
+//layout(binding = B_UBO) uniform CameraProperties
+//{
+//	mat4 viewInverse;
+//	mat4 projInverse;
+//	vec4 lightPos;
+//	int vertexSize;
+//} cam;
 
 S_HitPayload InitHitpayload(in uint seed)
 {
@@ -38,17 +42,17 @@ void main()
 	vec3 hitValue = vec3(0);
 
 	// Send sampels
-	for (int smpl = 0; smpl < pushC.samples; smpl++)
+	for (int smpl = 0; smpl < config.PrimarySamplesPerPixel; smpl++)
 	{
 		// // seed for Random Values
-		uint seed = tea(gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x, pushC.frame * pushC.samples + smpl);
+		uint seed = tea(gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x, config.Frame * config.PrimarySamplesPerPixel + smpl);
 		const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
 		const vec2 inUV = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
 		vec2 d = inUV * 2.0 - 1.0;
 
-		vec4 origin = cam.viewInverse * vec4(0, 0, 0, 1);
-		vec4 target = cam.projInverse * vec4(d.x, d.y, 1, 1);
-		vec4 direction = cam.viewInverse * vec4(normalize(target.xyz / target.w), 0);
+		vec4 origin = ubo_sceneinfo.ViewMatInverse * vec4(0, 0, 0, 1);
+		vec4 target = ubo_sceneinfo.ProjMatInverse * vec4(d.x, d.y, 1, 1);
+		vec4 direction = ubo_sceneinfo.ViewMatInverse * vec4(normalize(target.xyz / target.w), 0);
 
 		prd = InitHitpayload(seed);
 
@@ -74,6 +78,6 @@ void main()
 	}
 
 	// Result
-	hitValue /= pushC.samples;
+	hitValue /= config.PrimarySamplesPerPixel;
 	imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(hitValue, 0.5f));
 }

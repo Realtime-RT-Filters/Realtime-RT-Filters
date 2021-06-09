@@ -8,7 +8,6 @@
 #include "gltf.glsl"
 #include "raycommon.glsl"
 #include "sampling.glsl"
-#include "pushconstant.glsl"
 
 hitAttributeEXT vec2 intersectionPoint;
 
@@ -17,13 +16,17 @@ layout(location = 2) rayPayloadEXT bool isShadowed;
 
 hitAttributeEXT vec3 attribs;
 
-layout(binding = B_UBO) uniform UBO
-{
-	mat4 viewInverse;
-	mat4 projInverse;
-	vec4 lightPos;
-	int vertexSize;
-} ubo;
+
+#define BIND_SCENEINFO B_UBO
+#define PUSHC_PATHTRACERCONFIG 0
+#include "../ubo_definitions.glsl"
+//layout(binding = B_UBO) uniform UBO
+//{
+//	mat4 viewInverse;
+//	mat4 projInverse;
+//	vec4 lightPos;
+//	int vertexSize;
+//} ubo;
 
 layout(binding = 0) uniform accelerationStructureEXT topLevelAS;
 layout(binding = B_INSTANCEINFO) readonly buffer _InstanceInfo { PrimMeshInfo primInfo[]; };
@@ -56,7 +59,7 @@ S_Vertex getVertex(uint index)
 {
 
 	// The multiplier is the size of the vertex divided by four float components (=16 bytes)
-	const int m = ubo.vertexSize / 16;
+	const int m = 96 / 16;//ubo.vertexSize / 16;
 
 	vec4 d0 = vertices.v[m * index + 0];
 	vec4 d1 = vertices.v[m * index + 1];
@@ -99,7 +102,7 @@ S_GeometryHitPoint initGeometryHitPoint()
 
 vec3 calculateIndirectLight(S_GeometryHitPoint hitpoint)
 {
-	if (prd.depth >= pushC.bounces)
+	if (prd.depth >= config.MaxBounceDepth)
 	{
 		return vec3(0.0);
 	}
@@ -107,7 +110,7 @@ vec3 calculateIndirectLight(S_GeometryHitPoint hitpoint)
 	vec3 attenuation = prd.attenuation * hitpoint.albedo / M_PI;
 	vec3 indirect = vec3(0);
 	{
-		for (int i = 0; i < pushC.bounceSamples; i++)
+		for (int i = 0; i < config.SecondarySamplesPerBounce; i++)
 		{
 			vec3 origin = hitpoint.pos_world;
 			vec3 direction = sampleLambert(prd.seed, createTBN(hitpoint.normal_world));
@@ -127,31 +130,42 @@ vec3 calculateIndirectLight(S_GeometryHitPoint hitpoint)
 			);
 			indirect += prd.radiance;
 		}
+		indirect /= config.SecondarySamplesPerBounce;
 	}
 	return indirect;
 }
 
-vec3 calculateDirectLight(S_GeometryHitPoint hitpoint)
+vec3 sampleLi(in S_GeometryHitPoint hitpoint, in S_Light light, in float lightDistance, in float NdotL)
+{
+	if (light.Type == 1.0)
+	{
+		float distFactor = 1.0 / (lightDistance * lightDistance);
+		return NdotL * distFactor * light.RadiantFlux * light.Color;
+	}
+	else
+	{
+		return NdotL * light.RadiantFlux * light.Color;
+	}
+}
+
+vec3 calculateDirectLight(in S_GeometryHitPoint hitpoint)
 {
 	vec3 direct = vec3(0);
-	if (pushC.lightType != -1) // direct lighting
+	if (ubo_sceneinfo.Lights[0].Type >= 0) // direct lighting
 	{
 		// Vector toward the light
 		vec3 lightDir;
-		float lightIntensity = pushC.lightIntensity;
 		float lightDistance = 100000.0;
 
-		if (pushC.lightType == 0) // Point light
+		if (ubo_sceneinfo.Lights[0].Type == 1.0) // Point light
 		{
-			vec3 lightVector = ubo.lightPos.xyz - hitpoint.pos_world;
+			vec3 lightVector = ubo_sceneinfo.Lights[0].Position.xyz - hitpoint.pos_world;
 			lightDistance = length(lightVector);
-			lightIntensity = pushC.lightIntensity / (lightDistance * lightDistance);
-			lightIntensity = 1.0;
 			lightDir = normalize(lightVector);
 		}
 		else // Directional light
 		{
-			lightDir = normalize(ubo.lightPos.xyz);
+			lightDir = normalize(ubo_sceneinfo.Lights[0].Position.xyz);
 		}
 
 		const float BIAS = 0.001;
@@ -184,11 +198,10 @@ vec3 calculateDirectLight(S_GeometryHitPoint hitpoint)
 			);
 		}
 		// In case of shadow we reduce the color level and don't generate a fake specular highlight
-		if (isShadowed)
+		if (!isShadowed)
 		{
-			lightIntensity = 0.0;
+			direct += sampleLi(hitpoint, ubo_sceneinfo.Lights[0], lightDistance, NdotL);
 		}
-		direct += vec3(1) * NdotL * lightIntensity;
 	}
 	return direct;
 }

@@ -11,18 +11,14 @@ namespace rtf
 		vkDestroyPipeline(m_vulkanDevice->logicalDevice, m_pipeline, nullptr);
 		vkDestroyPipelineLayout(m_vulkanDevice->logicalDevice, m_pipelineLayout, nullptr);
 		vkDestroyDescriptorSetLayout(m_vulkanDevice->logicalDevice, m_descriptorSetLayout, nullptr);
-		m_composition_UBO_buffer.destroy();
 	}
 
 	void RenderpassGui::prepare()
 	{
 		m_Scene = &(m_rtFilterDemo->m_Scene);
-		m_camera = &m_rtFilterDemo->camera;
 		m_swapchain = &m_rtFilterDemo->swapChain;
 
 		//stuff taken to allow legacy bits to work
-		m_timer = &m_rtFilterDemo->timer;
-		m_debugDisplayTarget = &m_rtFilterDemo->debugDisplayTarget;
 
 		m_commandBuffers = &m_rtFilterDemo->drawCmdBuffers;
 		m_currentBuffer = &m_rtFilterDemo->currentBuffer;
@@ -32,9 +28,6 @@ namespace rtf
 		{
 			attachment.m_Attachment = m_attachmentManager->getAttachment(attachment.m_AttachmentId);
 		}
-
-		//UBO
-		prepareUBO();
 
 		//Descriptors
 		setupDescriptorSetLayout();
@@ -103,77 +96,6 @@ namespace rtf
 		out_commandBuffers = &m_commandBuffers->at(*m_currentBuffer);
 	}
 
-	void RenderpassGui::prepareUBO()
-	{
-		// Deferred fragment shader
-		VK_CHECK_RESULT(m_vulkanDevice->createBuffer(
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			&m_composition_UBO_buffer,
-			sizeof(m_composition_ubo)));
-
-		// Map persistent
-		//VK_CHECK_RESULT(uniformBuffers.offscreen.map());
-		VK_CHECK_RESULT(m_composition_UBO_buffer.map());
-
-		updateUniformBuffer();
-
-	}
-
-	void RenderpassGui::updateUniformBuffer()
-	{
-		// White
-		m_composition_ubo.lights[0].position = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
-		m_composition_ubo.lights[0].color = glm::vec3(1.5f);
-		m_composition_ubo.lights[0].radius = 15.0f * 0.25f;
-		// Red
-		m_composition_ubo.lights[1].position = glm::vec4(-2.0f, 0.0f, 0.0f, 0.0f);
-		m_composition_ubo.lights[1].color = glm::vec3(1.0f, 0.0f, 0.0f);
-		m_composition_ubo.lights[1].radius = 15.0f;
-		// Blue
-		m_composition_ubo.lights[2].position = glm::vec4(2.0f, -1.0f, 0.0f, 0.0f);
-		m_composition_ubo.lights[2].color = glm::vec3(0.0f, 0.0f, 2.5f);
-		m_composition_ubo.lights[2].radius = 5.0f;
-		// Yellow
-		m_composition_ubo.lights[3].position = glm::vec4(0.0f, -0.9f, 0.5f, 0.0f);
-		m_composition_ubo.lights[3].color = glm::vec3(1.0f, 1.0f, 0.0f);
-		m_composition_ubo.lights[3].radius = 2.0f;
-		// Green
-		m_composition_ubo.lights[4].position = glm::vec4(0.0f, -0.5f, 0.0f, 0.0f);
-		m_composition_ubo.lights[4].color = glm::vec3(0.0f, 1.0f, 0.2f);
-		m_composition_ubo.lights[4].radius = 5.0f;
-		// Yellow
-		m_composition_ubo.lights[5].position = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);
-		m_composition_ubo.lights[5].color = glm::vec3(1.0f, 0.7f, 0.3f);
-		m_composition_ubo.lights[5].radius = 25.0f;
-
-		m_composition_ubo.lights[0].position.x = sin(glm::radians(360.0f * *m_timer)) * 5.0f;
-		m_composition_ubo.lights[0].position.z = cos(glm::radians(360.0f * *m_timer)) * 5.0f;
-
-		m_composition_ubo.lights[1].position.x = -4.0f + sin(glm::radians(360.0f * *m_timer) + 45.0f) * 2.0f;
-		m_composition_ubo.lights[1].position.z = 0.0f + cos(glm::radians(360.0f * *m_timer) + 45.0f) * 2.0f;
-
-		m_composition_ubo.lights[2].position.x = 4.0f + sin(glm::radians(360.0f * *m_timer)) * 2.0f;
-		m_composition_ubo.lights[2].position.z = 0.0f + cos(glm::radians(360.0f * *m_timer)) * 2.0f;
-
-		m_composition_ubo.lights[4].position.x = 0.0f + sin(glm::radians(360.0f * *m_timer + 90.0f)) * 5.0f;
-		m_composition_ubo.lights[4].position.z = 0.0f - cos(glm::radians(360.0f * *m_timer + 45.0f)) * 5.0f;
-
-		m_composition_ubo.lights[5].position.x = 0.0f + sin(glm::radians(-360.0f * *m_timer + 135.0f)) * 10.0f;
-		m_composition_ubo.lights[5].position.z = 0.0f - cos(glm::radians(-360.0f * *m_timer - 45.0f)) * 10.0f;
-
-		// Current view position
-		m_composition_ubo.viewPos = glm::vec4(m_camera->position, 0.0f) * glm::vec4(-1.0f, 1.0f, -1.0f, 1.0f);
-
-		m_composition_ubo.debugDisplayTarget = *m_debugDisplayTarget;
-
-		m_composition_ubo.enableComposition = (m_enableComposition) ?  1 : 0;
-
-
-		memcpy(m_composition_UBO_buffer.mapped, &m_composition_ubo, sizeof(m_composition_ubo));
-
-	}
-
 	void RenderpassGui::setupDescriptorSetLayout()
 	{
 		// Deferred shading layout
@@ -182,8 +104,10 @@ namespace rtf
 			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0),
 			// Binding 1 : Attachments array
 			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, m_attachments.size()),
-			// Binding 2 : Fragment shader uniform buffer
-			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2)
+			// Binding 2 : Guibase Fragment shader uniform buffer
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+			// Binding 3 : SceneInfo uniform buffer
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 3)
 		};
 
 		VkDescriptorSetLayoutCreateInfo descriptorLayout = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings);
@@ -198,7 +122,7 @@ namespace rtf
 	void RenderpassGui::setupDescriptorPool()
 	{
 		std::vector<VkDescriptorPoolSize> poolSizes = {
-			vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2),
+			vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3),
 			vks::initializers::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_attachments.size())
 		};
 
@@ -224,7 +148,9 @@ namespace rtf
 			// Binding 1 : Attachment array
 			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, imageInfos.data(), m_attachments.size()),
 			// Binding 2 : Fragment shader uniform buffer
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &m_composition_UBO_buffer.descriptor),
+			m_rtFilterDemo->m_UBO_Guibase->writeDescriptorSet(m_descriptorSet, 2),
+			// Binding 3 : SceneInfo uniform buffer
+			m_rtFilterDemo->m_UBO_SceneInfo->writeDescriptorSet(m_descriptorSet, 3)
 		};
 
 		vkUpdateDescriptorSets(m_vulkanDevice->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
@@ -323,11 +249,7 @@ namespace rtf
 	{
 		m_attachments = attachmentBindings;
 		m_dropoutOptions.clear();
-		m_dropoutOptions.reserve(m_attachments.size() + 1);
-		if (m_enableComposition)
-		{
-			m_dropoutOptions.push_back("Rasterization Composed");
-		}
+		m_dropoutOptions.reserve(m_attachments.size());
 		for (auto& attachment : m_attachments)
 		{
 			m_dropoutOptions.push_back(attachment.m_Displayname);

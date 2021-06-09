@@ -10,18 +10,6 @@
 namespace rtf
 {
 
-	struct UBO_GBuffer
-	{
-		glm::mat4 projection;
-		glm::mat4 model;
-		glm::mat4 view;
-		glm::mat4 old_projection;
-		glm::mat4 old_model;
-		glm::mat4 old_view;
-	};
-
-	void UBO_GBuffer_PushCamera(UBO_GBuffer& ubo,Camera& camera);
-
 	class RenderpassGbuffer : public Renderpass
 	{
 	public:
@@ -33,16 +21,12 @@ namespace rtf
 		FrameBufferAttachment* m_MotionAttachment = nullptr;
 		FrameBufferAttachment* m_DepthAttachment = nullptr;
 
-		vks::Buffer m_Buffer = {};
-		UBO_GBuffer m_UBO = {};
 		VkDescriptorSet m_DescriptorSetAttachments = nullptr;
 		VkDescriptorSet m_DescriptorSetScene = nullptr;
 		VkCommandBuffer m_CmdBuffer = nullptr;
 		VkPipelineCache m_PipelineCache;
 
 		vkglTF::Model* m_Scene = nullptr;
-		Camera* m_camera;
-
 
 		RenderpassGbuffer();
 
@@ -50,8 +34,6 @@ namespace rtf
 		virtual void prepare() override;
 		void prepareRenderpass();
 		void prepareAttachments();
-		void prepareUBOs();
-		void updateUniformBuffer();
 		void setupDescriptorPool();
 		void setupDescriptorSetLayout();
 		void setupDescriptorSet();

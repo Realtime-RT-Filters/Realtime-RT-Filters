@@ -4,6 +4,7 @@
 
 #include <vulkanexamplebase.h>
 #include "VulkanglTFModel.h"
+#include "../data/shaders/glsl/ubo_definitions.glsl"
 
 namespace rtf
 {
@@ -14,6 +15,8 @@ namespace rtf
 		{
 			this->m_queue = queue;
 		}
+
+		
 
 	protected:
 		// ================ Struct types ================
@@ -49,26 +52,33 @@ namespace rtf
 			ShaderBindingTable hit;
 		}m_shaderBindingTables;
 
-		struct UniformData {
-			glm::mat4 viewInverse;
-			glm::mat4 projInverse;
-			glm::vec4 lightPos;
-			int32_t vertexSize;
-		}m_uniformData;
-		vks::Buffer m_uniformBufferObject{};
+		//struct UniformData {
+		//	glm::mat4 viewInverse;
+		//	glm::mat4 projInverse;
+		//	glm::vec4 lightPos;
+		//	int32_t vertexSize;
+		//}m_uniformData;
+		//vks::Buffer m_uniformBufferObject{};
 
-		struct PushConstant{
-			glm::vec4	  clearColor = glm::vec4(0.0);
-			float         lightIntensity = 15.f;
-			int           lightType = 0; // -1: off, 0: point, 1: infinite
-			int           frame = 0;
-			int           samples = 1;
-			int           bounces = 3;
-			int           bounceSamples = 1;
-		}m_pushConstant;
+		//struct PushConstant{
+		//	glm::vec4	  clearColor = glm::vec4(0.0);
+		//	float         lightIntensity = 15.f;
+		//	int           lightType = 0; // -1: off, 0: point, 1: infinite
+		//	int           frame = 0;
+		//	int           samples = 1;
+		//	int           bounces = 3;
+		//	int           bounceSamples = 1;
+		//}m_pushConstant;
+
+	public:
+		/// <summary>
+		/// Push constant used to configure path tracer
+		/// </summary>
+		SPC_PathtracerConfig m_pathtracerconfig;
 
 		// ================ Struct types END ================
 
+	protected:
 		// ShaderGroups
 		std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroups{};
 

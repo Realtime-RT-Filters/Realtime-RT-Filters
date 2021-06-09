@@ -90,7 +90,7 @@ void rtf::PathTracerManager::createRayTracingPipeline() {
 
 	// Ray generation group
 	{
-		shaderStages.push_back(m_rtFilterDemo->loadShader(m_rtFilterDemo->getShadersPath2() + "pathTracerShader/raygen.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+		shaderStages.push_back(m_rtFilterDemo->loadShader(m_rtFilterDemo->getShadersPath() + "pathTracerShader/raygen.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 		VkRayTracingShaderGroupCreateInfoKHR shaderGroup{};
 		shaderGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
 		shaderGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
@@ -103,7 +103,7 @@ void rtf::PathTracerManager::createRayTracingPipeline() {
 
 	// Miss group
 	{
-		shaderStages.push_back(m_rtFilterDemo->loadShader(m_rtFilterDemo->getShadersPath2() + "pathTracerShader/miss.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR));
+		shaderStages.push_back(m_rtFilterDemo->loadShader(m_rtFilterDemo->getShadersPath() + "pathTracerShader/miss.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR));
 		VkRayTracingShaderGroupCreateInfoKHR shaderGroup{};
 		shaderGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
 		shaderGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
@@ -113,7 +113,7 @@ void rtf::PathTracerManager::createRayTracingPipeline() {
 		shaderGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
 		shaderGroups.push_back(shaderGroup);
 		// Second shader for shadows
-		shaderStages.push_back(m_rtFilterDemo->loadShader(m_rtFilterDemo->getShadersPath2() + "pathTracerShader/shadow.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR));
+		shaderStages.push_back(m_rtFilterDemo->loadShader(m_rtFilterDemo->getShadersPath() + "pathTracerShader/shadow.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR));
 		shaderGroup.generalShader = static_cast<uint32_t>(shaderStages.size()) - 1;
 		shaderGroups.push_back(shaderGroup);
 	}

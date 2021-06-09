@@ -27,7 +27,7 @@ namespace rtf
 		createTopLevelAccelerationStructure();
 
 		//createStorageImage(m_swapChain->colorFormat, VkExtent3D{ m_rtFilterDemo->width, m_rtFilterDemo->height, 1 });
-		createUniformBuffer();
+		//createUniformBuffer();
 		createRayTracingPipeline();
 		createShaderBindingTables();
 		createDescriptorSets();
@@ -51,17 +51,16 @@ namespace rtf
 		vkDestroyPipeline(m_vulkanDevice->logicalDevice, m_pipeline, nullptr);
 		vkDestroyPipelineLayout(m_vulkanDevice->logicalDevice, m_pipelineLayout, nullptr);
 		vkDestroyDescriptorSetLayout(m_vulkanDevice->logicalDevice, m_descriptorSetLayout, nullptr);
-		m_uniformBufferObject.destroy();
+		//m_uniformBufferObject.destroy();
 	};
 
 	void RenderpassPathTracer::updateUniformBuffer() {
-		m_uniformData.projInverse = glm::inverse(m_camera->matrices.perspective);
-		m_uniformData.viewInverse = glm::inverse(m_camera->matrices.view);
-		m_uniformData.lightPos = glm::vec4(cos(glm::radians(m_timer * 360.0f)) * 40.0f, -50.0f + sin(glm::radians(m_timer * 360.0f)) * 20.0f, 25.0f + sin(glm::radians(m_timer * 360.0f)) * 5.0f, 0.0f);
-		// Pass the vertex size to the shader for unpacking vertices
-		m_uniformData.vertexSize = sizeof(vkglTF::Vertex);
-		memcpy(m_uniformBufferObject.mapped, &m_uniformData, sizeof(UniformData));
-		m_pushConstant.frame++;
+		//m_uniformData.projInverse = glm::inverse(m_camera->matrices.perspective);
+		//m_uniformData.viewInverse = glm::inverse(m_camera->matrices.view);
+		//m_uniformData.lightPos = glm::vec4(cos(glm::radians(m_timer * 360.0f)) * 40.0f, -50.0f + sin(glm::radians(m_timer * 360.0f)) * 20.0f, 25.0f + sin(glm::radians(m_timer * 360.0f)) * 5.0f, 0.0f);
+		//// Pass the vertex size to the shader for unpacking vertices
+		//m_uniformData.vertexSize = sizeof(vkglTF::Vertex);
+		//memcpy(m_uniformBufferObject.mapped, &m_uniformData, sizeof(UniformData));
 	};
 
 	// Define Class Methods ================================================================================================
@@ -79,10 +78,11 @@ namespace rtf
 		//m_pushConstant.clearColor;
 		//m_pushConstant.lightIntensity;
 		//m_pushConstant.lightType;
-		m_pushConstant.frame = frameNumber;
+		m_pathtracerconfig.Frame = frameNumber;
 		//m_pushConstant.samples;
 		//m_pushConstant.bounces;
 		//m_pushConstant.bounceSamples;
+		m_pathtracerconfig.VertexSize = sizeof(vkglTF::Vertex);
 	}
 
 	void RenderpassPathTracer::createRayTracingPipeline() {
@@ -112,7 +112,7 @@ namespace rtf
 		//setup push constants
 		VkPushConstantRange push_constant;
 		push_constant.offset = 0;
-		push_constant.size = sizeof(PushConstant);
+		push_constant.size = sizeof(SPC_PathtracerConfig);
 		//push_constant.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
 		push_constant.stageFlags = VK_SHADER_STAGE_ALL;
 
@@ -126,7 +126,7 @@ namespace rtf
 
 		// Ray generation group
 		{
-			shaderStages.push_back(m_rtFilterDemo->loadShader(m_rtFilterDemo->getShadersPath2() + "pathTracerShader/raygen.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+			shaderStages.push_back(m_rtFilterDemo->loadShader(m_rtFilterDemo->getShadersPath() + "pathTracerShader/raygen.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 			VkRayTracingShaderGroupCreateInfoKHR shaderGroup{};
 			shaderGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
 			shaderGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
@@ -139,7 +139,7 @@ namespace rtf
 
 		// Miss group
 		{
-			shaderStages.push_back(m_rtFilterDemo->loadShader(m_rtFilterDemo->getShadersPath2() + "pathTracerShader/miss.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR));
+			shaderStages.push_back(m_rtFilterDemo->loadShader(m_rtFilterDemo->getShadersPath() + "pathTracerShader/miss.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR));
 			VkRayTracingShaderGroupCreateInfoKHR shaderGroup{};
 			shaderGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
 			shaderGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
@@ -149,14 +149,14 @@ namespace rtf
 			shaderGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
 			shaderGroups.push_back(shaderGroup);
 			// Second shader for shadows
-			shaderStages.push_back(m_rtFilterDemo->loadShader(m_rtFilterDemo->getShadersPath2() + "pathTracerShader/shadow.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR));
+			shaderStages.push_back(m_rtFilterDemo->loadShader(m_rtFilterDemo->getShadersPath() + "pathTracerShader/shadow.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_KHR));
 			shaderGroup.generalShader = static_cast<uint32_t>(shaderStages.size()) - 1;
 			shaderGroups.push_back(shaderGroup);
 		}
 
 		// Closest hit group
 		{
-			shaderStages.push_back(m_rtFilterDemo->loadShader(m_rtFilterDemo->getShadersPath2() + "pathTracerShader/closesthit.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR));
+			shaderStages.push_back(m_rtFilterDemo->loadShader(m_rtFilterDemo->getShadersPath() + "pathTracerShader/closesthit.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR));
 			VkRayTracingShaderGroupCreateInfoKHR shaderGroup{};
 			shaderGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
 			shaderGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
@@ -216,7 +216,8 @@ namespace rtf
 			// Ray tracing result image
 			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, B_IMAGE, &storageImageDescriptor),
 			// Uniform data
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, B_UBO, &m_uniformBufferObject.descriptor),
+			m_rtFilterDemo->m_UBO_SceneInfo->writeDescriptorSet(m_descriptorSet, B_UBO),
+			//vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, B_UBO, &m_uniformBufferObject.descriptor),
 			// Scene vertex buffer
 			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_VERTICES, &vertexBufferDescriptor),
 			// Scene index buffer
@@ -287,12 +288,7 @@ namespace rtf
 		m_timer = *&m_rtFilterDemo->timer;
 
 		// Init Push Constant
-		m_pushConstant.clearColor = glm::vec4{ 0.0f, 0.0f, 0.0f, 0.0f };
-		m_pushConstant.lightIntensity = 10.0f;
-		m_pushConstant.frame = 0;
-		m_pushConstant.samples = 2;
-		m_pushConstant.bounces = 2;
-		m_pushConstant.bounceSamples = 1;
+		m_pathtracerconfig = SPC_PathtracerConfig{};
 	}
 
 	void RenderpassPathTracer::prepareAttachement() {
@@ -575,16 +571,16 @@ namespace rtf
 		accelerationStructure.deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(m_vulkanDevice->logicalDevice, &accelerationDeviceAddressInfo);
 	}
 
-	void RenderpassPathTracer::createUniformBuffer()
-	{
-		VK_CHECK_RESULT(m_vulkanDevice->createBuffer(
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			&m_uniformBufferObject,
-			sizeof(UniformData),
-			&m_uniformData));
-		VK_CHECK_RESULT(m_uniformBufferObject.map());
-	}
+	//void RenderpassPathTracer::createUniformBuffer()
+	//{
+	//	VK_CHECK_RESULT(m_vulkanDevice->createBuffer(
+	//		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+	//		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+	//		&m_uniformBufferObject,
+	//		sizeof(UniformData),
+	//		&m_uniformData));
+	//	VK_CHECK_RESULT(m_uniformBufferObject.map());
+	//}
 
 	/*
 		If the window has been resized, we need to recreate the storage image and it's descriptor
@@ -623,7 +619,7 @@ namespace rtf
 		vkCmdBindDescriptorSets(m_commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, 0);
 
 		//upload the matrix to the GPU via pushconstants
-		vkCmdPushConstants(m_commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(PushConstant), &m_pushConstant);
+		vkCmdPushConstants(m_commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_ALL, 0, sizeof(SPC_PathtracerConfig), &m_pathtracerconfig);
 
 		VkStridedDeviceAddressRegionKHR emptySbtEntry = {};
 		vkCmdTraceRaysKHR(

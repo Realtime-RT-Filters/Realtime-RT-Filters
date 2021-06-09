@@ -30,7 +30,7 @@ namespace rtf
 		
 		// Create Methods
 		void createStorageImage(VkFormat format, VkExtent3D extent);
-		void createUniformBuffer();
+		//void createUniformBuffer();
 		void createRayTracingPipeline();
 		void createShaderBindingTables();
 		void createShaderBindingTable(ShaderBindingTable& table, uint32_t);
