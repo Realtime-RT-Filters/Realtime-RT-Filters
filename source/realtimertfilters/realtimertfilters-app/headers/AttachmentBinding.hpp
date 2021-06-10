@@ -71,11 +71,11 @@ namespace rtf
 			AccessMode				accessmode,
 			BindType				bindtype = BindType::StorageImage,
 			FrameBufferAttachment*	attachment = nullptr,
-			SamplerType				samplertype = SamplerType::Direct,
+			SamplerType				samplertype = SamplerType::Normalized,
 			VkImageLayout			prelayout = VK_IMAGE_LAYOUT_GENERAL,
 			VkImageLayout			worklayout = VK_IMAGE_LAYOUT_GENERAL,
 			VkImageLayout			postlayout = VK_IMAGE_LAYOUT_GENERAL,
-			VkImageAspectFlags		aspectflags = VK_IMAGE_ASPECT_COLOR_BIT
+			VkImageAspectFlags		aspectflags = 0
 		);
 
 		/// <summary>

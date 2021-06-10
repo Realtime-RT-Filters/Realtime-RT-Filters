@@ -186,7 +186,7 @@ namespace rtf
 		uint32_t binding = 0;
 		for (auto& ubo : m_UBOs)
 		{
-			ubo->writeDescriptorSet(m_descriptorSets[DESCRIPTORSET_UBOS], binding);
+			writes.push_back(ubo->writeDescriptorSet(m_descriptorSets[DESCRIPTORSET_UBOS], binding));
 			binding++;
 		}
 

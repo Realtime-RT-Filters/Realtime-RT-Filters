@@ -352,6 +352,7 @@ namespace rtf
 		}
 		SceneControlUIOverlay(overlay);
 		PathtracerConfigUIOverlay(overlay);
+		AccumulationConfigUIOverlay(overlay);
 	}
 
 	void RTFilterDemo::ResetGUIState()

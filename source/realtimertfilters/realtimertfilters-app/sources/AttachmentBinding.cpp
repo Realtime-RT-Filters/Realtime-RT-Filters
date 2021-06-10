@@ -3,7 +3,7 @@
 namespace rtf
 {
 	AttachmentBinding::AttachmentBinding(Attachment attachmentid, AccessMode usetype, BindType bindtype, FrameBufferAttachment* attachment, SamplerType samplertype, VkImageLayout prelayout, VkImageLayout worklayout, VkImageLayout postlayout, VkImageAspectFlags aspectflags)
-		: m_AttachmentId(attachmentid), m_Attachment(attachment), m_AccessMode(usetype), m_Bind(bindtype), m_PreLayout(prelayout), m_Sampler(samplertype), m_WorkLayout(worklayout), m_PostLayout(postlayout), m_AspectMask(aspectflags)
+		: m_AttachmentId(attachmentid), m_Attachment(attachment), m_AccessMode(usetype), m_Bind(bindtype), m_PreLayout(prelayout), m_Sampler(samplertype), m_WorkLayout(worklayout), m_PostLayout(postlayout), m_AspectMask(aspectflags), m_ImageView()
 	{
 	}
 

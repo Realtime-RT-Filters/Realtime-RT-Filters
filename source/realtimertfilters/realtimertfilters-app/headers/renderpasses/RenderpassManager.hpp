@@ -38,6 +38,7 @@ namespace rtf
 		std::shared_ptr<RenderpassPostProcess> m_RPF_Gauss{};
 		std::shared_ptr<RenderpassPathTracer> m_RP_PT{};
 		std::shared_ptr<RenderpassPostProcess> m_RPF_DepthTest{};
+		std::shared_ptr<RenderpassPostProcess> m_RPF_TempAccu{};
 
 		std::shared_ptr<RenderpassGui> m_RPG_RasterOnly{};
 		std::shared_ptr<RenderpassGui> m_RPG_PathtracerOnly{};

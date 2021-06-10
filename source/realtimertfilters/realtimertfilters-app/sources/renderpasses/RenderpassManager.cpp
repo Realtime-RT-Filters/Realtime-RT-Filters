@@ -84,11 +84,25 @@ namespace rtf
 		AttachmentBinding depth(Attachment::depth, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled);
 		depth.m_AspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT;
 		depth.m_PreLayout = VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		//depth.m_WorkLayout = VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
-		//depth.m_PostLayout = VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
 		m_RPF_DepthTest->PushAttachment(depth);
 		m_RPF_DepthTest->PushAttachment(AttachmentBinding(Attachment::filteroutput, AttachmentBinding::AccessMode::WriteOnly, AttachmentBinding::BindType::Sampled));
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassPostProcess>(m_RPF_DepthTest));
+
+		// Temporal Accumulation Postprocess
+		m_RPF_TempAccu = std::make_shared<RenderpassPostProcess>();
+		m_RPF_TempAccu->ConfigureShader("filter/postprocess_tempAccu.frag.spv");
+		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::position, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
+		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::normal, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
+		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::motionvector, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
+		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::rtoutput, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
+		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::prev_accumulatedcolor, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
+		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::intermediate, AttachmentBinding::AccessMode::WriteOnly, AttachmentBinding::BindType::Sampled));
+		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::prev_position, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
+		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::prev_normal, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
+		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::prev_historylength, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
+		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::new_historylength, AttachmentBinding::AccessMode::WriteOnly, AttachmentBinding::BindType::Sampled));
+		m_RPF_TempAccu->PushUBO(std::dynamic_pointer_cast<UBOInterface, ManagedUBO<S_AccuConfig>>(rtFilterDemo->m_UBO_AccuConfig));
+		registerRenderpass(m_RPF_TempAccu);
 
 		// GUI Pass (RasterizerOnly)
 		m_RPG_RasterOnly = std::make_shared<RenderpassGui>();
@@ -166,6 +180,7 @@ namespace rtf
 
 		// TODO Add Pathtracer Renderpass
 		m_QT_PathtracerOnly->push_back(m_RP_PT);
+		m_QT_PathtracerOnly->push_back(m_RPF_TempAccu);
 		m_QT_PathtracerOnly->push_back(m_RPG_PathtracerOnly);
 
 		// SVGF
