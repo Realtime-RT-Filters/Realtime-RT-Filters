@@ -26,16 +26,19 @@ layout (location = 1) out int Out_NewHistoryLength;						// Per pixel accumulate
 
 void main()
 {
-	vec4 rawColor = texelFetch(Tex_RawColor, Texel, 0);
+	vec3 rawColor = texelFetch(Tex_RawColor, Texel, 0).xyz;
+
+	// Set the RT Output values and a 1 to new history length by default
+	Out_NewAccuColor = vec4(rawColor, 1.0);
+	Out_NewHistoryLength = 1;
 
 	if (ubo_accuconfig.EnableAccumulation == 0)
 	{
-		Out_NewAccuColor = rawColor;
-		Out_NewHistoryLength = 1;
 		return;
 	}
 
-	vec2 uv_prevFrame = UV - texture(Tex_Motion, UV).xy;
+	vec2 motionVec = texelFetch(Tex_Motion, Texel, 0).xy;
+	vec2 uv_prevFrame = UV + motionVec;
 	ivec2 texel_prevFrame = TexelizeCoords(uv_prevFrame);
 
 	// Check if prev frame UV is outside of view frustrum
@@ -45,8 +48,6 @@ void main()
 	if (discard_viewFrustrum)
 	{
 		// The new pixel was outside the view frustrum in previous frame, therefor we cannot accumulate.
-		Out_NewAccuColor = rawColor;
-		Out_NewHistoryLength = 1;
 		return;
 	}
 	vec3 curPos = texelFetch(Tex_CurPos, Texel, 0).xyz;						// Current worldspace position of the fragment
@@ -67,14 +68,12 @@ void main()
 
 		// History = 0: Previous pixel didn't exist (could only happen in very rare circumstances in the very first frame) => We mix raw 1, accu 0
 		// History = 1: History was discarded previously => We mix raw 0.5, accu 0.5
-		// History > 1: History is pretty old and useful => We mix up to raw 0.1, accu 0.9
+		// History > 1: History is pretty old and useful => We mix up to raw MinNewWeight, accu 1 - MinNewWeight
 		float mixFactor = max(ubo_accuconfig.MinNewWeight, 1.f / (historylength + 1));
-		Out_NewAccuColor = mix(texelFetch(Tex_PrevAccuColor, texel_prevFrame, 0), rawColor,  mixFactor);
+		vec3 oldColor = texelFetch(Tex_PrevAccuColor, texel_prevFrame, 0).xyz;
+		vec3 mixedColor = mix(oldColor, rawColor,  mixFactor);
+		Out_NewAccuColor =vec4(mixedColor, 1.0);
+		
 		Out_NewHistoryLength = historylength + 1;
-	}
-	else
-	{
-		Out_NewAccuColor = rawColor;
-		Out_NewHistoryLength = 1;
 	}
 }

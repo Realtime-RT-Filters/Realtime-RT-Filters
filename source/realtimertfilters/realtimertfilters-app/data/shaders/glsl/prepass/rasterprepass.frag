@@ -47,9 +47,9 @@ void main()
 	outAlbedo =	textureColor;
 
 	// Calculate motion delta
-	vec2 screenPos = inDevicePos.xz / inDevicePos.w;
-	vec2 old_screenPos = inOldDevicePos.xz / inOldDevicePos.w;
-   	outMotion = old_screenPos-screenPos;
+	vec2 screenPos = inDevicePos.xy / inDevicePos.w;
+	vec2 old_screenPos = inOldDevicePos.xy / inOldDevicePos.w;
+   	outMotion = (old_screenPos-screenPos) * 0.5;
 
 	outMeshId = inMeshId;
 }

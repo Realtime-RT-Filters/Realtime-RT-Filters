@@ -161,7 +161,7 @@ struct S_AccuConfig
 	float		MaxNormalAngleDifference;
 	float		MinNewWeight;
 
-	S_AccuConfig() : EnableAccumulation(1), MaxPosDifference(0.001), MaxNormalAngleDifference(0.01), MinNewWeight(0.1f) {}
+	S_AccuConfig() : EnableAccumulation(1), MaxPosDifference(0.0064), MaxNormalAngleDifference(0.06), MinNewWeight(0.15f) {}
 };
 
 #endif

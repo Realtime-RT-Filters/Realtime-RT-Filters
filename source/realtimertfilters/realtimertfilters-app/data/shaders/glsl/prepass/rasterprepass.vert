@@ -26,8 +26,8 @@ void main()
 {
 	// Get transformations out of the way
 	outWorldPos = inPos.xyz;
-	gl_Position = ubo_sceneinfo.ProjMat * ubo_sceneinfo.ViewMat * inPos;
-	outDevicePos = gl_Position;
+	outDevicePos = ubo_sceneinfo.ProjMat * ubo_sceneinfo.ViewMat * inPos;
+	gl_Position = outDevicePos;
 	outOldDevicePos = ubo_sceneinfo.ProjMatPrev * ubo_sceneinfo.ViewMatPrev * inPos;
 //	outWorldPos = (MODELMATRIX * inPos).xyz;
 //	gl_Position = ubo_sceneinfo.ProjMat * ubo_sceneinfo.ViewMat * MODELMATRIX * inPos;
