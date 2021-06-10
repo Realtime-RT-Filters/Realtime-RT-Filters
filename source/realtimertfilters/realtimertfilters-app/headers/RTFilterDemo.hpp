@@ -70,6 +70,7 @@ namespace rtf
 
 		UBO_SceneInfo m_UBO_SceneInfo{};
 		UBO_Guibase m_UBO_Guibase{};
+		UBO_AccuConfig m_UBO_AccuConfig{};
 		
 		bool m_ShowSceneControls = false;
 		bool m_ShowPathtracerControls = false;
@@ -108,6 +109,7 @@ namespace rtf
 		virtual void ResetGUIState();
 		virtual void SceneControlUIOverlay(vks::UIOverlay* overlay);
 		virtual void PathtracerConfigUIOverlay(vks::UIOverlay* overlay);
+		virtual void AccumulationConfigUIOverlay(vks::UIOverlay* overlay);
 		
 		std::wstring getShadersPathW();
 

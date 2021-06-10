@@ -280,6 +280,9 @@ namespace rtf
 		m_UBO_Guibase = std::make_shared<ManagedUBO<S_Guibase>>(vulkanDevice);
 		m_UBO_Guibase->prepare();
 
+		m_UBO_AccuConfig = std::make_shared<ManagedUBO<S_AccuConfig>>(vulkanDevice);
+		m_UBO_AccuConfig->prepare();
+
 		updateUBOs();
 	}
 
@@ -310,6 +313,7 @@ namespace rtf
 
 		m_UBO_SceneInfo->update();
 		m_UBO_Guibase->update();
+		m_UBO_AccuConfig->update();
 	}
 
 	void RTFilterDemo::OnUpdateUIOverlay(vks::UIOverlay* overlay)
@@ -431,6 +435,24 @@ namespace rtf
 			pathtracerConfig.PrimarySamplesPerPixel = static_cast<uint>(samplesPerPixel);
 			pathtracerConfig.MaxBounceDepth = static_cast<uint>(bounceDepth);
 			pathtracerConfig.SecondarySamplesPerBounce = static_cast<uint>(samplesPerBounce);
+		}
+	}
+
+	void RTFilterDemo::AccumulationConfigUIOverlay(vks::UIOverlay* overlay)
+	{
+		if (!m_renderpassManager->m_RPG_Active->m_usePathtracing)
+		{
+			return;
+		}
+		S_AccuConfig& ubo = m_UBO_AccuConfig->UBO();
+		overlay->checkBox("Enable TempAccu", &ubo.EnableAccumulation);
+		if (ubo.EnableAccumulation)
+		{
+			float maxPosDiff = sqrt(ubo.MaxPosDifference);
+			overlay->sliderFloat("Max PosDiff Squared", &maxPosDiff, 0.f, 1.f);
+			ubo.MaxPosDifference = maxPosDiff * maxPosDiff;
+			overlay->sliderFloat("Max Normal Deviation", &ubo.MaxNormalAngleDifference, 0.f, 3.141f);
+			overlay->sliderFloat("Min new data weight", &ubo.MinNewWeight, 0.f, 1.f);
 		}
 	}
 

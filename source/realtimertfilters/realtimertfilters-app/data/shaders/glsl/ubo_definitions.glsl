@@ -144,4 +144,39 @@ layout(set = SET_GUIBASE, binding = BIND_GUIBASE) uniform S_Guibase
 } ubo_guibase;
 #endif
 
+
+/// ACCU UBO
+/// Size: 16 byte
+/// EnableAccumulation = If 0, accumulation is skipped
+/// MaxPosDifference = maximum squared distance of current and previous world position of a fragment
+/// MaxNormalAngleDifference = maximum angle difference in radians between current and previous worldspace normals of a fragment
+/// MinNewWeight = Minimum weight that new data is mixed with old (accumulated)
+
+#ifdef __cplusplus
+
+struct S_AccuConfig
+{
+	int		EnableAccumulation;
+	float		MaxPosDifference;
+	float		MaxNormalAngleDifference;
+	float		MinNewWeight;
+
+	S_AccuConfig() : EnableAccumulation(1), MaxPosDifference(0.001), MaxNormalAngleDifference(0.01), MinNewWeight(0.1f) {}
+};
+
+#endif
+#ifdef BIND_ACCUCONFIG
+#ifndef SET_ACCUCONFIG
+#define SET_ACCUCONFIG 0
+#endif 
+
+layout(set = SET_ACCUCONFIG, binding = BIND_ACCUCONFIG) uniform S_AccuConfig
+{
+	int		EnableAccumulation;
+	float		MaxPosDifference;
+	float		MaxNormalAngleDifference;
+	float		MinNewWeight;
+} ubo_accuconfig;
+#endif
+
 #endif

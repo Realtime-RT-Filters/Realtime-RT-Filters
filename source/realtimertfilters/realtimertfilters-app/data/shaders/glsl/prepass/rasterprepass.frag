@@ -26,7 +26,7 @@ void main()
 	vec3 texNormal = texture(samplerNormalMap, inUV).xyz;
 	if (texNormal == vec3(0.0))
 	{
-		outNormal = vec4(inNormal, 0.0);
+		outNormal = vec4(normalize(inNormal), 0.0);
 	}
 	else
 	{

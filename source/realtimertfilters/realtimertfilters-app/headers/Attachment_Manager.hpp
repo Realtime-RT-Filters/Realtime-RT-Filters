@@ -21,6 +21,7 @@ namespace rtf {
 		filteroutput,
 		history_color,
 		scratch_buffer,
+
 		// add your attachment before this one
 		max_attachments,
 	};
@@ -37,6 +38,7 @@ namespace rtf {
 	class AttachmentInitInfo
 	{
 	public:
+		Attachment m_AttachmentId;
 		VkFormat m_Format{};
 		VkImageUsageFlags m_UsageFlags{};
 		VkExtent2D m_Size{};
