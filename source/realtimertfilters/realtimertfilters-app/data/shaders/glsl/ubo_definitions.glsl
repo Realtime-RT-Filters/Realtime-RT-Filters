@@ -96,7 +96,7 @@ struct SPC_PathtracerConfig
 	uint		SecondarySamplesPerBounce;
 	uint		VertexSize;
 
-	SPC_PathtracerConfig() : ClearColor(), Frame(), PrimarySamplesPerPixel(1), MaxBounceDepth(1), SecondarySamplesPerBounce(1), VertexSize(0) {}
+	SPC_PathtracerConfig() : ClearColor(), Frame(), PrimarySamplesPerPixel(1), MaxBounceDepth(3), SecondarySamplesPerBounce(1), VertexSize(0) {}
 };
 
 #endif
