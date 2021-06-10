@@ -17,6 +17,7 @@ namespace rtf
 
 		void ConfigureShader(const std::string& shadername);
 		void PushAttachment(const AttachmentBinding& attachmentbinding);
+		void Push_PastRenderpass_BufferCopy(Attachment sourceAttachment, Attachment destinationAttachment);
 		void PushUBO(UBOPtr& ubo);
 
 		virtual void prepare() override;
@@ -48,6 +49,10 @@ namespace rtf
 
 		std::string m_Shadername;
 		std::vector<AttachmentBinding> m_AttachmentBindings{};
+
+		/// use attachment copies to copy the content of one attachment into another, after the renderpass has finished
+		std::vector<std::pair<Attachment, Attachment>> m_AttachmentCopies{};
+
 		inline size_t getAttachmentCount() { return m_AttachmentBindings.size(); }
 
 

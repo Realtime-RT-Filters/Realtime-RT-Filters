@@ -23,6 +23,11 @@ namespace rtf
 		m_AttachmentBindings.push_back(attachmentbinding);
 	}
 
+	void RenderpassPostProcess::Push_PastRenderpass_BufferCopy(Attachment sourceAttachment, Attachment destinationAttachment)
+	{
+		m_AttachmentCopies.push_back({ sourceAttachment , destinationAttachment });
+	}
+
 	void RenderpassPostProcess::PushUBO(UBOPtr& ubo)
 	{
 		m_UBOs.push_back(ubo);
@@ -295,8 +300,6 @@ namespace rtf
 
 		renderPassBeginInfo.framebuffer = m_Framebuffer;
 
-
-
 		vkCmdBeginRenderPass(m_CmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		VkViewport viewport = vks::initializers::viewport((float)m_rtFilterDemo->width, (float)m_rtFilterDemo->height, 0.0f, 1.0f);
@@ -318,6 +321,63 @@ namespace rtf
 		vkCmdDraw(m_CmdBuffer, 3, 1, 0, 0);
 
 		vkCmdEndRenderPass(m_CmdBuffer);
+
+		for (auto copyBufferPair : m_AttachmentCopies)
+		{
+			Attachment source = copyBufferPair.first;
+			VkImage sourceImage = m_rtFilterDemo->m_attachmentManager->getAttachment(source)->image;
+
+			Attachment destination = copyBufferPair.second;
+			VkImage destinationImage = m_rtFilterDemo->m_attachmentManager->getAttachment(destination)->image;
+
+			VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+			// Prepare layout of source attachment to function as transfer source
+			vks::tools::setImageLayout(
+				m_CmdBuffer,
+				sourceImage,
+				VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_IMAGE_LAYOUT_GENERAL,
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+			);
+
+
+
+			// Prepare layout of destination attachment to function as transfer destination
+			vks::tools::setImageLayout(
+				m_CmdBuffer,
+				destinationImage,
+				VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_IMAGE_LAYOUT_GENERAL,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+			);
+
+			VkImageCopy copyRegion{};
+			copyRegion.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+			copyRegion.srcOffset = { 0, 0, 0 };
+			copyRegion.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+			copyRegion.dstOffset = { 0, 0, 0 };
+			copyRegion.extent = { m_rtFilterDemo->width, m_rtFilterDemo->height, 1 };
+			vkCmdCopyImage(m_CmdBuffer, sourceImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, destinationImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+
+			// Transition destination image back to layout general
+			vks::tools::setImageLayout(
+				m_CmdBuffer,
+				destinationImage,
+				VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				VK_IMAGE_LAYOUT_GENERAL
+				);
+
+			// Transition source image back to layout general
+			vks::tools::setImageLayout(
+				m_CmdBuffer,
+				sourceImage,
+				VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				VK_IMAGE_LAYOUT_GENERAL
+				);
+		}
 
 		VK_CHECK_RESULT(vkEndCommandBuffer(m_CmdBuffer));
 	}

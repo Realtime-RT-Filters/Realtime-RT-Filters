@@ -102,6 +102,10 @@ namespace rtf
 		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::prev_historylength, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
 		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::new_historylength, AttachmentBinding::AccessMode::WriteOnly, AttachmentBinding::BindType::Sampled));
 		m_RPF_TempAccu->PushUBO(std::dynamic_pointer_cast<UBOInterface, ManagedUBO<S_AccuConfig>>(rtFilterDemo->m_UBO_AccuConfig));
+		m_RPF_TempAccu->Push_PastRenderpass_BufferCopy(Attachment::position, Attachment::prev_position);
+		m_RPF_TempAccu->Push_PastRenderpass_BufferCopy(Attachment::normal, Attachment::prev_normal);
+		m_RPF_TempAccu->Push_PastRenderpass_BufferCopy(Attachment::new_historylength, Attachment::prev_historylength);
+		m_RPF_TempAccu->Push_PastRenderpass_BufferCopy(Attachment::intermediate, Attachment::prev_accumulatedcolor);
 		registerRenderpass(m_RPF_TempAccu);
 
 		// GUI Pass (RasterizerOnly)
@@ -123,7 +127,8 @@ namespace rtf
 		m_RPG_PathtracerOnly->m_usePathtracing = true;
 		m_RPG_PathtracerOnly->setAttachmentBindings({
 			GuiAttachmentBinding(Attachment::rtoutput, std::string("RT Output")),
-			GuiAttachmentBinding(Attachment::albedo, std::string("GBuffer::Albedo"))
+			GuiAttachmentBinding(Attachment::albedo, std::string("GBuffer::Albedo")),
+			GuiAttachmentBinding(Attachment::intermediate, std::string("Intermediate")),
 			});
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_PathtracerOnly));
 

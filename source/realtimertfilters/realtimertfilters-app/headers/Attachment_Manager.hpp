@@ -67,7 +67,9 @@ namespace rtf
 	{
 		static const VkImageUsageFlags DEFAULTFLAGS =
 			VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |		// Load into GUI & GBuffer shader with this
-			VkImageUsageFlagBits::VK_IMAGE_USAGE_STORAGE_BIT;				// Use as StorageImage, for RT and Postprocessing Shader
+			VkImageUsageFlagBits::VK_IMAGE_USAGE_STORAGE_BIT |				// Use as StorageImage, for RT and Postprocessing Shader
+			VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+			VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 		std::vector<AttachmentInitInfo> m_attachmentInitsUnsorted = {
 			// GBuffer

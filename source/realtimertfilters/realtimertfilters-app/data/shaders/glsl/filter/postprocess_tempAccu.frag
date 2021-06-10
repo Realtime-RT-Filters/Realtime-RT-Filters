@@ -69,7 +69,7 @@ void main()
 		// History = 1: History was discarded previously => We mix raw 0.5, accu 0.5
 		// History > 1: History is pretty old and useful => We mix up to raw 0.1, accu 0.9
 		float mixFactor = max(ubo_accuconfig.MinNewWeight, 1.f / (historylength + 1));
-		Out_NewAccuColor = mix(rawColor, texelFetch(Tex_PrevAccuColor, texel_prevFrame, 0), mixFactor);
+		Out_NewAccuColor = vec4(mixFactor); //mix(rawColor, texelFetch(Tex_PrevAccuColor, texel_prevFrame, 0), mixFactor);
 		Out_NewHistoryLength = historylength + 1;
 	}
 	else
