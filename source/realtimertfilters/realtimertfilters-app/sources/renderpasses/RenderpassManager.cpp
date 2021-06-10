@@ -98,6 +98,7 @@ namespace rtf
 			GuiAttachmentBinding(Attachment::normal, std::string("GBuffer::Normal")),
 			GuiAttachmentBinding(Attachment::albedo, std::string("GBuffer::Albedo")),
 			GuiAttachmentBinding(Attachment::motionvector, std::string("GBuffer::Motion")),
+			//GuiAttachmentBinding(Attachment::meshid, std::string("GBuffer::MeshId")), // Right now throws validation errors
 			GuiAttachmentBinding(Attachment::filteroutput, std::string("Filter Output"))
 			});
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_RasterOnly));

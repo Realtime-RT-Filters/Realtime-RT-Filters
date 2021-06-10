@@ -19,6 +19,7 @@ namespace rtf
 		FrameBufferAttachment* m_NormalAttachment = nullptr;
 		FrameBufferAttachment* m_AlbedoAttachment = nullptr;
 		FrameBufferAttachment* m_MotionAttachment = nullptr;
+		FrameBufferAttachment* m_MeshIdAttachment = nullptr;
 		FrameBufferAttachment* m_DepthAttachment = nullptr;
 
 		VkDescriptorSet m_DescriptorSetAttachments = nullptr;

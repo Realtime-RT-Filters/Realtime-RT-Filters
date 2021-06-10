@@ -591,6 +591,10 @@ VkVertexInputAttributeDescription vkglTF::Vertex::inputAttributeDescription(uint
 			return VkVertexInputAttributeDescription({ location, binding, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, joint0) });
 		case VertexComponent::Weight0:
 			return VkVertexInputAttributeDescription({ location, binding, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, weight0) });
+		case VertexComponent::MaterialId:
+			return VkVertexInputAttributeDescription{ location, binding, VK_FORMAT_R32_SINT, offsetof(Vertex, materialId)};
+		case VertexComponent::MeshId:
+			return VkVertexInputAttributeDescription{ location, binding, VK_FORMAT_R32_SINT, offsetof(Vertex, meshId)};
 		default:
 			return VkVertexInputAttributeDescription({});
 	}
@@ -876,6 +880,9 @@ void vkglTF::Model::loadNode(vkglTF::Node *parent, const tinygltf::Node &node, u
 					bufferWeights = reinterpret_cast<const float *>(&(model.buffers[uvView.buffer].data[uvAccessor.byteOffset + uvView.byteOffset]));
 				}
 
+				// MeshId / Material Id
+				
+
 				hasSkin = (bufferJoints && bufferWeights);
 
 				vertexCount = static_cast<uint32_t>(posAccessor.count);
@@ -899,6 +906,8 @@ void vkglTF::Model::loadNode(vkglTF::Node *parent, const tinygltf::Node &node, u
 					vert.tangent = bufferTangents ? glm::vec4(glm::make_vec4(&bufferTangents[v * 4])) : glm::vec4(0.0f);
 					vert.joint0 = hasSkin ? glm::vec4(glm::make_vec4(&bufferJoints[v * 4])) : glm::vec4(0.0f);
 					vert.weight0 = hasSkin ? glm::make_vec4(&bufferWeights[v * 4]) : glm::vec4(0.0f);
+					vert.materialId = primitive.material;
+					vert.meshId = node.mesh;
 					vertexBuffer.push_back(vert);
 				}
 			}

@@ -5,6 +5,7 @@ layout (location = 1) in vec2 inUV;					// UV coordinates
 layout (location = 2) in vec3 inColor;				// Per vertex color
 layout (location = 3) in vec3 inNormal;				// Vertex normal
 layout (location = 4) in vec3 inTangent;			// Vertex tangent
+layout (location = 5) in int inMeshId;				// Mesh Id
 
 #define BIND_SCENEINFO 0
 #include "../ubo_definitions.glsl"
@@ -16,7 +17,7 @@ layout (location = 3) out vec3 outNormal; 			// Normal in world space
 layout (location = 4) out vec3 outTangent;			// Tangent in world space
 layout (location = 5) out vec2 outUV;				// UV coordinates
 layout (location = 6) out vec3 outColor;			// Passthrough for vertex color
-//layout (location = 7) out uint outMeshId;			// Mesh Id. Currently not supported.
+layout (location = 7) flat out int outMeshId;			// Mesh Id
 
 //const mat4 MODELMATRIX = mat4(1.0f);
 //const mat4 PREVMODELMATRIX = MODELMATRIX;
@@ -42,4 +43,6 @@ void main()
 	
 	// Set vertex color passthrough
 	outColor = inColor;
+
+	outMeshId = inMeshId;
 }

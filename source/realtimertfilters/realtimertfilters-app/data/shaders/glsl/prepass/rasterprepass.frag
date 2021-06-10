@@ -10,13 +10,13 @@ layout (location = 3) in vec3 inNormal; 			// Normal in world space
 layout (location = 4) in vec3 inTangent;			// Tangent in world space
 layout (location = 5) in vec2 inUV;				// UV coordinates
 layout (location = 6) in vec3 inColor;				// Passthrough for vertex color
-//layout (location = 7) in uint inMeshId;			// Mesh id. Currently not supported.
+layout (location = 7) flat in int inMeshId;			// Mesh id
 
 layout (location = 0) out vec4 outPosition;			// Fragment position in world spcae
 layout (location = 1) out vec4 outNormal;			// Fragment normal in world space
 layout (location = 2) out vec4 outAlbedo;			// Fragment raw albedo
 layout (location = 3) out vec2 outMotion;			// Fragment screenspace motion delta
-//layout (location = 4) out uint outMeshId;			// Fragment mesh id. Currently not supported.
+layout (location = 4) out int outMeshId;			// Fragment mesh id
 
 void main() 
 {
@@ -49,5 +49,7 @@ void main()
 	// Calculate motion delta
 	vec2 screenPos = inDevicePos.xz / inDevicePos.w;
 	vec2 old_screenPos = inOldDevicePos.xz / inOldDevicePos.w;
-   	outMotion = old_screenPos-screenPos;	
+   	outMotion = old_screenPos-screenPos;
+
+	outMeshId = inMeshId;
 }

@@ -28,24 +28,26 @@ namespace rtf
 		m_NormalAttachment = m_attachmentManager->getAttachment(Attachment::normal);
 		m_AlbedoAttachment = m_attachmentManager->getAttachment(Attachment::albedo);
 		m_MotionAttachment = m_attachmentManager->getAttachment(Attachment::motionvector);
+		m_MeshIdAttachment = m_attachmentManager->getAttachment(Attachment::meshid);
 		m_DepthAttachment = m_attachmentManager->getAttachment(Attachment::depth);
 		assert(m_PositionAttachment != nullptr);
 		assert(m_NormalAttachment != nullptr);
 		assert(m_AlbedoAttachment != nullptr);
 		assert(m_MotionAttachment != nullptr);
+		assert(m_MeshIdAttachment != nullptr);
 		assert(m_DepthAttachment != nullptr);
 	}
 
 	void RenderpassGbuffer::prepareRenderpass()
 	{
 		// Formatting attachment data into VkAttachmentDescription structs
-		const uint32_t ATTACHMENT_COUNT_COLOR = 4;
+		const uint32_t ATTACHMENT_COUNT_COLOR = 5;
 		const uint32_t ATTACHMENT_COUNT_DEPTH = 1;
 		const uint32_t ATTACHMENT_COUNT = ATTACHMENT_COUNT_COLOR + ATTACHMENT_COUNT_DEPTH;
 		VkAttachmentDescription attachmentDescriptions[ATTACHMENT_COUNT] = {};
 		FrameBufferAttachment* attachments[] =
 		{
-			m_PositionAttachment, m_NormalAttachment, m_AlbedoAttachment, m_MotionAttachment, m_DepthAttachment
+			m_PositionAttachment, m_NormalAttachment, m_AlbedoAttachment, m_MotionAttachment, m_MeshIdAttachment, m_DepthAttachment
 		};
 
 		for (uint32_t i = 0; i < ATTACHMENT_COUNT; i++)
@@ -108,7 +110,7 @@ namespace rtf
 		VK_CHECK_RESULT(vkCreateRenderPass(m_vulkanDevice->logicalDevice, &renderPassInfo, nullptr, &m_renderpass));
 
 		VkImageView attachmentViews[ATTACHMENT_COUNT] = {
-			m_PositionAttachment->view, m_NormalAttachment->view, m_AlbedoAttachment->view, m_MotionAttachment->view, m_DepthAttachment->view
+			m_PositionAttachment->view, m_NormalAttachment->view, m_AlbedoAttachment->view, m_MotionAttachment->view, m_MeshIdAttachment->view, m_DepthAttachment->view
 		};
 
 		VkExtent2D size = m_attachmentManager->GetSize();
@@ -185,12 +187,13 @@ namespace rtf
 		VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
 
 		// Clear values for all attachments written in the fragment shader
-		std::array<VkClearValue, 5> clearValues;
+		std::array<VkClearValue, 6> clearValues;
 		clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
 		clearValues[1].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
 		clearValues[2].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
 		clearValues[3].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
-		clearValues[4].depthStencil = { 1.0f, 0 };
+		clearValues[4].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+		clearValues[5].depthStencil = { 1.0f, 0 };
 
 		VkExtent2D size = m_attachmentManager->GetSize();
 
@@ -261,7 +264,8 @@ namespace rtf
 				vkglTF::VertexComponent::UV,
 				vkglTF::VertexComponent::Color,
 				vkglTF::VertexComponent::Normal,
-				vkglTF::VertexComponent::Tangent
+				vkglTF::VertexComponent::Tangent,
+				vkglTF::VertexComponent::MeshId
 			}
 		);
 		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
@@ -269,7 +273,8 @@ namespace rtf
 		// Blend attachment states required for all color attachments
 		// This is important, as color write mask will otherwise be 0x0 and you
 		// won't see anything rendered to the attachment
-		std::array<VkPipelineColorBlendAttachmentState, 4> blendAttachmentStates = {
+		std::array<VkPipelineColorBlendAttachmentState, 5> blendAttachmentStates = {
+			vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 			vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 			vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 			vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE),

@@ -59,7 +59,7 @@ S_Vertex getVertex(uint index)
 {
 
 	// The multiplier is the size of the vertex divided by four float components (=16 bytes)
-	const int m = 96 / 16;//ubo.vertexSize / 16;
+	const int m = int(config.VertexSize) / 16;//ubo.vertexSize / 16;
 
 	vec4 d0 = vertices.v[m * index + 0];
 	vec4 d1 = vertices.v[m * index + 1];
