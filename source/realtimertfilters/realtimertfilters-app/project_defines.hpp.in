@@ -4,6 +4,7 @@
 // the gltf scene to be loaded
 #define MODEL_NAME "models/cornellBox.gltf"
 //#define MODEL_NAME "models/Sponza/glTF/Sponza.gltf"
+//#define MODEL_NAME "models/pink_room/pink_room.gltf"
 
 // vulkan glslc executable
 #define SPIRV_COMPILER_CMD_NAME "${Vulkan_GLSLC_EXECUTABLE}"
