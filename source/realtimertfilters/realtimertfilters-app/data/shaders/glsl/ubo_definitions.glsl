@@ -156,7 +156,7 @@ layout(set = SET_GUIBASE, binding = BIND_GUIBASE) uniform S_Guibase
 
 struct S_AccuConfig
 {
-	int		EnableAccumulation;
+	int			EnableAccumulation;
 	float		MaxPosDifference;
 	float		MaxNormalAngleDifference;
 	float		MinNewWeight;
@@ -172,7 +172,7 @@ struct S_AccuConfig
 
 layout(set = SET_ACCUCONFIG, binding = BIND_ACCUCONFIG) uniform S_AccuConfig
 {
-	int		EnableAccumulation;
+	int			EnableAccumulation;
 	float		MaxPosDifference;
 	float		MaxNormalAngleDifference;
 	float		MinNewWeight;

@@ -4,22 +4,34 @@
 #include "disable_warnings.h"
 #include <VulkanDevice.h>
 
+#include <array>
 #include <utility>
 
-namespace rtf {
+namespace rtf
+{
 
 	//These are global types needed by other classes
 	enum class Attachment
 	{
+		// GBUFFER
 		position,
 		normal,
 		albedo,
 		depth,
 		meshid,
 		motionvector,
+		// PATHTRACER
 		rtoutput,
+		// TEMPORAL ACCUMULATION
+		prev_position,
+		prev_normal,
+		prev_accumulatedcolor,
+		prev_historylength,
+		new_historylength,
+		// MISC
+		intermediate,
 		filteroutput,
-		history_color,
+		// BMFR
 		scratch_buffer,
 
 		// add your attachment before this one
@@ -38,14 +50,14 @@ namespace rtf {
 	class AttachmentInitInfo
 	{
 	public:
-		Attachment m_AttachmentId;
+		Attachment m_AttachmentId{};
 		VkFormat m_Format{};
 		VkImageUsageFlags m_UsageFlags{};
 		VkExtent2D m_Size{};
 		VkImageLayout m_InitialLayout;
 
 		AttachmentInitInfo() = default;
-		AttachmentInitInfo(VkFormat format, VkImageUsageFlags flags, VkImageLayout initialLayout = VK_IMAGE_LAYOUT_GENERAL, VkExtent2D size = VkExtent2D{0, 0}) : m_Format(format), m_UsageFlags(flags), m_Size(size), m_InitialLayout(initialLayout) {};
+		AttachmentInitInfo(Attachment attachmentid, VkFormat format, VkImageUsageFlags flags, VkImageLayout initialLayout = VK_IMAGE_LAYOUT_GENERAL, VkExtent2D size = VkExtent2D{ 0, 0 }) : m_AttachmentId(attachmentid), m_Format(format), m_UsageFlags(flags), m_Size(size), m_InitialLayout(initialLayout) {};
 	};
 
 	/// <summary>
@@ -57,18 +69,29 @@ namespace rtf {
 			VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |		// Load into GUI & GBuffer shader with this
 			VkImageUsageFlagBits::VK_IMAGE_USAGE_STORAGE_BIT;				// Use as StorageImage, for RT and Postprocessing Shader
 
-		std::vector<AttachmentInitInfo> m_attachmentTypes = {
-			AttachmentInitInfo(VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS), // position
-			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS), // normal
-			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS), // albedo
-			AttachmentInitInfo( VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL ), // depth
-			AttachmentInitInfo( VK_FORMAT_R32_SINT, DEFAULTFLAGS), // meshid
-			AttachmentInitInfo( VK_FORMAT_R32G32_SFLOAT, DEFAULTFLAGS), // motionvector
-			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS), // rtoutput
-			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS), // filteroutput
-			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS), // history_color
-			AttachmentInitInfo( VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS), // scratch_buffer
+		std::vector<AttachmentInitInfo> m_attachmentInitsUnsorted = {
+			// GBuffer
+			AttachmentInitInfo(Attachment::position, VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::normal,  VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::albedo,  VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::depth,  VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL),
+			AttachmentInitInfo(Attachment::meshid,  VK_FORMAT_R32_SINT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::motionvector,  VK_FORMAT_R32G32_SFLOAT, DEFAULTFLAGS),
+			// Pathtracer
+			AttachmentInitInfo(Attachment::rtoutput,  VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
+			// Temporal Accumulation
+			AttachmentInitInfo(Attachment::prev_position, VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::prev_normal, VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::prev_accumulatedcolor, VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::prev_historylength, VK_FORMAT_R16_SINT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::new_historylength, VK_FORMAT_R16_SINT, DEFAULTFLAGS),
+			// Misc
+			AttachmentInitInfo(Attachment::filteroutput,  VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::intermediate,  VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
+			// BMFR
+			AttachmentInitInfo(Attachment::scratch_buffer,  VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
 		};
+		std::array<AttachmentInitInfo, (size_t)Attachment::max_attachments> m_attachmentInits{};
 
 	public:
 		static const uint32_t DEFAULT_WIDTH = 2048, DEFAULT_HEIGHT = 2048;

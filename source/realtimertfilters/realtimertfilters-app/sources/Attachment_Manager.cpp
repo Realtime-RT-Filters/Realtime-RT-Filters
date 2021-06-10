@@ -30,9 +30,14 @@ namespace rtf
 		assert(validDepthFormat);
 		//m_attachmentTypes[(int)Attachment::depth].m_Format = attDepthFormat;
 
+		for (auto& initInfo : m_attachmentInitsUnsorted)
+		{
+			m_attachmentInits.at((size_t)initInfo.m_AttachmentId) = initInfo;
+		}
+
 		for (int idx = 0; idx < m_maxAttachmentSize; idx++)
 		{
-			this->createAttachment(cmdBuffer, m_attachmentTypes.at(idx), &m_attachments[idx]);
+			this->createAttachment(cmdBuffer, m_attachmentInits.at(idx), &m_attachments[idx]);
 		}
 		m_vulkanDevice->flushCommandBuffer(cmdBuffer, m_queue);
 	}
