@@ -33,17 +33,7 @@ layout(binding = B_INSTANCEINFO) readonly buffer _InstanceInfo { PrimMeshInfo pr
 layout(binding = B_VERTICES) readonly buffer _VertexBuf { vec4 v[]; } vertices;
 layout(binding = B_INDICES) readonly buffer _Indices { uint i[]; }indices;
 // layout( binding = B_MATERIALS) readonly buffer _MaterialBuffer {GltfShadeMaterial m[];} materials;
-//layout( binding = B_TEXTURES) uniform sampler2D texturesMap[]; // all textures
-
-struct S_GeometryHitPoint
-{
-	vec3 pos;
-	vec3 pos_world;
-	vec3 normal;
-	vec3 normal_world;
-	vec2 uv;
-	vec3 albedo;
-};
+// layout( binding = B_TEXTURES) uniform sampler2D texturesMap[]; // all textures
 
 struct S_Vertex 
 {
@@ -56,6 +46,16 @@ struct S_Vertex
 	vec4 tangent;
 	int materialId;
 	int meshId;
+};
+
+struct S_GeometryHitPoint
+{
+	vec3 pos;
+	vec3 pos_world;
+	vec3 normal;
+	vec3 normal_world;
+	vec2 uv;
+	vec3 albedo;
 };
 
 S_Vertex getVertex(uint index)
