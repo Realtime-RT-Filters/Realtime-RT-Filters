@@ -35,6 +35,7 @@ namespace rtf
 		void createShaderBindingTables();
 		void createShaderBindingTable(ShaderBindingTable& table, uint32_t);
 		void createDescriptorSets();
+		void createMaterialBuffer();
 		ScratchBuffer createScratchBuffer(VkDeviceSize);
 
 		void createAccelerationStructure(AccelerationStructure& accelerationStructure, VkAccelerationStructureTypeKHR type, VkAccelerationStructureBuildSizesInfoKHR buildSizeInfo);
