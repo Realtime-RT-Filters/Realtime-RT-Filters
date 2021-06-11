@@ -32,7 +32,7 @@ layout(binding = 0) uniform accelerationStructureEXT topLevelAS;
 layout(binding = B_INSTANCEINFO) readonly buffer _InstanceInfo { PrimMeshInfo primInfo[]; };
 layout(binding = B_VERTICES) readonly buffer _VertexBuf { vec4 v[]; } vertices;
 layout(binding = B_INDICES) readonly buffer _Indices { uint i[]; }indices;
-// layout( binding = B_MATERIALS) readonly buffer _MaterialBuffer {GltfShadeMaterial m[];} materials;
+layout( binding = B_MATERIALS) readonly buffer _MaterialBuffer {GltfShadeMaterial m[];} materials;
 // layout( binding = B_TEXTURES) uniform sampler2D texturesMap[]; // all textures
 
 struct S_Vertex 
@@ -56,6 +56,7 @@ struct S_GeometryHitPoint
 	vec3 normal_world;
 	vec2 uv;
 	vec3 albedo;
+	int materialId;
 };
 
 S_Vertex getVertex(uint index)
@@ -108,6 +109,8 @@ S_GeometryHitPoint initGeometryHitPoint()
 	// Calculate uv and color
 	hitpoint.uv = v0.uv * barycentrics.x + v1.uv * barycentrics.y + v2.uv * barycentrics.z;
 	hitpoint.albedo = v0.color.xyz * barycentrics.x + v1.color.xyz * barycentrics.y + v2.color.xyz * barycentrics.z;
+
+	hitpoint.materialId = v0.materialId;
 	return hitpoint;
 }
 
@@ -230,7 +233,7 @@ void main()
 	{
 		prd.radiance = emittance;
 		prd.normal = hitpoint.normal_world;
-		prd.albedo = hitpoint.albedo;
+		prd.albedo = materials.m[hitpoint.materialId].pbrBaseColorFactor.xyz;
 		return;
 	}
 

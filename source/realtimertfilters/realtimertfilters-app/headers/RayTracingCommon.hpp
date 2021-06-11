@@ -5,19 +5,11 @@
 #include <vulkanexamplebase.h>
 #include "VulkanglTFModel.h"
 #include "../data/shaders/glsl/ubo_definitions.glsl"
+#include "../../data/shaders/glsl/pathTracerShader/gltf.glsl"
 
 namespace rtf
 {
 	class RayTracingComponent {
-
-	public:
-		void setQueue(VkQueue queue)
-		{
-			this->m_queue = queue;
-		}
-
-		
-
 	protected:
 		// ================ Struct types ================
 
@@ -86,6 +78,8 @@ namespace rtf
 		Camera* m_camera{};
 		// set via setter after scene loaded
 		vkglTF::Model* m_Scene{};
+		std::vector<GltfShadeMaterial> m_materials;
+		vks::Buffer m_material_buffer;
 
 		PFN_vkGetBufferDeviceAddressKHR vkGetBufferDeviceAddressKHR;
 		PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR;

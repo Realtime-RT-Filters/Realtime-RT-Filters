@@ -1,6 +1,7 @@
 #include "../../headers/renderpasses/Renderpass_PathTracer.hpp"
 #include "../../headers/RTFilterDemo.hpp"
 #include "../../data/shaders/glsl/pathTracerShader/binding.glsl"
+#include "../../data/shaders/glsl/pathTracerShader/gltf.glsl"
 
 namespace rtf
 {
@@ -9,6 +10,7 @@ namespace rtf
 		// Init push Constant
 		initData();
 		prepareAttachement();
+		createMaterialBuffer();
 
 		// Get the function pointers required for ray tracing
 		vkGetBufferDeviceAddressKHR = reinterpret_cast<PFN_vkGetBufferDeviceAddressKHR>(vkGetDeviceProcAddr(m_vulkanDevice->logicalDevice, "vkGetBufferDeviceAddressKHR"));
@@ -99,9 +101,9 @@ namespace rtf
 			// Index buffer
 			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_INDICES),
 			//  Material
-			//vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_MATERIALS),
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_MATERIALS),
 			//  Textures
-			//vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_TEXTURES),
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_TEXTURES),
 		};
 
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI = vks::initializers::descriptorSetLayoutCreateInfo(layoutBindingSet);
@@ -183,9 +185,9 @@ namespace rtf
 		std::vector<VkDescriptorPoolSize> poolSizes = {
 			{ VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1 },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2 },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2 },
-			//{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 }
+			//{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0 }
 		};
 		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = vks::initializers::descriptorPoolCreateInfo(poolSizes, 1);
 		VK_CHECK_RESULT(vkCreateDescriptorPool(m_vulkanDevice->logicalDevice, &descriptorPoolCreateInfo, nullptr, &m_descriptorPool));
@@ -206,10 +208,11 @@ namespace rtf
 		accelerationStructureWrite.descriptorCount = 1;
 		accelerationStructureWrite.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 
+
 		VkDescriptorImageInfo storageImageDescriptor{ VK_NULL_HANDLE, m_Rtoutput->view, VK_IMAGE_LAYOUT_GENERAL };
 		VkDescriptorBufferInfo vertexBufferDescriptor{ m_Scene->vertices.buffer, 0, VK_WHOLE_SIZE };
 		VkDescriptorBufferInfo indexBufferDescriptor{ m_Scene->indices.buffer, 0, VK_WHOLE_SIZE };
-		//VkDescriptorBufferInfo materialBufferDescriptor{ getMaterialBuffer(), 0, VK_WHOLE_SIZE };
+		VkDescriptorBufferInfo materialBufferDescriptor{ m_material_buffer.buffer, 0, VK_WHOLE_SIZE };
 
 		std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
 			// Top level acceleration structure
@@ -223,15 +226,34 @@ namespace rtf
 			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_VERTICES, &vertexBufferDescriptor),
 			// Scene index buffer
 			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_INDICES, &indexBufferDescriptor),
-			// Material 
-			//vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_MATERIALS, &m_Scene->materials.data()->descriptor, m_Scene->materials.size()),
+			// Material buffer
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, B_MATERIALS, &materialBufferDescriptor),
 			// Textures
-			//vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, B_TEXTURES, &m_Scene->textures.data()->descriptor,2)
+			//vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, B_TEXTURES, &m_Scene->textures.data()->descriptor)
 		};
 		vkUpdateDescriptorSets(m_vulkanDevice->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
 	}
 
+	void RenderpassPathTracer::createMaterialBuffer()
+	{
+		std::vector<vkglTF::Material> materials = m_Scene->materials;
+		this->m_materials.resize(materials.size());
+		for (int i = 0; i < materials.size(); i++) {
+			m_materials[i].pbrBaseColorFactor = materials[i].baseColorFactor;
+			//m_materials[i].pbrBaseColorTexture = materials[i].baseColorTexture;
+			//m_materials[i].emissiveFactor = materials[i].baseColorTexture;
+		}
 
+		VK_CHECK_RESULT(m_vulkanDevice->createBuffer(
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			&m_material_buffer,
+			sizeof(GltfShadeMaterial) * this->m_materials.size(),
+			m_materials.data())
+		);
+		m_material_buffer.map();
+		memcpy(m_material_buffer.mapped, m_materials.data(), sizeof(GltfShadeMaterial) * this->m_materials.size());
+	}
 
 	void RenderpassPathTracer::createShaderBindingTables()
 	{
@@ -299,7 +321,7 @@ namespace rtf
 		m_AlbedoAttachment = m_attachmentManager->getAttachment(Attachment::albedo);
 		m_MotionAttachment = m_attachmentManager->getAttachment(Attachment::motionvector);
 		m_Rtoutput = m_attachmentManager->getAttachment(Attachment::rtoutput);
-		m_Filteroutput= m_attachmentManager->getAttachment(Attachment::filteroutput);
+		m_Filteroutput = m_attachmentManager->getAttachment(Attachment::filteroutput);
 	}
 
 	/*
@@ -610,11 +632,11 @@ namespace rtf
 
 		VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
 		vks::tools::setImageLayout(
-		m_commandBuffer,
-		m_Rtoutput->image,
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_GENERAL,
-		subresourceRange);
+			m_commandBuffer,
+			m_Rtoutput->image,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_GENERAL,
+			subresourceRange);
 
 		vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_pipeline);
 		vkCmdBindDescriptorSets(m_commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, 0);
@@ -700,5 +722,5 @@ namespace rtf
 		vkDestroyImage(m_vulkanDevice->logicalDevice, m_Rtoutput->image, nullptr);
 		vkFreeMemory(m_vulkanDevice->logicalDevice, m_Rtoutput->mem, nullptr);
 	}
-	
+
 }
