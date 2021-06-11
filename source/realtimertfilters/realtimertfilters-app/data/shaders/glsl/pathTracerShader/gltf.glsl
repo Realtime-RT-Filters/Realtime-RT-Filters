@@ -1,5 +1,6 @@
 
 #ifdef __cplusplus
+#pragma once
 struct GltfShadeMaterial
 {
 	glm::vec4 pbrBaseColorFactor;
