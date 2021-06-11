@@ -179,4 +179,34 @@ layout(set = SET_ACCUCONFIG, binding = BIND_ACCUCONFIG) uniform S_AccuConfig
 } ubo_accuconfig;
 #endif
 
+/// BMFR UBO
+/// Size: 16 byte
+
+#ifdef __cplusplus
+
+struct S_BMFRConfig
+{
+	int			EnableAccumulation;
+	float		MaxPosDifference;
+	float		MaxNormalAngleDifference;
+	float		MinNewWeight;
+
+	S_BMFRConfig() : EnableAccumulation(1), MaxPosDifference(0.0064), MaxNormalAngleDifference(0.06), MinNewWeight(0.15f) {}
+};
+
+#endif
+#ifdef BIND_BMFRCONFIG
+#ifndef SET_BMFRCONFIG
+#define SET_BMFRCONFIG 0
+#endif 
+
+layout(set = SET_BMFRCONFIG, binding = BIND_BMFRCONFIG) uniform S_BMFRConfig
+{
+	int			EnableAccumulation;
+	float		MaxPosDifference;
+	float		MaxNormalAngleDifference;
+	float		MinNewWeight;
+} ubo_bmfrconfig;
+#endif
+
 #endif

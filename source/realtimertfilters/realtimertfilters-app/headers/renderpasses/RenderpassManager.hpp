@@ -1,5 +1,6 @@
 #pragma once
 #include "Renderpass.hpp"
+#include "../BMFR.hpp"
 
 namespace rtf 
 {
@@ -57,6 +58,8 @@ namespace rtf
 		// The currently active queue template
 		QueueTemplatePtr m_QT_Active{};
 		std::shared_ptr<RenderpassGui> m_RPG_Active{};
+
+		friend bmfr::RenderPasses;
 
 	protected:
 

@@ -1,9 +1,9 @@
 #include "../../headers/renderpasses/Renderpass_BMFRCompute.hpp"
 #include "../../headers/RTFilterDemo.hpp"
 
-namespace rtf
+namespace bmfr
 {
-	void rtf::RenderpassBMFRCompute::prepare()
+	void RenderpassBMFRCompute::prepare()
 	{
 		m_compute_QueueFamilyIndex = m_vulkanDevice->queueFamilyIndices.compute;
 		// Get a compute queue from the device
@@ -45,8 +45,8 @@ namespace rtf
 		pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
 		VK_CHECK_RESULT(vkCreatePipelineCache(getLogicalDevice(), &pipelineCacheCreateInfo, nullptr, &m_pipelineCache));
 
-		computePipelineCreateInfo.stage = loadShader(fileName, VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_CHECK_RESULT(vkCreateComputePipelines(getLogicalDevice(), , 1, &computePipelineCreateInfo, nullptr, &m_pipeline));
+		computePipelineCreateInfo.stage = m_rtFilterDemo->loadShader("bmfr/bmfrMain.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_CHECK_RESULT(vkCreateComputePipelines(getLogicalDevice(), m_pipelineCache, 1, &computePipelineCreateInfo, nullptr, &m_pipeline));
 
 		// Separate command pool as queue family for compute may be different than graphics
 		VkCommandPoolCreateInfo cmdPoolInfo = {};
@@ -77,7 +77,7 @@ namespace rtf
 		vkCmdBindPipeline(m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline);
 		vkCmdBindDescriptorSets(m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, 0);
 
-		vkCmdDispatch(m_cmdBuffer, textureComputeTarget.width / 16, textureComputeTarget.height / 16, 1);
+		vkCmdDispatch(m_cmdBuffer, 1, 1, 1);
 
 		vkEndCommandBuffer(m_cmdBuffer);
 
@@ -85,13 +85,13 @@ namespace rtf
 
 	void RenderpassBMFRCompute::draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount)
 	{
-		out_commandBuffers = m_cmdBuffer;
+		out_commandBuffers = &m_cmdBuffer;
 		out_commandBufferCount = 1;
 	}
 
 	void RenderpassBMFRCompute::cleanUp()
 	{
-		vkDestroyPipeline(getLogicalDevice(), pipeline, nullptr);
+		vkDestroyPipeline(getLogicalDevice(), m_pipeline, nullptr);
 		vkDestroyPipelineLayout(getLogicalDevice(), m_pipelineLayout, nullptr);
 		vkDestroyPipelineCache(getLogicalDevice(), m_pipelineCache, nullptr);
 		vkDestroyDescriptorSetLayout(getLogicalDevice(), m_descriptorSetLayout, nullptr);

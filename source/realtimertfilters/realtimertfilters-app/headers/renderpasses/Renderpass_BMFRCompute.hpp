@@ -3,9 +3,9 @@
 
 #include "Renderpass.hpp"
 
-namespace rtf
+namespace bmfr
 {
-	class RenderpassBMFRCompute : public Renderpass
+	class RenderpassBMFRCompute : public rtf::Renderpass
 	{
 	public:
 
