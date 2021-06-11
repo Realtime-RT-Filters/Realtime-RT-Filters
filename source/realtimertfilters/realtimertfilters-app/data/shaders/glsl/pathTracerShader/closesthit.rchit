@@ -33,17 +33,7 @@ layout(binding = B_INSTANCEINFO) readonly buffer _InstanceInfo { PrimMeshInfo pr
 layout(binding = B_VERTICES) readonly buffer _VertexBuf { vec4 v[]; } vertices;
 layout(binding = B_INDICES) readonly buffer _Indices { uint i[]; }indices;
 // layout( binding = B_MATERIALS) readonly buffer _MaterialBuffer {GltfShadeMaterial m[];} materials;
-// layout( binding = B_TEXTURES) uniform sampler2D texturesMap[]; // all textures
-
-
-
-struct S_Vertex
-{
-	vec3 pos;
-	vec3 normal;
-	vec2 uv;
-	vec4 color;
-};
+//layout( binding = B_TEXTURES) uniform sampler2D texturesMap[]; // all textures
 
 struct S_GeometryHitPoint
 {
@@ -55,21 +45,42 @@ struct S_GeometryHitPoint
 	vec3 albedo;
 };
 
+struct S_Vertex 
+{
+	vec3 pos;
+	vec3 normal;
+	vec2 uv;
+	vec4 color;
+	vec4 joint0;
+	vec4 weight0;
+	vec4 tangent;
+	int materialId;
+	int meshId;
+};
+
 S_Vertex getVertex(uint index)
 {
-
 	// The multiplier is the size of the vertex divided by four float components (=16 bytes)
-	const int m = int(config.VertexSize) / 16;//ubo.vertexSize / 16;
+	const int m = int(config.VertexSize) / 16;		//ubo.vertexSize / 16;
 
-	vec4 d0 = vertices.v[m * index + 0];
+	vec4 d0 = vertices.v[m * index + 0];	
 	vec4 d1 = vertices.v[m * index + 1];
 	vec4 d2 = vertices.v[m * index + 2];
+	vec4 d3 = vertices.v[m * index + 3];			// joint0
+	vec4 d4 = vertices.v[m * index + 4];			// weight0
+	vec4 d5 = vertices.v[m * index + 5];			// tangent
+	vec2 d6 = vertices.v[m * index + 6].xy;			// material and  meshId
 
 	S_Vertex v;
 	v.pos = d0.xyz;
 	v.normal = vec3(d0.w, d1.x, d1.y);
 	v.uv = vec2(d1.z, d1.w);
 	v.color = vec4(d2.xyz, 1.0);
+	v.joint0 = d3;
+	v.weight0 = d4;
+	v.tangent = d5;
+	v.materialId = int(d6.x);
+	v.meshId = int(d6.y);
 	return v;
 }
 
