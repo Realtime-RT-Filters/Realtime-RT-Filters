@@ -33,6 +33,7 @@ namespace rtf
 		filteroutput,
 		// BMFR
 		scratch_buffer,
+		prev_accumulatedregression,
 
 		// add your attachment before this one
 		max_attachments,
@@ -65,6 +66,10 @@ namespace rtf
 	/// </summary>
 	class Attachment_Manager
 	{
+
+		static const VkFormat DEFAULT_COLOR_FORMAT = VK_FORMAT_R16G16B16A16_SFLOAT;
+		static const VkFormat DEFAULT_GEOMETRY_FORMAT = VK_FORMAT_R16G16B16A16_SFLOAT;
+
 		static const VkImageUsageFlags DEFAULTFLAGS =
 			VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |		// Load into GUI & GBuffer shader with this
 			VkImageUsageFlagBits::VK_IMAGE_USAGE_STORAGE_BIT |				// Use as StorageImage, for RT and Postprocessing Shader
@@ -73,25 +78,26 @@ namespace rtf
 
 		std::vector<AttachmentInitInfo> m_attachmentInitsUnsorted = {
 			// GBuffer
-			AttachmentInitInfo(Attachment::position, VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
-			AttachmentInitInfo(Attachment::normal,  VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
-			AttachmentInitInfo(Attachment::albedo,  VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::position, DEFAULT_GEOMETRY_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::normal,  DEFAULT_GEOMETRY_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::albedo,  DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
 			AttachmentInitInfo(Attachment::depth,  VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL),
 			AttachmentInitInfo(Attachment::meshid,  VK_FORMAT_R32_SINT, DEFAULTFLAGS),
 			AttachmentInitInfo(Attachment::motionvector,  VK_FORMAT_R32G32_SFLOAT, DEFAULTFLAGS),
 			// Pathtracer
-			AttachmentInitInfo(Attachment::rtoutput,  VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::rtoutput,  DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
 			// Temporal Accumulation
-			AttachmentInitInfo(Attachment::prev_position, VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
-			AttachmentInitInfo(Attachment::prev_normal, VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
-			AttachmentInitInfo(Attachment::prev_accumulatedcolor, VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::prev_position, DEFAULT_GEOMETRY_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::prev_normal, DEFAULT_GEOMETRY_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::prev_accumulatedcolor, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
 			AttachmentInitInfo(Attachment::prev_historylength, VK_FORMAT_R16_SINT, DEFAULTFLAGS),
 			AttachmentInitInfo(Attachment::new_historylength, VK_FORMAT_R16_SINT, DEFAULTFLAGS),
 			// Misc
-			AttachmentInitInfo(Attachment::filteroutput,  VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
-			AttachmentInitInfo(Attachment::intermediate,  VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::filteroutput,  DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::intermediate,  DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
 			// BMFR
-			AttachmentInitInfo(Attachment::scratch_buffer,  VK_FORMAT_R16G16B16A16_SFLOAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::scratch_buffer, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::prev_accumulatedregression, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
 		};
 		std::array<AttachmentInitInfo, (size_t)Attachment::max_attachments> m_attachmentInits{};
 

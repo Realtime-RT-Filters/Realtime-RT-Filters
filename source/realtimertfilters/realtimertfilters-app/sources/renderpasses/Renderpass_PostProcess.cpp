@@ -18,9 +18,9 @@ namespace rtf
 		m_Shadername = shadername;
 	}
 
-	void RenderpassPostProcess::PushAttachment(const AttachmentBinding& attachmentbinding)
+	void RenderpassPostProcess::PushTextureAttachment(const TextureBinding& TextureBinding)
 	{
-		m_AttachmentBindings.push_back(attachmentbinding);
+		m_TextureBindings.push_back(TextureBinding);
 	}
 
 	void RenderpassPostProcess::Push_PastRenderpass_BufferCopy(Attachment sourceAttachment, Attachment destinationAttachment)
@@ -42,7 +42,7 @@ namespace rtf
 		// Assure the object has been properly configured
 		assert(!m_Shadername.empty());
 
-		assert(preprocessAttachmentBindings());
+		assert(preprocessTextureBindings());
 
 		// Fetch our statics
 		if (GlobalStatics == nullptr)
@@ -61,17 +61,17 @@ namespace rtf
 		buildCommandBuffer();
 	}
 
-	bool RenderpassPostProcess::preprocessAttachmentBindings()
+	bool RenderpassPostProcess::preprocessTextureBindings()
 	{
 		bool hasOutput = false;
 
-		for (auto& attachmentBinding : m_AttachmentBindings)
+		for (auto& TextureBinding : m_TextureBindings)
 		{
-			if (attachmentBinding.m_Attachment == nullptr)
+			if (TextureBinding.m_Attachment == nullptr)
 			{
-				attachmentBinding.resolveAttachment(m_vulkanDevice, m_attachmentManager);
+				TextureBinding.resolveAttachment(m_vulkanDevice, m_attachmentManager);
 			}
-			if (attachmentBinding.writeAccess())
+			if (TextureBinding.writeAccess())
 			{
 				hasOutput = true;
 			}
@@ -86,7 +86,7 @@ namespace rtf
 		std::vector<VkAttachmentReference> inputReferences;
 		std::vector<VkAttachmentReference> outputReferences;
 
-		AttachmentBinding::FillAttachmentDescriptionStructures(attachmentDescriptions, inputReferences, outputReferences, m_AttachmentBindings.data(), getAttachmentCount());
+		TextureBinding::FillAttachmentDescriptionStructures(attachmentDescriptions, inputReferences, outputReferences, m_TextureBindings.data(), getAttachmentCount());
 
 		// Default render pass setup uses only one subpass
 		VkSubpassDescription subpass = {};
@@ -130,7 +130,7 @@ namespace rtf
 	{
 		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo;
 
-		AttachmentBinding::CreateDescriptorSetLayout(getLogicalDevice(), m_descriptorSetLayouts[DESCRIPTORSET_IMAGES], m_AttachmentBindings.data(), getAttachmentCount());
+		TextureBinding::CreateDescriptorSetLayout(getLogicalDevice(), m_descriptorSetLayouts[DESCRIPTORSET_IMAGES], m_TextureBindings.data(), getAttachmentCount());
 		if (getUboCount() > 0)
 		{
 			std::vector<VkDescriptorSetLayoutBinding> bindings{};
@@ -163,7 +163,7 @@ namespace rtf
 		VK_CHECK_RESULT(vkCreatePipelineLayout(m_vulkanDevice->logicalDevice, &pPipelineLayoutCreateInfo, nullptr, &m_pipelineLayout));
 
 		std::vector<VkDescriptorPoolSize> poolsizes{};
-		AttachmentBinding::FillPoolSizesVector(poolsizes, m_AttachmentBindings.data(), getAttachmentCount());
+		TextureBinding::FillPoolSizesVector(poolsizes, m_TextureBindings.data(), getAttachmentCount());
 		
 		uint32_t maxSets = 1;
 		if (getUboCount() > 0)
@@ -185,8 +185,8 @@ namespace rtf
 
 		std::vector<VkDescriptorImageInfo> imageInfos{};
 		std::vector<VkWriteDescriptorSet> writes{};
-		AttachmentBinding::FillWriteDescriptorSetStructures(imageInfos, writes, m_AttachmentBindings.data(), getAttachmentCount(),
-			m_descriptorSets[DESCRIPTORSET_IMAGES], Statics->m_ColorSampler_Direct, Statics->m_ColorSampler_Normalized);
+		TextureBinding::FillWriteDescriptorSetStructures(imageInfos, writes, m_TextureBindings.data(), getAttachmentCount(),
+			m_descriptorSets[DESCRIPTORSET_IMAGES], Statics->m_ColorSampler_Normalized);
 
 		uint32_t binding = 0;
 		for (auto& ubo : m_UBOs)
@@ -205,8 +205,8 @@ namespace rtf
 		std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates;
 		for (size_t i = 0; i < getAttachmentCount(); i++)
 		{
-			const AttachmentBinding& attachment = m_AttachmentBindings[i];
-			if (attachment.m_Bind == AttachmentBinding::BindType::Sampled && attachment.writeAccess())
+			const TextureBinding& attachment = m_TextureBindings[i];
+			if (attachment.usesAttachmentDescription())
 			{
 				blendAttachmentStates.push_back(vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE));
 			}
@@ -244,7 +244,7 @@ namespace rtf
 	{
 		std::vector<VkImageView> attachmentViews;
 		attachmentViews.reserve(getAttachmentCount());
-		for (auto& attachment : m_AttachmentBindings)
+		for (auto& attachment : m_TextureBindings)
 		{
 			if (attachment.usesAttachmentDescription())
 			{
@@ -276,7 +276,7 @@ namespace rtf
 		VkCommandBufferBeginInfo cmdBufInfo = vks::initializers::commandBufferBeginInfo();
 		VK_CHECK_RESULT(vkBeginCommandBuffer(m_CmdBuffer, &cmdBufInfo));
 
-		for (const AttachmentBinding& attachment : m_AttachmentBindings)
+		for (const TextureBinding& attachment : m_TextureBindings)
 		{
 			if (attachment.requireImageTransition())
 			{
@@ -402,6 +402,11 @@ namespace rtf
 		vkDestroyDescriptorSetLayout(m_vulkanDevice->logicalDevice, m_descriptorSetLayout, nullptr);
 		vkDestroyDescriptorPool(m_vulkanDevice->logicalDevice, m_descriptorPool, nullptr);
 		vkDestroyFramebuffer(m_vulkanDevice->logicalDevice, m_Framebuffer, nullptr);
+
+		for (auto& textureBinding : m_TextureBindings)
+		{
+			textureBinding.destroyImageview(m_vulkanDevice);
+		}
 
 		// Clean up statics
 		InstanceCount--;

@@ -12,7 +12,6 @@ layout (set = 0, binding = 2) uniform sampler2D Tex_Motion;				// Screenspace mo
 layout (set = 0, binding = 3) uniform sampler2D Tex_Regression;			// Raw RT input
 layout (set = 0, binding = 4) uniform sampler2D Tex_PrevAccuRegression;	// Previous frame Accumulated RT input
 layout (location = 0) out vec4 Out_NewAccuRegression;					// Accumulated RT input
-layout (location = 1) out vec4 Out_Filteroutput;						// Filter output (AccuRegression + Albedo)
 
 // ACCUMULATION SPECIFIC VARIABLES
 layout (set = 0, binding = 7) uniform isampler2D Tex_HistoryLength;		// Per pixel accumulated data age
@@ -28,7 +27,7 @@ layout (set = 0, binding = 8) uniform sampler2D Tex_Albedo;				// Albedo color
 
 void main()
 {
-	vec3 rawColor = texelFetch(Tex_Regression, Texel, 0).xyz;
+	vec3 rawColor = texelFetch(Tex_Regression, Texel, 0).xyz + texelFetch(Tex_Albedo, Texel, 0).xyz;
 
 	// Set the RT Output values and a 1 to new history length by default
 	Out_NewAccuRegression = vec4(rawColor, 1.0);

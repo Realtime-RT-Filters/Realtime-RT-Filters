@@ -180,7 +180,15 @@ layout(set = SET_ACCUCONFIG, binding = BIND_ACCUCONFIG) uniform S_AccuConfig
 #endif
 
 /// BMFR UBO
-/// Size: 16 byte
+/// Size: 8 * 4 + 4 * BMFR_MAX_FEATURE_BUFFERS bytes
+/// EnableAccumulation = See Accuconfig
+/// MaxPosDifference = See Accuconfig
+/// MaxNormalAngleDifference = See Accuconfig
+/// MinNewWeight = See Accuconfig
+/// EnabledFeatureBuffers = How many feature buffers are to be used in computing feature regression
+/// FeatureBufferExponents[] = Exponents assigned to the feature buffers
+
+#define BMFR_MAX_FEATURE_BUFFERS 12
 
 #ifdef __cplusplus
 
@@ -190,8 +198,13 @@ struct S_BMFRConfig
 	float		MaxPosDifference;
 	float		MaxNormalAngleDifference;
 	float		MinNewWeight;
+	int			EnabledFeatureBuffers;
+	int			_RESERVED1;
+	int			_RESERVED2;
+	int			_RESERVED3;
+	float		FeatureBufferExponents[BMFR_MAX_FEATURE_BUFFERS];
 
-	S_BMFRConfig() : EnableAccumulation(1), MaxPosDifference(0.0064), MaxNormalAngleDifference(0.06), MinNewWeight(0.15f) {}
+	S_BMFRConfig() : EnableAccumulation(1), MaxPosDifference(0.0064), MaxNormalAngleDifference(0.06), MinNewWeight(0.15f), EnabledFeatureBuffers(0), _RESERVED1(), _RESERVED2(), _RESERVED3(), FeatureBufferExponents() {}
 };
 
 #endif
@@ -206,6 +219,11 @@ layout(set = SET_BMFRCONFIG, binding = BIND_BMFRCONFIG) uniform S_BMFRConfig
 	float		MaxPosDifference;
 	float		MaxNormalAngleDifference;
 	float		MinNewWeight;
+	int			EnabledFeatureBuffers;
+	int			_RESERVED1;
+	int			_RESERVED2;
+	int			_RESERVED3;
+	float		FeatureBufferExponents[BMFR_MAX_FEATURE_BUFFERS];
 } ubo_bmfrconfig;
 #endif
 

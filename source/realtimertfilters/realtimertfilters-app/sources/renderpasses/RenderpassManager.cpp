@@ -74,33 +74,33 @@ namespace rtf
 		// Gauss Postprocess
 		m_RPF_Gauss = std::make_shared<RenderpassPostProcess>();
 		m_RPF_Gauss->ConfigureShader("filter/postprocess_gauss.frag.spv");
-		m_RPF_Gauss->PushAttachment(AttachmentBinding(Attachment::albedo, AttachmentBinding::AccessMode::ReadOnly));
-		m_RPF_Gauss->PushAttachment(AttachmentBinding(Attachment::filteroutput, AttachmentBinding::AccessMode::WriteOnly));
+		m_RPF_Gauss->PushTextureAttachment(TextureBinding(Attachment::albedo, TextureBinding::Type::StorageImage_ReadOnly));
+		m_RPF_Gauss->PushTextureAttachment(TextureBinding(Attachment::filteroutput, TextureBinding::Type::StorageImage_ReadWrite));
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassPostProcess>(m_RPF_Gauss));
 
 		// Depthtest Postprocess
 		m_RPF_DepthTest = std::make_shared<RenderpassPostProcess>();
 		m_RPF_DepthTest->ConfigureShader("filter/postprocess_depthTest.frag.spv");
-		AttachmentBinding depth(Attachment::depth, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled);
+		TextureBinding depth(Attachment::depth, TextureBinding::Type::Sampler_ReadOnly);
 		depth.m_AspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT;
 		depth.m_PreLayout = VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		m_RPF_DepthTest->PushAttachment(depth);
-		m_RPF_DepthTest->PushAttachment(AttachmentBinding(Attachment::filteroutput, AttachmentBinding::AccessMode::WriteOnly, AttachmentBinding::BindType::Sampled));
+		m_RPF_DepthTest->PushTextureAttachment(depth);
+		m_RPF_DepthTest->PushTextureAttachment(TextureBinding(Attachment::filteroutput, TextureBinding::Type::Subpass_Output));
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassPostProcess>(m_RPF_DepthTest));
 
 		// Temporal Accumulation Postprocess
 		m_RPF_TempAccu = std::make_shared<RenderpassPostProcess>();
 		m_RPF_TempAccu->ConfigureShader("filter/postprocess_tempAccu.frag.spv");
-		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::position, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::normal, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::motionvector, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::rtoutput, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::prev_accumulatedcolor, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::intermediate, AttachmentBinding::AccessMode::WriteOnly, AttachmentBinding::BindType::Sampled));
-		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::prev_position, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::prev_normal, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::prev_historylength, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		m_RPF_TempAccu->PushAttachment(AttachmentBinding(Attachment::new_historylength, AttachmentBinding::AccessMode::WriteOnly, AttachmentBinding::BindType::Sampled));
+		m_RPF_TempAccu->PushTextureAttachment(TextureBinding(Attachment::position, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_TempAccu->PushTextureAttachment(TextureBinding(Attachment::normal, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_TempAccu->PushTextureAttachment(TextureBinding(Attachment::motionvector, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_TempAccu->PushTextureAttachment(TextureBinding(Attachment::rtoutput, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_TempAccu->PushTextureAttachment(TextureBinding(Attachment::prev_accumulatedcolor, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_TempAccu->PushTextureAttachment(TextureBinding(Attachment::intermediate, TextureBinding::Type::Subpass_Output));
+		m_RPF_TempAccu->PushTextureAttachment(TextureBinding(Attachment::prev_position, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_TempAccu->PushTextureAttachment(TextureBinding(Attachment::prev_normal, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_TempAccu->PushTextureAttachment(TextureBinding(Attachment::prev_historylength, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_TempAccu->PushTextureAttachment(TextureBinding(Attachment::new_historylength, TextureBinding::Type::Subpass_Output));
 		m_RPF_TempAccu->PushUBO(std::dynamic_pointer_cast<UBOInterface, ManagedUBO<S_AccuConfig>>(rtFilterDemo->m_UBO_AccuConfig));
 		m_RPF_TempAccu->Push_PastRenderpass_BufferCopy(Attachment::position, Attachment::prev_position);
 		m_RPF_TempAccu->Push_PastRenderpass_BufferCopy(Attachment::normal, Attachment::prev_normal);
