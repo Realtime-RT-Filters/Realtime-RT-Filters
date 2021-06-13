@@ -14,16 +14,17 @@ namespace bmfr
 
 		Prepass = std::make_shared<RenderpassPostProcess>();
 		Prepass->ConfigureShader("filter/postprocess_tempAccu.frag.spv");
-		Prepass->PushAttachment(AttachmentBinding(Attachment::position, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		Prepass->PushAttachment(AttachmentBinding(Attachment::normal, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		Prepass->PushAttachment(AttachmentBinding(Attachment::motionvector, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		Prepass->PushAttachment(AttachmentBinding(Attachment::rtoutput, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		Prepass->PushAttachment(AttachmentBinding(Attachment::prev_accumulatedcolor, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		Prepass->PushAttachment(AttachmentBinding(Attachment::intermediate, AttachmentBinding::AccessMode::WriteOnly, AttachmentBinding::BindType::Sampled));
-		Prepass->PushAttachment(AttachmentBinding(Attachment::prev_position, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		Prepass->PushAttachment(AttachmentBinding(Attachment::prev_normal, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		Prepass->PushAttachment(AttachmentBinding(Attachment::prev_historylength, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		Prepass->PushAttachment(AttachmentBinding(Attachment::new_historylength, AttachmentBinding::AccessMode::WriteOnly, AttachmentBinding::BindType::Sampled));
+		Prepass->PushTextureAttachment(TextureBinding(Attachment::position, TextureBinding::Type::Sampler_ReadOnly));
+		Prepass->PushTextureAttachment(TextureBinding(Attachment::normal, TextureBinding::Type::Sampler_ReadOnly));
+		Prepass->PushTextureAttachment(TextureBinding(Attachment::motionvector, TextureBinding::Type::Sampler_ReadOnly));
+		Prepass->PushTextureAttachment(TextureBinding(Attachment::rtoutput, TextureBinding::Type::Sampler_ReadOnly));
+		Prepass->PushTextureAttachment(TextureBinding(Attachment::prev_accumulatedcolor, TextureBinding::Type::Sampler_ReadOnly));
+		Prepass->PushTextureAttachment(TextureBinding(Attachment::intermediate, TextureBinding::Type::Subpass_Output));
+		Prepass->PushTextureAttachment(TextureBinding(Attachment::prev_position, TextureBinding::Type::Sampler_ReadOnly));
+		Prepass->PushTextureAttachment(TextureBinding(Attachment::prev_normal, TextureBinding::Type::Sampler_ReadOnly));
+		Prepass->PushTextureAttachment(TextureBinding(Attachment::prev_historylength, TextureBinding::Type::Sampler_ReadOnly));
+		Prepass->PushTextureAttachment(TextureBinding(Attachment::new_historylength, TextureBinding::Type::Subpass_Output));
+		Prepass->PushTextureAttachment(TextureBinding(Attachment::albedo, TextureBinding::Type::Sampler_ReadOnly));
 		Prepass->PushUBO(std::dynamic_pointer_cast<UBOInterface, ManagedUBO<S_AccuConfig>>(rtfilterdemo->m_UBO_AccuConfig));
 		Prepass->Push_PastRenderpass_BufferCopy(Attachment::position, Attachment::prev_position);
 		Prepass->Push_PastRenderpass_BufferCopy(Attachment::normal, Attachment::prev_normal);
@@ -36,21 +37,14 @@ namespace bmfr
 
 		Postpass = std::make_shared<RenderpassPostProcess>();
 		Postpass->ConfigureShader("filter/postprocess_tempAccu.frag.spv");
-		Postpass->PushAttachment(AttachmentBinding(Attachment::position, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		Postpass->PushAttachment(AttachmentBinding(Attachment::normal, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		Postpass->PushAttachment(AttachmentBinding(Attachment::motionvector, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		Postpass->PushAttachment(AttachmentBinding(Attachment::rtoutput, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		Postpass->PushAttachment(AttachmentBinding(Attachment::prev_accumulatedcolor, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		Postpass->PushAttachment(AttachmentBinding(Attachment::intermediate, AttachmentBinding::AccessMode::WriteOnly, AttachmentBinding::BindType::Sampled));
-		Postpass->PushAttachment(AttachmentBinding(Attachment::prev_position, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		Postpass->PushAttachment(AttachmentBinding(Attachment::prev_normal, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		Postpass->PushAttachment(AttachmentBinding(Attachment::prev_historylength, AttachmentBinding::AccessMode::ReadOnly, AttachmentBinding::BindType::Sampled));
-		Postpass->PushAttachment(AttachmentBinding(Attachment::new_historylength, AttachmentBinding::AccessMode::WriteOnly, AttachmentBinding::BindType::Sampled));
+		Postpass->PushTextureAttachment(TextureBinding(Attachment::motionvector, TextureBinding::Type::Sampler_ReadOnly));
+		Postpass->PushTextureAttachment(TextureBinding(Attachment::intermediate, TextureBinding::Type::Sampler_ReadOnly));
+		Postpass->PushTextureAttachment(TextureBinding(Attachment::prev_accumulatedregression, TextureBinding::Type::Sampler_ReadOnly));
+		Postpass->PushTextureAttachment(TextureBinding(Attachment::filteroutput, TextureBinding::Type::Subpass_Output));
+		Postpass->PushTextureAttachment(TextureBinding(Attachment::new_historylength, TextureBinding::Type::Sampler_ReadOnly));
+		Postpass->PushTextureAttachment(TextureBinding(Attachment::albedo, TextureBinding::Type::Sampler_ReadOnly));
+		Postpass->Push_PastRenderpass_BufferCopy(Attachment::filteroutput, Attachment::prev_accumulatedregression);
 		Postpass->PushUBO(std::dynamic_pointer_cast<UBOInterface, ManagedUBO<S_AccuConfig>>(rtfilterdemo->m_UBO_AccuConfig));
-		Postpass->Push_PastRenderpass_BufferCopy(Attachment::position, Attachment::prev_position);
-		Postpass->Push_PastRenderpass_BufferCopy(Attachment::normal, Attachment::prev_normal);
-		Postpass->Push_PastRenderpass_BufferCopy(Attachment::new_historylength, Attachment::prev_historylength);
-		Postpass->Push_PastRenderpass_BufferCopy(Attachment::intermediate, Attachment::prev_accumulatedcolor);
 		renderpassManager->registerRenderpass(Postpass);
 	}
 

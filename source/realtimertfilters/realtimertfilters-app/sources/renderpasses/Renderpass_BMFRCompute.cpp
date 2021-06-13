@@ -3,6 +3,11 @@
 
 namespace bmfr
 {
+	void RenderpassBMFRCompute::PushFeatureBuffer(FeatureBuffer& featurebuffer)
+	{
+		m_FeatureBuffer.push_back(featurebuffer);
+	}
+
 	void RenderpassBMFRCompute::prepare()
 	{
 		m_compute_QueueFamilyIndex = m_vulkanDevice->queueFamilyIndices.compute;
@@ -31,7 +36,9 @@ namespace bmfr
 			vks::initializers::descriptorSetAllocateInfo(m_descriptorPool, &m_descriptorSetLayout, 1);
 
 		VK_CHECK_RESULT(vkAllocateDescriptorSets(getLogicalDevice(), &allocInfo, &m_descriptorSet));
-		std::vector<VkWriteDescriptorSet> computeWriteDescriptorSets = {
+		std::vector<VkWriteDescriptorSet> computeWriteDescriptorSets = 
+		{
+			
 			//			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &ATTACHMENTDESCRIPTOR)
 		};
 		vkUpdateDescriptorSets(getLogicalDevice(), computeWriteDescriptorSets.size(), computeWriteDescriptorSets.data(), 0, NULL);

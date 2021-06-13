@@ -3,7 +3,7 @@
 
 #include "Renderpass.hpp"
 #include "../Attachment_Manager.hpp"
-#include "../AttachmentBinding.hpp"
+#include "../TextureBinding.hpp"
 #include "../ManagedUBO.hpp"
 
 namespace rtf
@@ -16,7 +16,7 @@ namespace rtf
 		RenderpassPostProcess();
 
 		void ConfigureShader(const std::string& shadername);
-		void PushAttachment(const AttachmentBinding& attachmentbinding);
+		void PushTextureAttachment(const TextureBinding& attachmentbinding);
 		void Push_PastRenderpass_BufferCopy(Attachment sourceAttachment, Attachment destinationAttachment);
 		void PushUBO(UBOPtr& ubo);
 
@@ -48,12 +48,12 @@ namespace rtf
 		bool m_IsPrepared = false;
 
 		std::string m_Shadername;
-		std::vector<AttachmentBinding> m_AttachmentBindings{};
+		std::vector<TextureBinding> m_TextureBindings{};
 
 		/// use attachment copies to copy the content of one attachment into another, after the renderpass has finished
 		std::vector<std::pair<Attachment, Attachment>> m_AttachmentCopies{};
 
-		inline size_t getAttachmentCount() { return m_AttachmentBindings.size(); }
+		inline size_t getAttachmentCount() { return m_TextureBindings.size(); }
 
 
 		StaticsContainer* Statics = nullptr;
@@ -74,7 +74,7 @@ namespace rtf
 		};
 		PushConstantsContainer m_PushConstants{};
 
-		virtual bool preprocessAttachmentBindings();
+		virtual bool preprocessTextureBindings();
 		virtual void createRenderPass();
 		virtual void setupDescriptorSetLayout();
 		virtual void setupDescriptorSet();

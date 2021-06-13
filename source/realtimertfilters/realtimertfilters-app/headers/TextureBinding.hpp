@@ -8,70 +8,49 @@ namespace rtf
 	/// <summary>
 	/// Class of configuration object used for RenderpassPostProcess (and potentially RenderpassGui down the line)
 	/// </summary>
-	class AttachmentBinding
+	class TextureBinding
 	{
 	public:
 
 		/// <summary>
-		/// Defines how the attachment is used in the shader
+		/// Type determines how the binding is used
 		/// </summary>
-		enum class BindType
+		enum class Type
 		{
-			// Access via imageLoad(...) / imageStore(...)
-			StorageImage,
-			// Access via a sampler 
-			Sampled,
-		};
-
-		/// <summary>
-		/// Defines how sampling happens
-		/// </summary>
-		enum class SamplerType
-		{
-			// Using ivec2 texture coordinates
-			Direct,
-			// Using normalized vec2 coordinates and mipmapping
-			Normalized
-		};
-
-		/// <summary>
-		/// Defines how the attachment is used
-		/// </summary>
-		enum class AccessMode
-		{
-			ReadOnly,
-			WriteOnly,
-			ReadWrite
+			// A readonly storage image, e.g.	layout (binding = 0, rgba32f) uniform readonly image2D Tex_Source
+			StorageImage_ReadOnly,
+			// A writeonly storage image, e.g.	layout (binding = 0, rgba32f) uniform writeonly image2D Tex_Output
+			StorageImage_WriteOnly,
+			// A readwrite storage image, e.g.	layout (binding = 0, rgba32f) uniform image2D Tex_InOut
+			StorageImage_ReadWrite,
+			// A sampled image, e.g.			layout (binding = 0) uniform sampler2D Tex_Source
+			Sampler_ReadOnly,
+			// A subpass output, e.g.			layout (location = 0) out vec4 Out_Image
+			Subpass_Output
 		};
 
 		Attachment				m_AttachmentId;
+		Type					m_Type;
 		FrameBufferAttachment*	m_Attachment;
-		AccessMode				m_AccessMode;
-		BindType				m_Bind;
-		SamplerType				m_Sampler;
 		VkImageLayout			m_PreLayout;
 		VkImageLayout			m_WorkLayout;
 		VkImageLayout			m_PostLayout;
 		VkImageAspectFlags		m_AspectMask;
 		VkImageView				m_ImageView;
 
-		AttachmentBinding() = default;
+		TextureBinding() = default;
 		
 		/// <param name="attachmentid">Attachment Id</param>
-		/// <param name="accessmode">Access mode</param>
-		/// <param name="bindtype">Bind type</param>
+		/// <param name="type">Bind type</param>
 		/// <param name="attachment">Pointer to attachment information. Can be resolved later via "resolveAttachment"</param>
-		/// <param name="samplertype">Which sampler is to be used</param>
 		/// <param name="prelayout">Expected layout before the attachment is used</param>
 		/// <param name="worklayout">Expected layout during attachment use</param>
 		/// <param name="postlayout">Expected layout after attachment has been used</param>
 		/// <param name="aspectflags">TBD</param>
-		AttachmentBinding(
+		TextureBinding(
 			Attachment				attachmentid,
-			AccessMode				accessmode,
-			BindType				bindtype = BindType::StorageImage,
+			Type					type,
 			FrameBufferAttachment*	attachment = nullptr,
-			SamplerType				samplertype = SamplerType::Normalized,
 			VkImageLayout			prelayout = VK_IMAGE_LAYOUT_GENERAL,
 			VkImageLayout			worklayout = VK_IMAGE_LAYOUT_GENERAL,
 			VkImageLayout			postlayout = VK_IMAGE_LAYOUT_GENERAL,
@@ -83,6 +62,7 @@ namespace rtf
 		/// </summary>
 		void resolveAttachment(vks::VulkanDevice* vulkanDevice, Attachment_Manager* manager);
 		void createImageview(vks::VulkanDevice* vulkanDevice);
+		void destroyImageview(vks::VulkanDevice* vulkanDevice);
 		/// <summary>
 		/// Returns the correct descriptor type based on m_Bind
 		/// </summary>
@@ -90,7 +70,7 @@ namespace rtf
 		/// <summary>
 		/// Selects the correct sampler based on m_Bind and m_Sampler
 		/// </summary>
-		inline VkSampler selectSampler(VkSampler direct, VkSampler normalized) const;
+		inline VkSampler selectSampler(VkSampler sampler) const;
 
 		/// <summary>
 		/// Returns true, if accessmode is either readonly or readwrite
@@ -120,7 +100,7 @@ namespace rtf
 		/// <summary>
 		/// Makes VkDescriptorImageInfo struct
 		/// </summary>
-		VkDescriptorImageInfo makeDescriptorImageInfo(VkSampler direct, VkSampler normalized) const;
+		VkDescriptorImageInfo makeDescriptorImageInfo(VkSampler sampler) const;
 		/// <summary>
 		/// Makes VkWriteDescriptorSet struct
 		/// </summary>
@@ -135,7 +115,7 @@ namespace rtf
 		/// <param name="data">source data ptr</param>
 		/// <param name="count">count</param>
 		/// <param name="baseBinding">binding offset</param>
-		static void FillLayoutBindingVector(std::vector<VkDescriptorSetLayoutBinding>& vector, const AttachmentBinding* data, uint32_t count, uint32_t baseBinding = 0);
+		static void FillLayoutBindingVector(std::vector<VkDescriptorSetLayoutBinding>& vector, const TextureBinding* data, uint32_t count, uint32_t baseBinding = 0);
 		
 		/// <summary>
 		/// Calls VkCreateDescriptorSetLayout with the correct parameters based on attachmentbindings
@@ -144,12 +124,12 @@ namespace rtf
 		/// <param name="out">VkDescriptorSetLayout output</param>
 		/// <param name="data">source data ptr</param>
 		/// <param name="count">count</param>
-		static void CreateDescriptorSetLayout(VkDevice logicalDevice, VkDescriptorSetLayout& out, const AttachmentBinding* data, uint32_t count);
+		static void CreateDescriptorSetLayout(VkDevice logicalDevice, VkDescriptorSetLayout& out, const TextureBinding* data, uint32_t count);
 
 		/// <summary>
 		/// Adds entries to target vector for StorageImages and Samplers, as required
 		/// </summary>
-		static void FillPoolSizesVector(std::vector<VkDescriptorPoolSize>& vector, const AttachmentBinding* data, uint32_t count);
+		static void FillPoolSizesVector(std::vector<VkDescriptorPoolSize>& vector, const TextureBinding* data, uint32_t count);
 
 		/// <summary>
 		/// Calls VkCreateDescriptorPool with the correct parameters based on attachmentbindings
@@ -159,7 +139,7 @@ namespace rtf
 		/// <param name="data">source data ptr</param>
 		/// <param name="count">count</param>
 		/// <param name="maxSets">max sets that can be create with this pool. Makes no sense to be more than 1 in most cases, when using this function.</param>
-		static void CreateDescriptorPool(VkDevice logicalDevice, VkDescriptorPool& out, const AttachmentBinding* data, uint32_t count, uint32_t maxSets = 1);
+		static void CreateDescriptorPool(VkDevice logicalDevice, VkDescriptorPool& out, const TextureBinding* data, uint32_t count, uint32_t maxSets = 1);
 		
 		/// <summary>
 		/// Prepares for the vkwriteDescriptorset command by filling imageInfos and writes vector.
@@ -170,7 +150,7 @@ namespace rtf
 		/// <param name="direct">Sampler to use for direct sampling access</param>
 		/// <param name="normalized">Sampler to use for normalized sampling access</param>
 		/// <param name="baseBinding">binding offset</param>
-		static void FillWriteDescriptorSetStructures(std::vector<VkDescriptorImageInfo>& imageInfos, std::vector<VkWriteDescriptorSet>& writes, const AttachmentBinding* data, uint32_t count, VkDescriptorSet descrSet, VkSampler direct, VkSampler normalized, uint32_t baseBinding = 0);
+		static void FillWriteDescriptorSetStructures(std::vector<VkDescriptorImageInfo>& imageInfos, std::vector<VkWriteDescriptorSet>& writes, const TextureBinding* data, uint32_t count, VkDescriptorSet descrSet, VkSampler sampler, uint32_t baseBinding = 0);
 
 		/// <summary>
 		/// Calls VkUpateDescriptorSet() with the correct parameters based on Attachmentbindings
@@ -182,7 +162,7 @@ namespace rtf
 		/// <param name="direct">Sampler to use for direct sampling access</param>
 		/// <param name="normalized">Sampler to use for normalized sampling access</param>
 		/// <param name="baseBinding">binding offset</param>
-		static void UpdateDescriptorSet(VkDevice logicalDevice, const AttachmentBinding* data, uint32_t count, VkDescriptorSet descrSet, VkSampler direct, VkSampler normalized, uint32_t baseBinding = 0);
+		static void UpdateDescriptorSet(VkDevice logicalDevice, const TextureBinding* data, uint32_t count, VkDescriptorSet descrSet, VkSampler sampler, uint32_t baseBinding = 0);
 
 		/// <summary>
 		/// Fills attachment description structures based on AttachmentBindings
@@ -192,54 +172,50 @@ namespace rtf
 		/// <param name="outputrefs">VkAttachmentReferences used as colorAttachments</param>
 		/// <param name="data">source data ptr</param>
 		/// <param name="count">count</param>
-		static void FillAttachmentDescriptionStructures(std::vector<VkAttachmentDescription>& descriptions, std::vector<VkAttachmentReference>& inputrefs, std::vector<VkAttachmentReference>& outputrefs, const AttachmentBinding* data, uint32_t count);
+		static void FillAttachmentDescriptionStructures(std::vector<VkAttachmentDescription>& descriptions, std::vector<VkAttachmentReference>& inputrefs, std::vector<VkAttachmentReference>& outputrefs, const TextureBinding* data, uint32_t count);
 
 	};
 
-	inline VkDescriptorType AttachmentBinding::getDescriptorType() const
+	inline VkDescriptorType TextureBinding::getDescriptorType() const
 	{
-		if (m_Bind == BindType::StorageImage)
+		switch (m_Type)
 		{
+		case Type::StorageImage_ReadOnly:
+		case Type::StorageImage_ReadWrite:
 			return VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		}
-		else
-		{
+		case Type::Sampler_ReadOnly:
 			return VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		case Type::Subpass_Output:
+		default:
+			return VkDescriptorType::VK_DESCRIPTOR_TYPE_MAX_ENUM;
 		}
 	}
 
-	inline VkSampler rtf::AttachmentBinding::selectSampler(VkSampler direct, VkSampler normalized) const
+	inline VkSampler rtf::TextureBinding::selectSampler(VkSampler sampler) const
 	{
-		switch (m_Bind)
+		if (m_Type == Type::Sampler_ReadOnly)
 		{
-		case BindType::Sampled:
-			return (m_Sampler == SamplerType::Direct) ? direct : normalized;
-		case BindType::StorageImage:
-		default:
-			return nullptr;
+			return sampler;
 		}
+		return nullptr;
 	}
-	inline bool AttachmentBinding::readAccess() const
+	inline bool TextureBinding::readAccess() const
 	{
-		return (m_AccessMode == AccessMode::ReadOnly) || m_AccessMode == AccessMode::ReadWrite;
+		return (m_Type == Type::StorageImage_ReadOnly || m_Type == Type::StorageImage_ReadWrite || m_Type == Type::Sampler_ReadOnly);
 	}
-	inline bool AttachmentBinding::writeAccess() const
+	inline bool TextureBinding::writeAccess() const
 	{
-		return m_AccessMode == AccessMode::WriteOnly || m_AccessMode == AccessMode::ReadWrite;
+		return (m_Type == Type::StorageImage_ReadWrite || m_Type == Type::StorageImage_WriteOnly || m_Type == Type::Subpass_Output);
 	}
-	inline bool AttachmentBinding::usesDescriptor() const
+	inline bool TextureBinding::usesDescriptor() const
 	{
-		if (m_Bind == BindType::StorageImage)
-		{
-			return true; // A storageImage always needs a descriptor
-		}
-		return !writeAccess(); // Output attachments are not sampled, and don't require a descriptor
+		return !(m_Type == Type::Subpass_Output);
 	}
-	inline bool AttachmentBinding::usesAttachmentDescription() const
+	inline bool TextureBinding::usesAttachmentDescription() const
 	{
-		return m_Bind == BindType::Sampled && writeAccess();
+		return m_Type == Type::Subpass_Output;
 	}
-	inline bool AttachmentBinding::requireImageTransition() const
+	inline bool TextureBinding::requireImageTransition() const
 	{
 		return m_PreLayout != m_WorkLayout;
 	}
