@@ -1014,6 +1014,7 @@ void vkglTF::Model::loadMaterials(tinygltf::Model &gltfModel)
 		vkglTF::Material material(device);
 		if (mat.values.find("baseColorTexture") != mat.values.end()) {
 			material.baseColorTexture = getTexture(gltfModel.textures[mat.values["baseColorTexture"].TextureIndex()].source);
+			material.baseColorTextureId = mat.values["baseColorTexture"].TextureIndex();
 		}
 		// Metallic roughness workflow
 		if (mat.values.find("metallicRoughnessTexture") != mat.values.end()) {

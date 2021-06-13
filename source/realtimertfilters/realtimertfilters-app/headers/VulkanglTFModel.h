@@ -82,6 +82,7 @@ namespace vkglTF
 		glm::vec4 baseColorFactor = glm::vec4(1.0f);
 		glm::vec4 emissiveFactor = glm::vec4(0.0f);
 		vkglTF::Texture* baseColorTexture = nullptr;
+		int baseColorTextureId = -1;
 		vkglTF::Texture* metallicRoughnessTexture = nullptr;
 		vkglTF::Texture* normalTexture = nullptr;
 		vkglTF::Texture* occlusionTexture = nullptr;
