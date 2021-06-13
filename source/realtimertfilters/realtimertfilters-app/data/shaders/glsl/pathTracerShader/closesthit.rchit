@@ -11,8 +11,8 @@
 
 hitAttributeEXT vec2 intersectionPoint;
 
-layout(location = 0) rayPayloadInEXT S_HitPayload prd;
-layout(location = 2) rayPayloadEXT bool isShadowed;
+layout(location = LOCATION_PBR) rayPayloadInEXT S_HitPayload prd;
+layout(location = LOCATION_SHADOW) rayPayloadEXT bool isShadowed;
 
 hitAttributeEXT vec3 attribs;
 
@@ -106,9 +106,9 @@ S_GeometryHitPoint initGeometryHitPoint()
 
 	// Calculate uv and color
 	hitpoint.uv = v0.uv * barycentrics.x + v1.uv * barycentrics.y + v2.uv * barycentrics.z;
-	hitpoint.albedo = v0.color.xyz * barycentrics.x + v1.color.xyz * barycentrics.y + v2.color.xyz * barycentrics.z;
+	// hitpoint.albedo = v0.color.xyz * barycentrics.x + v1.color.xyz * barycentrics.y + v2.color.xyz * barycentrics.z;
 	hitpoint.materialId = v0.materialId;
-	// hitpoint.albedo = materials.m[hitpoint.materialId].baseColorFactor.rgb;
+	hitpoint.albedo = materials.m[hitpoint.materialId].baseColorFactor.rgb;
 
 	return hitpoint;
 }
@@ -139,7 +139,7 @@ vec3 calculateIndirectLight(S_GeometryHitPoint hitpoint)
 				0.001,					// ray min range
 				direction,				// ray direction
 				10000.0,				// ray max range
-				0						// payload (location = 0) prd
+				LOCATION_PBR			// payload (location = 0) prd
 			);
 			indirect += prd.radiance;
 		}
@@ -207,7 +207,7 @@ vec3 calculateDirectLight(in S_GeometryHitPoint hitpoint)
 				tmin,
 				lightDir,				// The direction of the ray.
 				tmax,
-				2						// Layout location index the rayPayloadEXT has been assigned to in this shader.
+				LOCATION_SHADOW			// Layout location index the rayPayloadEXT has been assigned to in this shader.
 			);
 		}
 		// In case of shadow we reduce the color level and don't generate a fake specular highlight
@@ -236,7 +236,7 @@ void main()
 		return;
 	}
 
-	// vec3 attenuation = prd.attenuation * prd.albedo / M_PI;
+	//vec3 attenuation = prd.attenuation * prd.albedo / M_PI;
 	vec3 attenuation = vec3(1.0);
 
 	vec3 indirectLight = calculateIndirectLight(hitpoint);

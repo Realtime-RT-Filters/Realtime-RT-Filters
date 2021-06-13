@@ -9,3 +9,6 @@
 #define B_MATERIALS 6
 #define B_TEXTURES 7
 
+#define LOCATION_PBR 0
+#define LOCATION_SHADOW 1
+

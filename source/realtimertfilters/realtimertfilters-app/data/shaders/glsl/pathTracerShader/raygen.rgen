@@ -7,7 +7,7 @@
 #include "raycommon.glsl"
 #include "sampling.glsl"
 
-layout(location = 0) rayPayloadEXT S_HitPayload prd;
+layout(location = LOCATION_PBR) rayPayloadEXT S_HitPayload prd;
 
 layout(binding = B_ACCELERATIONSTRUCTURE) uniform accelerationStructureEXT topLevelAS;
 layout(binding = B_IMAGE, rgba16f) uniform image2D image;
@@ -72,7 +72,7 @@ void main()
 			tmin,					// ray min range
 			direction.xyz,			// ray direction
 			tmax,					// ray max range
-			0						// payload (location = 0)
+			LOCATION_PBR			// payload (location = 0)
 		);
 		hitValue += prd.radiance;
 	}

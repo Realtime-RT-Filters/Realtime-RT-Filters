@@ -1,8 +1,9 @@
 #version 460
 #extension GL_EXT_ray_tracing : require
 #include "raycommon.glsl"
+#include "binding.glsl"
 
-layout(location = 0) rayPayloadInEXT S_HitPayload prd;
+layout(location = LOCATION_PBR) rayPayloadInEXT S_HitPayload prd;
 
 void main()
 {
