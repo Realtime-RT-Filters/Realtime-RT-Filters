@@ -101,7 +101,7 @@ namespace rtf
 			// Index buffer
 			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_INDICES),
 			//  Material
-			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_MATERIALS),
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_MATERIALS),
 			//  Textures
 			//vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_TEXTURES),
 		};
@@ -116,7 +116,6 @@ namespace rtf
 		VkPushConstantRange push_constant;
 		push_constant.offset = 0;
 		push_constant.size = sizeof(SPC_PathtracerConfig);
-		//push_constant.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
 		push_constant.stageFlags = VK_SHADER_STAGE_ALL;
 
 		pPipelineLayoutCI.pPushConstantRanges = &push_constant;
@@ -185,8 +184,8 @@ namespace rtf
 		std::vector<VkDescriptorPoolSize> poolSizes = {
 			{ VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1 },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2 },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3 }
 			//{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0 }
 		};
 		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = vks::initializers::descriptorPoolCreateInfo(poolSizes, 1);
@@ -208,7 +207,6 @@ namespace rtf
 		accelerationStructureWrite.descriptorCount = 1;
 		accelerationStructureWrite.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 
-
 		VkDescriptorImageInfo storageImageDescriptor{ VK_NULL_HANDLE, m_Rtoutput->view, VK_IMAGE_LAYOUT_GENERAL };
 		VkDescriptorBufferInfo vertexBufferDescriptor{ m_Scene->vertices.buffer, 0, VK_WHOLE_SIZE };
 		VkDescriptorBufferInfo indexBufferDescriptor{ m_Scene->indices.buffer, 0, VK_WHOLE_SIZE };
@@ -227,7 +225,7 @@ namespace rtf
 			// Scene index buffer
 			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_INDICES, &indexBufferDescriptor),
 			// Material buffer
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, B_MATERIALS, &materialBufferDescriptor),
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_MATERIALS, &materialBufferDescriptor),
 			// Textures
 			//vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, B_TEXTURES, &m_Scene->textures.data()->descriptor)
 		};
@@ -239,20 +237,19 @@ namespace rtf
 		std::vector<vkglTF::Material> materials = m_Scene->materials;
 		this->m_materials.resize(materials.size());
 		for (int i = 0; i < materials.size(); i++) {
-			m_materials[i].pbrBaseColorFactor = materials[i].baseColorFactor;
-			//m_materials[i].pbrBaseColorTexture = materials[i].baseColorTexture;
-			//m_materials[i].emissiveFactor = materials[i].baseColorTexture;
+			m_materials[i].baseColorFactor = materials[i].baseColorFactor;
+			m_materials[i].emissiveFactor = materials[i].emissiveFactor;
+			//m_materials[i].baseColorTexture = materials[i].baseColorTexture;
+
 		}
 
 		VK_CHECK_RESULT(m_vulkanDevice->createBuffer(
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			&m_material_buffer,
 			sizeof(GltfShadeMaterial) * this->m_materials.size(),
 			m_materials.data())
 		);
-		m_material_buffer.map();
-		memcpy(m_material_buffer.mapped, m_materials.data(), sizeof(GltfShadeMaterial) * this->m_materials.size());
 	}
 
 	void RenderpassPathTracer::createShaderBindingTables()

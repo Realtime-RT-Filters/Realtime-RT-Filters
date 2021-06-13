@@ -1027,7 +1027,11 @@ void vkglTF::Model::loadMaterials(tinygltf::Model &gltfModel)
 		}
 		if (mat.values.find("baseColorFactor") != mat.values.end()) {
 			material.baseColorFactor = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
-		}				
+		}
+		// todo fix
+		if (mat.values.find("emissiveFactor") != mat.values.end()) {
+			material.emissiveFactor = glm::make_vec4(mat.values["emissiveFactor"].ColorFactor().data());
+		}
 		if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) {
 			material.normalTexture = getTexture(gltfModel.textures[mat.additionalValues["normalTexture"].TextureIndex()].source);
 		} else {

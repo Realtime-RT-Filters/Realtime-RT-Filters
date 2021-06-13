@@ -29,10 +29,9 @@ hitAttributeEXT vec3 attribs;
 //} ubo;
 
 layout(binding = 0) uniform accelerationStructureEXT topLevelAS;
-layout(binding = B_INSTANCEINFO) readonly buffer _InstanceInfo { PrimMeshInfo primInfo[]; };
 layout(binding = B_VERTICES) readonly buffer _VertexBuf { vec4 v[]; } vertices;
 layout(binding = B_INDICES) readonly buffer _Indices { uint i[]; }indices;
-layout( binding = B_MATERIALS) readonly buffer _MaterialBuffer {GltfShadeMaterial m[];} materials;
+layout(binding = B_MATERIALS ) readonly buffer _MaterialBuffer {GltfShadeMaterial m[];} materials;
 // layout( binding = B_TEXTURES) uniform sampler2D texturesMap[]; // all textures
 
 struct S_Vertex 
@@ -66,7 +65,7 @@ S_Vertex getVertex(uint index)
 
 	vec4 d0 = vertices.v[m * index + 0];	
 	vec4 d1 = vertices.v[m * index + 1];
-	vec4 d2 = vertices.v[m * index + 2];
+	vec4 d2 = vertices.v[m * index + 2];			// color
 	vec4 d3 = vertices.v[m * index + 3];			// joint0
 	vec4 d4 = vertices.v[m * index + 4];			// weight0
 	vec4 d5 = vertices.v[m * index + 5];			// tangent
@@ -74,14 +73,13 @@ S_Vertex getVertex(uint index)
 
 	S_Vertex v;
 	v.pos = d0.xyz;
-	v.normal = vec3(d0.w, d1.x, d1.y);
+	v.normal = vec3(d0.w, d1.xy);
 	v.uv = vec2(d1.z, d1.w);
 	v.color = vec4(d2.xyz, 1.0);
 	v.joint0 = d3;
 	v.weight0 = d4;
 	v.tangent = d5;
-	v.materialId = int(d6.x);
-	v.meshId = int(d6.y);
+	v.materialId = floatBitsToInt(d6.x);
 	return v;
 }
 
@@ -109,8 +107,9 @@ S_GeometryHitPoint initGeometryHitPoint()
 	// Calculate uv and color
 	hitpoint.uv = v0.uv * barycentrics.x + v1.uv * barycentrics.y + v2.uv * barycentrics.z;
 	hitpoint.albedo = v0.color.xyz * barycentrics.x + v1.color.xyz * barycentrics.y + v2.color.xyz * barycentrics.z;
-
 	hitpoint.materialId = v0.materialId;
+	// hitpoint.albedo = materials.m[hitpoint.materialId].baseColorFactor.rgb;
+
 	return hitpoint;
 }
 
@@ -226,19 +225,19 @@ void main()
 	// Temporary vars
 	vec3 emittance = vec3(0, 0, 0);
 
-	// Hit point of geometry init
+	// // Hit point of geometry init
 	S_GeometryHitPoint hitpoint = initGeometryHitPoint();
 
 	if (emittance != vec3(0))
 	{
 		prd.radiance = emittance;
 		prd.normal = hitpoint.normal_world;
-		prd.albedo = materials.m[hitpoint.materialId].pbrBaseColorFactor.xyz;
+		prd.albedo = hitpoint.albedo;
 		return;
 	}
 
-	vec3 attenuation = prd.attenuation * prd.albedo / M_PI;
-	attenuation = vec3(1.0);
+	// vec3 attenuation = prd.attenuation * prd.albedo / M_PI;
+	vec3 attenuation = vec3(1.0);
 
 	vec3 indirectLight = calculateIndirectLight(hitpoint);
 	vec3 directLight = calculateDirectLight(hitpoint);

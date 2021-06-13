@@ -3,32 +3,25 @@
 #pragma once
 struct GltfShadeMaterial
 {
-	glm::vec4 pbrBaseColorFactor;
-	int		pbrBaseColorTexture;
-	glm::vec3 emissiveFactor;
+	glm::vec4 baseColorFactor;
+	glm::vec4 emissiveFactor;	// origin vec3
+	glm::vec4 baseColorTexture; // origin int
 };
 #endif
 
 #ifndef __cplusplus
 struct GltfShadeMaterial
 {
-	vec4	pbrBaseColorFactor;
-	int		pbrBaseColorTexture;
-	vec3	emissiveFactor;
-};
-
-struct PrimMeshInfo
-{
-	uint	indexOffset;
-	uint	vertexOffset;
-	int		materialIndex;
+	vec4	baseColorFactor;
+	vec4	emissiveFactor;
+	vec4	baseColorTexture;
 };
 
 vec3 computeDiffuse(GltfShadeMaterial mat, vec3 lightDir, vec3 normal)
 {
 	// Lambertian
 	float dotNL = max(dot(normal, lightDir), 0.0);
-	return mat.pbrBaseColorFactor.xyz * dotNL;
+	return mat.baseColorFactor.xyz * dotNL;
 }
 
 vec3 computeSpecular(GltfShadeMaterial mat, vec3 viewDir, vec3 lightDir, vec3 normal)
