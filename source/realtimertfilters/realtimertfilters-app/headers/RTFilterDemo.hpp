@@ -17,7 +17,6 @@
 
 #include "Attachment_Manager.hpp"
 
-#include "SpatioTemporalAccumulation.hpp"
 #include "RaytracingManager.hpp"
 
 #include <memory>

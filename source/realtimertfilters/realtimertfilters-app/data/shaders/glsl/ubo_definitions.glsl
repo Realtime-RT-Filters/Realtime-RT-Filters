@@ -227,4 +227,34 @@ layout(set = SET_BMFRCONFIG, binding = BIND_BMFRCONFIG) uniform S_BMFRConfig
 } ubo_bmfrconfig;
 #endif
 
+#ifdef __cplusplus
+
+using uint = uint32_t;
+
+struct S_AtrousConfig
+{
+	float	c_phi;
+	float	n_phi;
+	float	p_phi;
+	int		stepwidth;
+
+	S_AtrousConfig():c_phi(),n_phi(),p_phi(),stepwidth(1){}
+};
+
+#endif
+#ifdef BIND_ATROUSCONFIG
+#ifndef SET_ATROUSCONFIG
+#define SET_ATROUSCONFIG 0
+#endif 
+
+layout(set = SET_ATROUSCONFIG, binding = BIND_ATROUSCONFIG) uniform S_AtrousConfig
+{
+	float	c_phi;
+	float	n_phi;
+	float	p_phi;
+	int		stepwidth;
+} ubo_atrousconfig;
+#endif
+
+
 #endif
