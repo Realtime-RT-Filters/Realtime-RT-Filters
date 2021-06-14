@@ -253,7 +253,7 @@ layout(set = SET_ATROUSCONFIG, binding = BIND_ATROUSCONFIG) uniform S_AtrousConf
 	float	n_phi;
 	float	p_phi;
 	int		stepwidth;
-};
+} ubo_atrousconfig;
 #endif
 
 
