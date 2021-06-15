@@ -283,6 +283,9 @@ namespace rtf
 		m_UBO_AccuConfig = std::make_shared<ManagedUBO<S_AccuConfig>>(vulkanDevice);
 		m_UBO_AccuConfig->prepare();
 
+		m_UBO_AtrousConfig = std::make_shared<ManagedUBO<S_AtrousConfig>>(vulkanDevice);
+		m_UBO_AtrousConfig->prepare();
+
 		updateUBOs();
 	}
 
@@ -314,6 +317,7 @@ namespace rtf
 		m_UBO_SceneInfo->update();
 		m_UBO_Guibase->update();
 		m_UBO_AccuConfig->update();
+		m_UBO_AtrousConfig->update();
 	}
 
 	void RTFilterDemo::OnUpdateUIOverlay(vks::UIOverlay* overlay)
@@ -353,6 +357,7 @@ namespace rtf
 		SceneControlUIOverlay(overlay);
 		PathtracerConfigUIOverlay(overlay);
 		AccumulationConfigUIOverlay(overlay);
+		AtrousConfigUIOverlay(overlay);
 	}
 
 	void RTFilterDemo::ResetGUIState()
@@ -441,7 +446,7 @@ namespace rtf
 
 	void RTFilterDemo::AccumulationConfigUIOverlay(vks::UIOverlay* overlay)
 	{
-		if (!m_renderpassManager->m_RPG_Active->m_usePathtracing)
+		if (!m_renderpassManager->m_RPG_Active->m_useTempAccu)
 		{
 			return;
 		}
@@ -454,6 +459,25 @@ namespace rtf
 			ubo.MaxPosDifference = maxPosDiff * maxPosDiff;
 			overlay->sliderFloat("Max Normal Deviation", &ubo.MaxNormalAngleDifference, 0.f, 3.141f);
 			overlay->sliderFloat("Min new data weight", &ubo.MinNewWeight, 0.f, 1.f);
+		}
+	}
+
+	void RTFilterDemo::AtrousConfigUIOverlay(vks::UIOverlay* overlay)
+	{
+		if (!m_renderpassManager->m_RPG_Active->m_useAtrous)
+		{
+			return;
+		}
+		S_AtrousConfig& ubo = m_UBO_AtrousConfig->UBO();
+		overlay->sliderInt("Iterations", &ubo.iterations, 0, 9);
+		if (ubo.iterations > 0)
+		{
+			overlay->sliderFloat("Normal Phi", &ubo.n_phi, 0.f, 0.5);
+			ubo.n_phi = ubo.n_phi < 0.0001 ? 0.0001 : ubo.n_phi;
+			overlay->sliderFloat("Depth Phi", &ubo.p_phi, 0.f, 0.5);
+			ubo.p_phi = ubo.p_phi < 0.0001 ? 0.0001 : ubo.p_phi;
+			overlay->sliderFloat("Color Phi", &ubo.c_phi, 0.f, 0.5);
+			ubo.c_phi = ubo.c_phi < 0.0001 ? 0.0001 : ubo.c_phi;
 		}
 	}
 

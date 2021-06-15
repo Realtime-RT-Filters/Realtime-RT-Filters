@@ -236,9 +236,9 @@ struct S_AtrousConfig
 	float	c_phi;
 	float	n_phi;
 	float	p_phi;
-	int		stepwidth;
+	int		iterations;
 
-	S_AtrousConfig():c_phi(),n_phi(),p_phi(),stepwidth(1){}
+	S_AtrousConfig():c_phi(0.01),n_phi(0.01),p_phi(0.1),iterations(5){}
 };
 
 #endif
@@ -252,7 +252,7 @@ layout(set = SET_ATROUSCONFIG, binding = BIND_ATROUSCONFIG) uniform S_AtrousConf
 	float	c_phi;
 	float	n_phi;
 	float	p_phi;
-	int		stepwidth;
+	int		iterations;
 } ubo_atrousconfig;
 #endif
 

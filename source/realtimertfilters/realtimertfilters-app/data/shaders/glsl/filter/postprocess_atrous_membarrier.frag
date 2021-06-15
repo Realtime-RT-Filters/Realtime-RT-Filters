@@ -1,8 +1,9 @@
 #version 450
 #extension GL_KHR_vulkan_glsl : enable
-//#define BIND_ATROUSCONFIG 0
-//#define SET_ATROUSCONFIG 1
-//#include "../ubo_definitions.glsl"
+
+#define BIND_ATROUSCONFIG 0
+#define SET_ATROUSCONFIG 1
+#include "../ubo_definitions.glsl"
 
 layout (binding = 0, rgba32f) uniform coherent image2D Tex_colorA;
 layout (binding = 1, rgba32f) uniform coherent image2D Tex_colorB;
@@ -36,15 +37,14 @@ void storeColor(in int iteration, in ivec2 UV, in vec4 color)
 	imageStore(Tex_colorB, UV, color);
 }
 
-#define ITERATIONS 5
-
 void main()
 {
-	for (int iteration = 0; iteration < ITERATIONS; iteration++)
+	
+	for (int iteration = 0; iteration < ubo_atrousconfig.iterations; iteration++)
 	{
-		float c_phi = 1.f / float(iteration) * 0.01; //* ubo_atrousconfig.c_phi;
-		float p_phi = 1.f / float(iteration) * 0.1; //* ubo_atrousconfig.p_phi;
-		float n_phi = 1.f / float(iteration) * 0.01; //* ubo_atrousconfig.n_phi;
+		float c_phi = 1.f / float(iteration) * ubo_atrousconfig.c_phi;
+		float p_phi = 1.f / float(iteration) * ubo_atrousconfig.p_phi;
+		float n_phi = 1.f / float(iteration) * ubo_atrousconfig.n_phi;
 		int stepw = iteration * 2 + 1;
 
 		vec3 sum = vec3(0.0);
@@ -82,7 +82,7 @@ void main()
 			cum_w = 1.f;
 		}
 		storeColor(iteration, Texel, vec4(sum / cum_w, 1.0));
-		if (iteration < ITERATIONS - 1)
+		if (iteration < ubo_atrousconfig.iterations - 1)
 		{
 			memoryBarrierImage();
 		}

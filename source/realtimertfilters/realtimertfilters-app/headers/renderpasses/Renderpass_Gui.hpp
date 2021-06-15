@@ -31,6 +31,8 @@ namespace rtf
 	public:
 		bool m_allowComposition = false;
 		bool m_usePathtracing = false;
+		bool m_useTempAccu = false;
+		bool m_useAtrous = false;
 	protected:
 
 		std::vector<GuiAttachmentBinding> m_attachments{};

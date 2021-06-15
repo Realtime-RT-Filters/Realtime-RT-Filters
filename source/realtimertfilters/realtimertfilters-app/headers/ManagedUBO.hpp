@@ -63,6 +63,7 @@ namespace rtf
 	using UBO_SceneInfo = ManagedUBO<S_Sceneinfo>::Ptr;
 	using UBO_Guibase = ManagedUBO<S_Guibase>::Ptr;
 	using UBO_AccuConfig = ManagedUBO<S_AccuConfig>::Ptr;
+	using UBO_AtrousConfig = ManagedUBO<S_AtrousConfig>::Ptr;
 
 	template<typename T_UBO>
 	ManagedUBO<T_UBO>::ManagedUBO(vks::VulkanDevice* vulkanDevice)

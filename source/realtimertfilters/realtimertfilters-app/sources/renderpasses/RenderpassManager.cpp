@@ -106,17 +106,18 @@ namespace rtf
 		m_RPF_TempAccu->Push_PastRenderpass_BufferCopy(Attachment::normal, Attachment::prev_normal);
 		m_RPF_TempAccu->Push_PastRenderpass_BufferCopy(Attachment::new_historylength, Attachment::prev_historylength);
 		m_RPF_TempAccu->Push_PastRenderpass_BufferCopy(Attachment::intermediate, Attachment::prev_accumulatedcolor);
+		m_RPF_TempAccu->Push_PastRenderpass_BufferCopy(Attachment::intermediate, Attachment::atrous_output);
 		registerRenderpass(m_RPF_TempAccu);
 
 		// Atrous Postprocess
 		
 		m_RPF_Atrous = std::make_shared<RenderpassPostProcess>();
 		m_RPF_Atrous->ConfigureShader("filter/postprocess_atrous_membarrier.frag.spv");
-		m_RPF_Atrous->PushTextureAttachment(TextureBinding(Attachment::intermediate, TextureBinding::Type::StorageImage_ReadWrite));
-		m_RPF_Atrous->PushTextureAttachment(TextureBinding(Attachment::filteroutput, TextureBinding::Type::StorageImage_ReadWrite));
+		m_RPF_Atrous->PushTextureAttachment(TextureBinding(Attachment::atrous_output, TextureBinding::Type::StorageImage_ReadWrite));
+		m_RPF_Atrous->PushTextureAttachment(TextureBinding(Attachment::atrous_intermediate, TextureBinding::Type::StorageImage_ReadWrite));
 		m_RPF_Atrous->PushTextureAttachment(TextureBinding(Attachment::normal, TextureBinding::Type::Sampler_ReadOnly));
 		m_RPF_Atrous->PushTextureAttachment(depth);
-		//m_RPF_Atrous->PushUBO(std::dynamic_pointer_cast<UBOInterface, ManagedUBO<S_AtrousConfig>>(rtFilterDemo->m_UBO_AccuConfig));
+		m_RPF_Atrous->PushUBO(std::dynamic_pointer_cast<UBOInterface, ManagedUBO<S_AtrousConfig>>(rtFilterDemo->m_UBO_AtrousConfig));
 		registerRenderpass(m_RPF_Atrous);
 
 		// GUI Pass (RasterizerOnly)
@@ -136,10 +137,11 @@ namespace rtf
 		m_RPG_PathtracerOnly = std::make_shared<RenderpassGui>();
 		m_RPG_PathtracerOnly->m_allowComposition = false;
 		m_RPG_PathtracerOnly->m_usePathtracing = true;
+		m_RPG_PathtracerOnly->m_useTempAccu = true;
 		m_RPG_PathtracerOnly->setAttachmentBindings({
-			GuiAttachmentBinding(Attachment::rtoutput, std::string("RT Output")),
-			GuiAttachmentBinding(Attachment::filteroutput, std::string("Atrous")),
-			GuiAttachmentBinding(Attachment::intermediate, std::string("Intermediate")),
+			GuiAttachmentBinding(Attachment::intermediate, std::string("Temporal Accumulation")),
+			GuiAttachmentBinding(Attachment::rtoutput, std::string("Raw RT")),
+			GuiAttachmentBinding(Attachment::albedo, std::string("GBuffer::Albedo"))
 			});
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_PathtracerOnly));
 
@@ -147,10 +149,12 @@ namespace rtf
 		m_RPG_SVGF = std::make_shared<RenderpassGui>();
 		m_RPG_SVGF->m_allowComposition = false;
 		m_RPG_SVGF->m_usePathtracing = true;
+		m_RPG_SVGF->m_useTempAccu = true;
+		m_RPG_SVGF->m_useAtrous = true;
 		m_RPG_SVGF->setAttachmentBindings({
-			GuiAttachmentBinding(Attachment::position, std::string("GBuffer::Position")),
-			GuiAttachmentBinding(Attachment::normal, std::string("GBuffer::Normal")),
-			GuiAttachmentBinding(Attachment::albedo, std::string("GBuffer::Albedo"))
+			GuiAttachmentBinding(Attachment::atrous_output, std::string("A-Trous")),
+			GuiAttachmentBinding(Attachment::intermediate, std::string("Temporal Accumulation")),
+			GuiAttachmentBinding(Attachment::rtoutput, std::string("Raw RT"))
 			});
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_SVGF));
 
@@ -194,17 +198,17 @@ namespace rtf
 		m_QT_PathtracerOnly = std::make_shared<QueueTemplate>();
 		m_QT_PathtracerOnly->push_back(m_RP_GBuffer);
 
-		// TODO Add Pathtracer Renderpass
 		m_QT_PathtracerOnly->push_back(m_RP_PT);
 		m_QT_PathtracerOnly->push_back(m_RPG_PathtracerOnly);
 		m_QT_PathtracerOnly->push_back(m_RPF_TempAccu);
-		m_QT_PathtracerOnly->push_back(m_RPF_Atrous);
 
 		// SVGF
 		m_QT_SVGF = std::make_shared<QueueTemplate>();
 		m_QT_SVGF->push_back(m_RP_GBuffer);
 
-		// TODO Add Pathtracer Renderpass
+		m_QT_SVGF->push_back(m_RP_PT);
+		m_QT_SVGF->push_back(m_RPF_TempAccu);
+		m_QT_SVGF->push_back(m_RPF_Atrous);
 		// TODO Add SVGF Renderpasses
 
 		m_QT_SVGF->push_back(m_RPG_SVGF);
