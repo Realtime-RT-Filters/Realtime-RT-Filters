@@ -1,7 +1,6 @@
 ﻿#include "../headers/RTFilterDemo.hpp"
 #include "../headers/VulkanglTFModel.h"
 #include "../project_defines.hpp"
-#include "../headers/PathTracerManager.hpp"
 #include "../headers/SpirvCompiler.hpp"
 
 #include "../headers/renderpasses/RenderpassManager.hpp"

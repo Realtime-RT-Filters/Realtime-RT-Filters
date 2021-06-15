@@ -17,8 +17,6 @@
 
 #include "Attachment_Manager.hpp"
 
-#include "RaytracingManager.hpp"
-
 #include <memory>
 
 #include "ManagedUBO.hpp"
@@ -35,14 +33,11 @@
 
 namespace rtf
 {
-	class PathTracerManager;
 	class RenderpassManager;
 
 	class RenderpassGbuffer;
 	class RenderpassGui;
 	class RenderpassPathTracer;
-
-	using PFN_FilterDemoGui = void (RTFilterDemo::*)(vks::UIOverlay* overlay);
 
 	class RTFilterDemo : public VulkanExampleBase
 	{
