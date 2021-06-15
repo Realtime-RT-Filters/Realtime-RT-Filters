@@ -165,8 +165,6 @@ namespace rtf
 
 	void RTFilterDemo::prepare()
 	{
-		const size_t SEMAPHORE_COUNT = 5;
-
 		VulkanExampleBase::prepare();
 
 		std::cout << "loading assets.." << std::endl;
@@ -181,7 +179,7 @@ namespace rtf
 		setupUBOs();
 
 		m_renderpassManager = new RenderpassManager();
-		m_renderpassManager->prepare(this, SEMAPHORE_COUNT);
+		m_renderpassManager->prepare(this, m_semaphoreCount);
 
 		//Ray tracing
 		/*m_rtManager.setup(this, physicalDevice, vulkanDevice, device, queue, &swapChain, descriptorPool, &camera);
@@ -237,7 +235,6 @@ namespace rtf
 	{
 		// ui overlay updated, rebuild gui command buffers
 		m_renderpassManager->m_RPG_Active->buildCommandBuffer();
-
 	}
 
 	void RTFilterDemo::render()
@@ -254,6 +251,16 @@ namespace rtf
 
 		//m_rtManager.updateUniformBuffers(timer, &camera);
 		//m_pathTracerManager->updateUniformBuffers(timer, &camera);
+	}
+
+	void RTFilterDemo::windowResized()
+	{
+		// update attachment manager width height
+		m_attachmentManager->resize({width, height});
+		// rebuild command buffer
+		m_renderpassManager->m_RPG_Active->prepare();
+		m_renderpassManager->m_RPG_Active->buildCommandBuffer();
+		m_renderpassManager->prepare(this, m_semaphoreCount);
 	}
 
 	void RTFilterDemo::setupUBOs()

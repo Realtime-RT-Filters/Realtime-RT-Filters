@@ -101,6 +101,8 @@ namespace rtf
 
 		virtual void render() override;
 
+		virtual void windowResized() override;
+
 		virtual void setupUBOs();
 		virtual void updateUBOs();
 
@@ -113,6 +115,7 @@ namespace rtf
 		std::wstring getShadersPathW();
 
 		bool gui_rp_on = false;
+		const size_t m_semaphoreCount = 5;
 
 		VkPipelineShaderStageCreateInfo LoadShader(std::string shadername, VkShaderStageFlagBits stage);
 
