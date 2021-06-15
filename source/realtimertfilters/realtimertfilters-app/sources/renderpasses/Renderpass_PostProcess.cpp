@@ -65,6 +65,12 @@ namespace rtf
 	{
 		bool hasOutput = false;
 
+		// reset attachment bindings
+		for (auto& TextureBinding : m_TextureBindings)
+		{
+			TextureBinding.m_Attachment = nullptr;
+		}
+
 		for (auto& TextureBinding : m_TextureBindings)
 		{
 			if (TextureBinding.m_Attachment == nullptr)
