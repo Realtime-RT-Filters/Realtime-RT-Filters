@@ -20,7 +20,7 @@ namespace rtf
 		std::string m_Displayname = "Generic Attachment";
 
 		GuiAttachmentBinding() = default;
-		GuiAttachmentBinding(Attachment attachmentId, std::string& display) : m_AttachmentId(attachmentId), m_Displayname(display) {}
+		GuiAttachmentBinding(Attachment attachmentId, const std::string& display) : m_AttachmentId(attachmentId), m_Displayname(display) {}
 	};
 
 	/// <summary>
@@ -64,7 +64,7 @@ namespace rtf
 		~RenderpassGui();
 
 		void setAttachmentBindings(std::vector<GuiAttachmentBinding> attachmentBindings);
-		inline std::vector<std::string> getDropoutOptions() { return m_dropoutOptions; }
+		inline std::vector<std::string>& getDropoutOptions() { return m_dropoutOptions; }
 
 		void buildCommandBuffer();
 		virtual void prepare() override;

@@ -28,7 +28,7 @@ namespace rtf
 		m_AttachmentCopies.push_back({ sourceAttachment , destinationAttachment });
 	}
 
-	void RenderpassPostProcess::PushUBO(UBOPtr& ubo)
+	void RenderpassPostProcess::PushUBO(const UBOPtr& ubo)
 	{
 		m_UBOs.push_back(ubo);
 	}

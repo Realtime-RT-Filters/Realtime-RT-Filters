@@ -18,7 +18,7 @@ namespace rtf
 		void ConfigureShader(const std::string& shadername);
 		void PushTextureAttachment(const TextureBinding& attachmentbinding);
 		void Push_PastRenderpass_BufferCopy(Attachment sourceAttachment, Attachment destinationAttachment);
-		void PushUBO(UBOPtr& ubo);
+		void PushUBO(const UBOPtr& ubo);
 
 		virtual void prepare() override;
 		virtual void draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount) override;

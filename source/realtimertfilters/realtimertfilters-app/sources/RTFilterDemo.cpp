@@ -354,7 +354,7 @@ namespace rtf
 			}
 
 			int32_t attachmentIndex = static_cast<int32_t>(guiubo.AttachmentIndex);
-			std::vector<std::string>& dropoutoptions = m_renderpassManager->m_RPG_Active->getDropoutOptions();
+			std::vector<std::string> dropoutoptions = m_renderpassManager->m_RPG_Active->getDropoutOptions();
 			if (attachmentIndex > dropoutoptions.size() - 1)
 			{
 				attachmentIndex = 0;
