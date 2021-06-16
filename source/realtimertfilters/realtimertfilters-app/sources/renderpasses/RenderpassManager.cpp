@@ -10,7 +10,13 @@ namespace rtf
 {
 	RenderpassManager::~RenderpassManager()
 	{
-
+		for (auto& semaphore : m_semaphores)
+		{
+			if(semaphore != nullptr)
+			{
+				vkDestroySemaphore(m_device, semaphore, nullptr);
+			}
+		}
 	}
 
 	void RenderpassManager::setQueueTemplate(SupportedQueueTemplates queueTemplate)
@@ -52,9 +58,17 @@ namespace rtf
 
 		// after each renderpass, we need a semaphore signaled that the next renderpass can start
 		// except for the last renderpass, so nr -1
-		m_semaphores.resize(semaphorecount);
+		if(m_semaphores.size() < semaphorecount)
+		{
+			m_semaphores.resize(semaphorecount);
+		}
 		for (auto& semaphore : m_semaphores)
 		{
+			// cleanup old semaphores before creating new ones
+			if(semaphore != nullptr)
+			{
+				vkDestroySemaphore(m_device, semaphore, nullptr);
+			}
 			VK_CHECK_RESULT(vkCreateSemaphore(m_device, &semaphoreCreateInfo, nullptr, &semaphore));
 		}
 
