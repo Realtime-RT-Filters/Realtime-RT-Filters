@@ -1,6 +1,10 @@
 # Visual Studio 2019 cache/options directory
 .vs/
 
+# Visual Studio Code
+build/
+.vscode/
+
 # Shader compilation batch script (built by cmake instead)
 compile_all_shaders.bat
 
