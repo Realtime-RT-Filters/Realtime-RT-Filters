@@ -1,0 +1,502 @@
+#version 450
+#extension GL_KHR_vulkan_glsl : enable
+
+layout (local_size_x = 256) in;
+
+#define BIND_BMFRCONFIG 0
+#include "../ubo_definitions.glsl"
+
+layout (set = 0, binding = 1, rgba32f) uniform readonly image2D Tex_Positions;
+layout (set = 0, binding = 1, rgba32f) uniform readonly image2D Tex_Normals;
+layout (set = 0, binding = 2, rgba32f) uniform readonly image2D Tex_Input;  
+
+//layout( push_constant ) uniform constants
+//{
+//	uint frame_number;
+//	int screen_width;
+//	int screen_height;
+//	int horizental_blocks_count;
+//} PushC;
+
+#define INDEX_FEATURE_ONE 0
+#define INDEX_POS_X 1
+#define INDEX_POS_Y 2
+#define INDEX_POS_Z 3
+#define INDEX_POSSQ_X 4
+#define INDEX_POSSQ_Y 5
+#define INDEX_POSSQ_Z 6
+#define INDEX_NORMAL_X 7
+#define INDEX_NORMAL_Y 8
+#define INDEX_NORMAL_Z 9
+#define INDEX_COLOR_R 10
+#define INDEX_COLOR_G 11
+#define INDEX_COLOR_B 12
+#define BUFFER_COUNT 13
+#define FEATURES_COUNT 10
+//#define FEATURES_NOT_SCALED 4
+#define BLOCK_SIZE_X 32
+#define BLOCK_SIZE_Y 32
+#define BLOCK_PIXELS BLOCK_SIZE_X * BLOCK_SIZE_Y
+//#define BLOCK_EDGE_LENGTH 32
+#define NOISE_AMOUNT 0.01
+//#define BLOCK_OFFSETS_COUNT 16
+
+//#define INBLOCK_ID sub_vector * LOCAL_SIZE + gl_GlobalInvocationID
+//#define BLOCK_OFFSET groupId.x * BUFFER_COUNT
+
+layout (set = 0, binding = 3, r32f) uniform image3D Tex_QR;    // 
+layout (set = 0, binding = 5, r32f) uniform image3D Tex_MatA;
+layout (set = 0, binding = 4, rgba32f) uniform image2D Tex_Output; // where we perform QR decomposition
+shared float sum_vec[gl_WorkGroupSize.x];
+shared float uVec[1024];
+shared float gchannel[1024];
+shared float bchannel[1024];
+shared float rmat[10][13]; // FEATURES * BUFFER_COUNT
+shared float u_length_squared;
+shared float dotV;
+shared float block_min;
+shared float block_max;
+shared float vec_length;
+shared float matA[BUFFER_COUNT][BLOCK_PIXELS];
+
+int Blocks_horizontal = int(ubo_bmfrconfig.ScreenDims.x + BLOCK_SIZE_X - 1) / BLOCK_SIZE_X;
+
+float ReadMatA(in ivec2 blockPos, in ivec2 localPos, in int bufferId)
+{
+//	ivec3 matPos = ivec3(blockPos.x * Blocks_horizontal + blockPos.y, localPos.x * BLOCK_SIZE_X + localPos.y, bufferId);
+//	return imageLoad(Tex_MatA, matPos).x;
+	return matA[localPos.x * BLOCK_SIZE_X + localPos.y][bufferId];
+}
+
+float ReadMatA(in ivec2 blockPos, in int index, in int bufferId)
+{
+//	ivec3 matPos = ivec3(blockPos.x * Blocks_horizontal + blockPos.y, index, bufferId);
+//	return imageLoad(Tex_MatA, matPos).x;
+	return matA[index][bufferId];
+}
+
+void WriteMatA(in ivec2 blockPos, in ivec2 localPos, in int bufferId, in float data)
+{
+//	ivec3 matPos = ivec3(blockPos.x * Blocks_horizontal + blockPos.y, localPos.x * BLOCK_SIZE_X + localPos.y, bufferId);
+//	imageStore(Tex_MatA, matPos, vec4(data));
+	matA[localPos.x * BLOCK_SIZE_X + localPos.y][bufferId] = data;
+}
+
+void WriteMatA(in ivec2 blockPos, in int index, in int bufferId, in float data)
+{
+//	ivec3 matPos = ivec3(blockPos.x * Blocks_horizontal + blockPos.y, index, bufferId);
+//	imageStore(Tex_MatA, matPos, vec4(data));
+	matA[index][bufferId] = data;
+}
+
+//const ivec2 BLOCK_OFFSETS[BLOCK_OFFSETS_COUNT] =
+//{
+//	ivec2(-30, -30),
+//	ivec2(-12, -22),
+//	ivec2(-24, -2),
+//	ivec2(-8, -16),
+//	ivec2(-26, -24),
+//	ivec2(-14, -4),
+//	ivec2(-4, -28),
+//	ivec2(-26, -16),
+//	ivec2(-4, -2),
+//	ivec2(-24, -32),
+//	ivec2(-10, -10),
+//	ivec2(-18, -18),
+//	ivec2(-12, -30),
+//	ivec2(-32, -4),
+//	ivec2(-2, -20),
+//	ivec2(-22, -12),
+//};
+
+//int mirror(int index, int size)
+//{
+//	if (index < 0)
+//		index = abs(index) - 1;
+//	else if (index >= size)
+//		index = 2 * size - index - 1;
+//
+//	return index;
+//}
+//
+//ivec2 mirror2(ivec2 index, ivec2 size)
+//{
+//	index.x = mirror(index.x, size.x);
+//	index.y = mirror(index.y, size.y);
+//
+//	return index;
+//}
+//
+
+float random(uint a) {
+   a = (a+0x7ed55d16) + (a<<12);
+   a = (a^0xc761c23c) ^ (a>>19);
+   a = (a+0x165667b1) + (a<<5);
+   a = (a+0xd3a2646c) ^ (a<<9);
+   a = (a+0xfd7046c5) + (a<<3);
+   a = (a^0xb55a4f09) ^ (a>>16);
+
+   return float(a) / 4294967296.0f;
+}
+
+float add_random(
+	  const float value,
+	  const int id,
+	  const int sub_vector,
+	  const int feature_buffer,
+	  const int frame_number){
+   return value + NOISE_AMOUNT * 2 * (random(id + sub_vector * gl_WorkGroupSize.x +
+	  feature_buffer * BLOCK_PIXELS +
+	  frame_number * BUFFER_COUNT * BLOCK_PIXELS) - 0.5f);
+}
+
+
+
+const float POS_INFINITY = 1.f / 0.f;
+const float NEG_INFINITY = -1.f / 0.f;
+
+void main()
+{
+	int		localId = int(gl_LocalInvocationIndex);
+	ivec2	globalId = ivec2(gl_WorkGroupID.x, gl_WorkGroupID.y);
+
+	ivec2 blockPos = ivec2(globalId.x * BLOCK_SIZE_X, globalId.y * BLOCK_SIZE_Y);
+
+	vec3 data;
+	int blockIndex = localId * 4;
+	for (int i = 0; i < 4; i++)
+	{
+		int index = blockIndex + i;
+		ivec2 localPos = ivec2(index % BLOCK_SIZE_X, index / BLOCK_SIZE_X);
+		ivec2 uv = blockPos + localPos;
+		WriteMatA(blockPos, uv, INDEX_FEATURE_ONE, 1.f);
+		data = imageLoad(Tex_Positions, uv).xyz;
+		WriteMatA(blockPos, uv, INDEX_POS_X, data.x);
+		WriteMatA(blockPos, uv, INDEX_POS_Y, data.y);
+		WriteMatA(blockPos, uv, INDEX_POS_Z, data.z);
+		WriteMatA(blockPos, uv, INDEX_POSSQ_X, data.x * data.x);
+		WriteMatA(blockPos, uv, INDEX_POSSQ_Y, data.y * data.y);
+		WriteMatA(blockPos, uv, INDEX_POSSQ_Z, data.z * data.z);
+		data = imageLoad(Tex_Normals, uv).xyz;
+		WriteMatA(blockPos, uv, INDEX_NORMAL_X, data.x);
+		WriteMatA(blockPos, uv, INDEX_NORMAL_Y, data.y);
+		WriteMatA(blockPos, uv, INDEX_NORMAL_Z, data.z);
+		data = imageLoad(Tex_Input, uv).xyz;
+		WriteMatA(blockPos, uv, INDEX_COLOR_R, data.r);
+		WriteMatA(blockPos, uv, INDEX_COLOR_G, data.g);
+		WriteMatA(blockPos, uv, INDEX_COLOR_B, data.b);
+	}
+
+	groupMemoryBarrier();
+
+	// Normalize features
+
+	for (int featureIndex = INDEX_POS_X; featureIndex < FEATURES_COUNT; featureIndex++)
+	{
+		float temp_min = POS_INFINITY;
+		float temp_max = NEG_INFINITY;
+		int blockIndex = localId * 4;
+		for (int i = 0; i < 4; i++)
+		{
+			int index = blockIndex + i;
+			ivec2 localPos = ivec2(index % BLOCK_SIZE_X, index / BLOCK_SIZE_X);
+			float val = ReadMatA(blockPos, localPos, featureIndex);
+			temp_min = min(temp_min, val);
+			temp_max = max(temp_min, val);
+		}
+
+ 		// parallel reduction find min
+		sum_vec[localId] = temp_min;
+		groupMemoryBarrier();
+
+ 		if(localId < 128) sum_vec[localId] = min(sum_vec[localId], sum_vec[localId + 128]);
+ 		groupMemoryBarrier();
+ 		if(localId < 64) sum_vec[localId] = min(sum_vec[localId], sum_vec[localId + 64]);
+ 		groupMemoryBarrier();
+ 		if(localId < 32) sum_vec[localId] = min(sum_vec[localId], sum_vec[localId + 32]);
+ 		groupMemoryBarrier();
+ 		if(localId < 16) sum_vec[localId] = min(sum_vec[localId], sum_vec[localId + 16]);
+ 		groupMemoryBarrier();
+ 		if(localId < 8) sum_vec[localId] = min(sum_vec[localId], sum_vec[localId + 8]);
+ 		groupMemoryBarrier();
+ 		if(localId < 4) sum_vec[localId] = min(sum_vec[localId], sum_vec[localId + 4]);
+ 		groupMemoryBarrier();
+ 		if(localId < 2) sum_vec[localId] = min(sum_vec[localId], sum_vec[localId + 2]);
+ 		groupMemoryBarrier();
+ 		if(localId == 0) block_min = min(sum_vec[0], sum_vec[1]);
+ 		groupMemoryBarrier();
+
+ 		// parallel reduction find max
+		sum_vec[localId] = temp_max;
+		groupMemoryBarrier();
+
+ 		if(localId < 128) sum_vec[localId] = max(sum_vec[localId], sum_vec[localId + 128]);
+ 		groupMemoryBarrier();
+ 		if(localId < 64) sum_vec[localId] = max(sum_vec[localId], sum_vec[localId + 64]);
+ 		groupMemoryBarrier();
+ 		if(localId < 32) sum_vec[localId] = max(sum_vec[localId], sum_vec[localId + 32]);
+ 		groupMemoryBarrier();
+ 		if(localId < 16) sum_vec[localId] = max(sum_vec[localId], sum_vec[localId + 16]);
+ 		groupMemoryBarrier();
+ 		if(localId < 8) sum_vec[localId] = max(sum_vec[localId], sum_vec[localId + 8]);
+ 		groupMemoryBarrier();
+ 		if(localId < 4) sum_vec[localId] = max(sum_vec[localId], sum_vec[localId + 4]);
+ 		groupMemoryBarrier();
+ 		if(localId < 2) sum_vec[localId] = max(sum_vec[localId], sum_vec[localId + 2]);
+ 		groupMemoryBarrier();
+ 		if(localId == 0) 
+		{
+			block_max = max(sum_vec[0], sum_vec[1]);
+			block_max = max(abs(block_min), abs(block_max)); // Convert block_max into the divisor for normalization
+		}
+ 		groupMemoryBarrier();
+
+		// Normalizing
+
+		for (int i = 0; i < 4; i++)
+		{
+			int index = blockIndex + i;
+			ivec2 localPos = ivec2(index % BLOCK_SIZE_X, index / BLOCK_SIZE_X);
+			float val = ReadMatA(blockPos,localPos, featureIndex);
+			val /= block_max;
+			WriteMatA(blockPos, localPos, featureIndex, val);
+		}
+	}
+	
+	// Householder QR
+
+	for (uint col = 0; col < FEATURES_COUNT; col++) 
+	{
+ 		float tmp_sum_value = 0;
+ 		for (uint sub_vector = 0; sub_vector < BLOCK_PIXELS / gl_WorkGroupSize.x; ++sub_vector) 
+		{
+ 			int index = INBLOCK_ID;
+ 			float tmp = out_data[uvec2(index, col + BLOCK_OFFSET)];
+ 			uVec[index] = tmp;
+ 			if (index >= col + 1) {
+ 				tmp_sum_value += tmp * tmp;
+ 		}
+ 	}
+ 	sum_vec[localId] = tmp_sum_value;
+ 	groupMemoryBarrier();
+
+ 	// parallel reduction sum
+ 	if (localId < 128) sum_vec[localId] += sum_vec[localId + 128];
+ 	groupMemoryBarrier();
+ 	if (localId < 64) sum_vec[localId] += sum_vec[localId + 64];
+ 	groupMemoryBarrier();
+ 	if (localId < 32) sum_vec[localId] += sum_vec[localId + 32];
+ 	groupMemoryBarrier();
+ 	if (localId < 16) sum_vec[localId] += sum_vec[localId + 16];
+ 	groupMemoryBarrier();
+ 	if (localId < 8) sum_vec[localId] += sum_vec[localId + 8];
+ 	groupMemoryBarrier();
+ 	if (localId < 4) sum_vec[localId] += sum_vec[localId + 4];
+ 	groupMemoryBarrier();
+ 	if (localId < 2) sum_vec[localId] += sum_vec[localId + 2];
+ 	groupMemoryBarrier();
+ 	if (localId == 0) vec_length = sum_vec[0] + sum_vec[1];
+ 	groupMemoryBarrier();
+
+ 	float r_value;
+ 	if (localId < col) {
+ 		r_value = uVec[localId];
+ 	}
+ 	else if (localId == col) {
+ 		u_length_squared = vec_length;
+ 		vec_length = sqrt(vec_length + uVec[col] * uVec[col]);
+ 		uVec[col] -= vec_length;
+ 		u_length_squared += uVec[col] * uVec[col];
+ 		r_value = vec_length;
+ 	}
+ 	else if (localId > col) {
+ 		r_value = 0;
+ 	}
+
+
+
+// 		// normalize feature
+// 		if(block_max - block_min > 1.0f) {
+// 			for(uint sub_vector = 0; sub_vector < BLOCK_PIXELS / LOCAL_SIZE; ++sub_vector) {
+// 				out_data[uivec2(INBLOCK_ID, feature_buffer + BLOCK_OFFSET)] = (tmp_data[uivec2(INBLOCK_ID, feature_buffer + BLOCK_OFFSET)] - block_min) / (block_max - block_min);
+// 				tmp_data[uivec2(INBLOCK_ID, feature_buffer + BLOCK_OFFSET)] = out_data[uivec2(INBLOCK_ID, feature_buffer + BLOCK_OFFSET)];
+// 			}
+// 		} else {
+// 			for(uint sub_vector = 0; sub_vector < BLOCK_PIXELS / LOCAL_SIZE; ++sub_vector) {
+// 				out_data[uivec2(INBLOCK_ID, feature_buffer + BLOCK_OFFSET)] = tmp_data[uivec2(INBLOCK_ID, feature_buffer + BLOCK_OFFSET)] - block_min;
+// 				tmp_data[uivec2(INBLOCK_ID, feature_buffer + BLOCK_OFFSET)] = out_data[uivec2(INBLOCK_ID, feature_buffer + BLOCK_OFFSET)];
+// 			}
+// 		}
+// 	}
+
+// 	// copy noise colors to out
+// 	for(uint feature_buffer = FEATURES_COUNT; feature_buffer < BUFFER_COUNT; ++feature_buffer) {
+// 		for(uint sub_vector = 0; sub_vector < BLOCK_PIXELS / LOCAL_SIZE; ++sub_vector) {
+// 			out_data[uivec2(INBLOCK_ID, feature_buffer + BLOCK_OFFSET)] = tmp_data[uivec2(INBLOCK_ID, feature_buffer + BLOCK_OFFSET)];
+// 		}
+// 	}
+// 	// copy not scaled features to out
+// 	for(uint feature_buffer = 0; feature_buffer < FEATURES_NOT_SCALED; ++feature_buffer) {
+// 		for(uint sub_vector = 0; sub_vector < BLOCK_PIXELS / LOCAL_SIZE; ++sub_vector) {
+// 			out_data[uivec2(INBLOCK_ID, feature_buffer + BLOCK_OFFSET)] = tmp_data[uivec2(INBLOCK_ID, feature_buffer + BLOCK_OFFSET)];
+// 		}
+// 	}
+// 	groupMemoryBarrier();
+
+// 	// Householder QR decomposition
+// 	for (uint col = 0; col < FEATURES_COUNT; col++) {
+// 		float tmp_sum_value = 0;
+// 		for (uint sub_vector = 0; sub_vector < BLOCK_PIXELS / LOCAL_SIZE; ++sub_vector) {
+// 			int index = INBLOCK_ID;
+// 			float tmp = out_data[uivec2(index, col + BLOCK_OFFSET)];
+// 			uVec[index] = tmp;
+// 			if (index >= col + 1) {
+// 				tmp_sum_value += tmp * tmp;
+// 			}
+// 		}
+// 		sum_vec[localId] = tmp_sum_value;
+// 		groupMemoryBarrier();
+
+// 		// parallel reduction sum
+// 		if (localId < 128) sum_vec[localId] += sum_vec[localId + 128];
+// 		groupMemoryBarrier();
+// 		if (localId < 64) sum_vec[localId] += sum_vec[localId + 64];
+// 		groupMemoryBarrier();
+// 		if (localId < 32) sum_vec[localId] += sum_vec[localId + 32];
+// 		groupMemoryBarrier();
+// 		if (localId < 16) sum_vec[localId] += sum_vec[localId + 16];
+// 		groupMemoryBarrier();
+// 		if (localId < 8) sum_vec[localId] += sum_vec[localId + 8];
+// 		groupMemoryBarrier();
+// 		if (localId < 4) sum_vec[localId] += sum_vec[localId + 4];
+// 		groupMemoryBarrier();
+// 		if (localId < 2) sum_vec[localId] += sum_vec[localId + 2];
+// 		groupMemoryBarrier();
+// 		if (localId == 0) vec_length = sum_vec[0] + sum_vec[1];
+// 		groupMemoryBarrier();
+
+// 		float r_value;
+// 		if (localId < col) {
+// 			r_value = uVec[localId];
+// 		}
+// 		else if (localId == col) {
+// 			u_length_squared = vec_length;
+// 			vec_length = sqrt(vec_length + uVec[col] * uVec[col]);
+// 			uVec[col] -= vec_length;
+// 			u_length_squared += uVec[col] * uVec[col];
+// 			r_value = vec_length;
+// 		}
+// 		else if (localId > col) {
+// 			r_value = 0;
+// 		}
+
+// 		if (localId < FEATURES_COUNT)
+// 			rmat[localId][col] = r_value;
+
+// 		for (uint feature_buffer = col + 1; feature_buffer < BUFFER_COUNT; feature_buffer++) {
+// 			float tmp_data_private_cache[BLOCK_PIXELS / LOCAL_SIZE];
+// 			float tmp_sum_value = 0.0f;
+// 			for (uint sub_vector = 0; sub_vector < BLOCK_PIXELS / LOCAL_SIZE; ++sub_vector) {
+// 				int index = INBLOCK_ID;
+// 				if (index >= col) {
+// 					float tmp = out_data[uivec2(index, feature_buffer + BLOCK_OFFSET)];
+// 					if (col == 0 && feature_buffer < FEATURES_COUNT) {
+// 						tmp = add_random(tmp, localId, sub_vector, feature_buffer, frame_number);
+// 					}
+// 					tmp_data_private_cache[sub_vector] = tmp;
+// 					tmp_sum_value += tmp * uVec[index];
+// 				}
+// 			}
+
+// 			sum_vec[localId] = tmp_sum_value;
+// 			groupMemoryBarrier();
+// 			// parallel reduction sum
+// 			if (localId < 128) sum_vec[localId] += sum_vec[localId + 128];
+// 			groupMemoryBarrier();
+// 			if (localId < 64) sum_vec[localId] += sum_vec[localId + 64];
+// 			groupMemoryBarrier();
+// 			if (localId < 32) sum_vec[localId] += sum_vec[localId + 32];
+// 			groupMemoryBarrier();
+// 			if (localId < 16) sum_vec[localId] += sum_vec[localId + 16];
+// 			groupMemoryBarrier();
+// 			if (localId < 8) sum_vec[localId] += sum_vec[localId + 8];
+// 			groupMemoryBarrier();
+// 			if (localId < 4) sum_vec[localId] += sum_vec[localId + 4];
+// 			groupMemoryBarrier();
+// 			if (localId < 2) sum_vec[localId] += sum_vec[localId + 2];
+// 			groupMemoryBarrier();
+// 			if (localId == 0) dotV = sum_vec[0] + sum_vec[1];
+// 			groupMemoryBarrier();
+
+// 			for (uint sub_vector = 0; sub_vector < BLOCK_PIXELS / LOCAL_SIZE; ++sub_vector) {
+// 				int index = INBLOCK_ID;
+// 				if (index >= col) {
+// 					out_data[uivec2(index, feature_buffer + BLOCK_OFFSET)] = tmp_data_private_cache[sub_vector]
+// 						- 2.0f * uVec[index] * dotV / u_length_squared;
+// 				}
+// 			}
+// 			groupMemoryBarrier();
+// 		}
+// 	}
+
+// 	uint tmpId;
+// 	if (localId < FEATURES_COUNT) {
+// 		rmat[localId][FEATURES_COUNT] = out_data[uivec2(localId, FEATURES_COUNT + BLOCK_OFFSET)];
+// 	}
+// 	else if ((tmpId = localId - FEATURES_COUNT) < FEATURES_COUNT) {
+// 		rmat[tmpId][BUFFER_COUNT - 2] = out_data[uivec2(tmpId, BUFFER_COUNT - 2 + BLOCK_OFFSET)];
+// 	}
+// 	else if ((tmpId = tmpId - FEATURES_COUNT) < FEATURES_COUNT) {
+// 		rmat[tmpId][BUFFER_COUNT - 1] = out_data[uivec2(tmpId, BUFFER_COUNT - 1 + BLOCK_OFFSET)];
+// 	}
+// 	groupMemoryBarrier();
+
+
+// 	// Back substitution
+// 	for (int i = BUFFER_COUNT - 4; i >= 0; i--) {
+// 		if (localId < 3) {
+// 			rmat[i][BUFFER_COUNT - localId - 1] /= rmat[i][i];
+// 		}
+// 		groupMemoryBarrier();
+// 		if (localId < 3 * i) {
+// 			uint rowId = i - localId / 3 - 1;
+// 			uint channel = BUFFER_COUNT - (localId % 3) - 1;
+// 			rmat[rowId][channel] -= rmat[i][channel] * rmat[rowId][i];
+// 		}
+// 		groupMemoryBarrier();
+// 	}
+// #endif
+	
+// 	// calculate filtered color
+// 	for (uint sub_vector = 0; sub_vector < BLOCK_PIXELS / LOCAL_SIZE; ++sub_vector) {
+// 		uint index = INBLOCK_ID;
+// 		uVec[index] = 0.0f;
+// 		gchannel[index] = 0.0f;
+// 		bchannel[index] = 0.0f;
+// 	}
+
+// 	for (int col = 0; col < FEATURES_COUNT; col++) {
+// 		for (uint sub_vector = 0; sub_vector < BLOCK_PIXELS / LOCAL_SIZE; ++sub_vector) {
+// 			uint index = INBLOCK_ID;
+// 			float tmp = tmp_data[uivec2(index, col + BLOCK_OFFSET)];
+// 			uVec[index] += rmat[col][FEATURES_COUNT] * tmp;
+// 			gchannel[index] += rmat[col][FEATURES_COUNT + 1] * tmp;
+// 			bchannel[index] += rmat[col][FEATURES_COUNT + 2] * tmp;
+// 		}
+// 	}
+
+// 	for (uint sub_vector = 0; sub_vector < BLOCK_PIXELS / LOCAL_SIZE; ++sub_vector) {
+// 		uint index = INBLOCK_ID;
+// 		ivec2 uv = ivec2(groupId.x % horizental_blocks_count, groupId.x / horizental_blocks_count);
+// 		uv *= BLOCK_EDGE_LENGTH;
+// 		uv += ivec2(index % BLOCK_EDGE_LENGTH, index / BLOCK_EDGE_LENGTH);
+// 		uv += BLOCK_OFFSETS[frame_number % BLOCK_OFFSETS_COUNT];
+// 		if (uv.x < 0 || uv.y < 0 || uv.x >= screen_width || uv.y >= screen_height) {
+// 			continue;
+// 		}
+// 		gCurNoisy[uv] = gbuffer_Albedo[uv] * float4(uVec[index] < 0.0f ? 0.0f : uVec[index], 
+// 											gchannel[index] < 0.0f ? 0.0f : gchannel[index],
+// 											bchannel[index] < 0.0f ? 0.0f : bchannel[index],
+// 											gCurNoisy[uv].w);
+// 	}
+}

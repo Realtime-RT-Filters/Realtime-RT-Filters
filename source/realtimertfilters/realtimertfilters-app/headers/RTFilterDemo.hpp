@@ -66,6 +66,7 @@ namespace rtf
 		UBO_Guibase m_UBO_Guibase{};
 		UBO_AccuConfig m_UBO_AccuConfig{};
 		UBO_AtrousConfig m_UBO_AtrousConfig{};
+		UBO_BMFRConfig m_UBO_BMFRConfig{};
 		
 		bool m_ShowSceneControls = false;
 		bool m_ShowPathtracerControls = false;

@@ -292,6 +292,9 @@ namespace rtf
 		m_UBO_AtrousConfig = std::make_shared<ManagedUBO<S_AtrousConfig>>(vulkanDevice);
 		m_UBO_AtrousConfig->prepare();
 
+		m_UBO_BMFRConfig = std::make_shared<ManagedUBO<S_BMFRConfig>>(vulkanDevice);
+		m_UBO_BMFRConfig->prepare();
+
 		updateUBOs();
 	}
 
@@ -324,6 +327,7 @@ namespace rtf
 		m_UBO_Guibase->update();
 		m_UBO_AccuConfig->update();
 		m_UBO_AtrousConfig->update();
+		m_UBO_BMFRConfig->update();
 	}
 
 	void RTFilterDemo::OnUpdateUIOverlay(vks::UIOverlay* overlay)
