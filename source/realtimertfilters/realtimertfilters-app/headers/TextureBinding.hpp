@@ -222,4 +222,4 @@ namespace rtf
 }
 
 
-#endif AttachmentBinding_h
+#endif //AttachmentBinding_h

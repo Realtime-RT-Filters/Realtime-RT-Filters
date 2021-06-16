@@ -129,4 +129,4 @@ namespace rtf
 	}
 }
 
-#endif ManagedUBO_h
+#endif //ManagedUBO_h

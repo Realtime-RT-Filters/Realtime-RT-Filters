@@ -88,4 +88,4 @@ namespace rtf
 	};
 }
 
-#endif Renderpass_PostProcess_h
+#endif //Renderpass_PostProcess_h
