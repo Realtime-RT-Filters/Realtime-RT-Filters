@@ -104,7 +104,7 @@ namespace rtf
 		virtual void updateUBOs();
 
 		virtual void OnUpdateUIOverlay(vks::UIOverlay* overlay) override;
-		virtual void ResetGUIState();
+		virtual void ResetGUIState(int32_t splitView1InitialValue, int32_t splitView2InitialValue);
 		virtual void SceneControlUIOverlay(vks::UIOverlay* overlay);
 		virtual void PathtracerConfigUIOverlay(vks::UIOverlay* overlay);
 		virtual void AccumulationConfigUIOverlay(vks::UIOverlay* overlay);
