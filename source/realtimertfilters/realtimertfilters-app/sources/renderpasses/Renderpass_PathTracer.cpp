@@ -103,7 +103,7 @@ namespace rtf
 			//  Material
 			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_MATERIALS),
 			//  Textures
-			//vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_TEXTURES),
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_TEXTURES),
 		};
 
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI = vks::initializers::descriptorSetLayoutCreateInfo(layoutBindingSet);
@@ -185,8 +185,8 @@ namespace rtf
 			{ VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1 },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3 }
-			//{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0 }
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3 },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 }
 		};
 		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = vks::initializers::descriptorPoolCreateInfo(poolSizes, 1);
 		VK_CHECK_RESULT(vkCreateDescriptorPool(m_vulkanDevice->logicalDevice, &descriptorPoolCreateInfo, nullptr, &m_descriptorPool));
@@ -211,6 +211,14 @@ namespace rtf
 		VkDescriptorBufferInfo vertexBufferDescriptor{ m_Scene->vertices.buffer, 0, VK_WHOLE_SIZE };
 		VkDescriptorBufferInfo indexBufferDescriptor{ m_Scene->indices.buffer, 0, VK_WHOLE_SIZE };
 		VkDescriptorBufferInfo materialBufferDescriptor{ m_material_buffer.buffer, 0, VK_WHOLE_SIZE };
+		
+		VkSamplerCreateInfo samplerCI = vks::initializers::samplerCreateInfo();
+		VkSampler sampler;
+		vkCreateSampler(m_vulkanDevice->logicalDevice, &samplerCI, VK_NULL_HANDLE, &sampler);
+		VkDescriptorImageInfo textures{ sampler,  m_Rtoutput->view, VK_IMAGE_LAYOUT_GENERAL };
+		if (m_Scene->textures.data() != nullptr) {
+			textures = m_Scene->textures.data()->descriptor;
+		}
 
 		std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
 			// Top level acceleration structure
@@ -227,7 +235,7 @@ namespace rtf
 			// Material buffer
 			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_MATERIALS, &materialBufferDescriptor),
 			// Textures
-			//vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, B_TEXTURES, &m_Scene->textures.data()->descriptor)
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, B_TEXTURES, &textures)
 		};
 		vkUpdateDescriptorSets(m_vulkanDevice->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
 	}
@@ -238,9 +246,7 @@ namespace rtf
 		this->m_materials.resize(materials.size());
 		for (int i = 0; i < materials.size(); i++) {
 			m_materials[i].baseColorFactor = materials[i].baseColorFactor;
-			m_materials[i].emissiveFactor = materials[i].emissiveFactor;
-			//m_materials[i].baseColorTexture = materials[i].baseColorTexture;
-
+			m_materials[i].baseColorTexture = glm::vec4(materials[i].baseColorTextureId);
 		}
 
 		VK_CHECK_RESULT(m_vulkanDevice->createBuffer(
