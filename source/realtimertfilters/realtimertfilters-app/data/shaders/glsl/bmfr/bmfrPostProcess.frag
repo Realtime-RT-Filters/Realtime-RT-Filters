@@ -44,9 +44,6 @@ void main()
 	}
 
 
-	// History = 0: Previous pixel didn't exist (could only happen in very rare circumstances in the very first frame) => We mix raw 1, accu 0
-	// History = 1: History was discarded previously => We mix raw 0.5, accu 0.5
-	// History > 1: History is pretty old and useful => We mix up to raw MinNewWeight, accu 1 - MinNewWeight
 	float mixFactor = max(ubo_bmfrconfig.MinNewWeight, 1.f / historylength);
 	vec3 oldColor = texelFetch(Tex_PrevAccuRegression, texel_prevFrame, 0).xyz;
 	vec3 mixedColor = mix(oldColor, rawColor,  mixFactor);

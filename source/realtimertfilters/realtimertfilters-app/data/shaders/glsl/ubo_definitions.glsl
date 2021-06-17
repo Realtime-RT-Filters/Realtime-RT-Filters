@@ -121,12 +121,17 @@ layout (push_constant) uniform SPC_PathtracerConfig
 
 struct S_Guibase
 {
-	uint		AttachmentIndex;
-	uint		DoComposition;
-	uint		_RESERVED1;
-	uint		_RESERVED2;
+	int32_t     SplitViewImage1;
+	int32_t     SplitViewImage2;
+	float		SplitViewFactor;
+	uint		WindowWidth;
 
-	S_Guibase() : AttachmentIndex(), DoComposition(1), _RESERVED1(), _RESERVED2() {}
+	uint		WindowHeight;
+	uint		_RESERVED;
+	uint		_RESERVED2;
+	uint        _RESERVED3;
+
+	S_Guibase() : SplitViewImage1(0), SplitViewImage2(0), SplitViewFactor(0.5f), WindowWidth(800), WindowHeight(600), _RESERVED(0), _RESERVED2(0), _RESERVED3() {}
 };
 
 #endif
@@ -137,10 +142,15 @@ struct S_Guibase
 
 layout(set = SET_GUIBASE, binding = BIND_GUIBASE) uniform S_Guibase
 {
-	uint		AttachmentIndex;
-	uint		DoComposition;
-	uint		_RESERVED1;
-	uint		_RESERVED2;
+	uint		SplitViewImage1;
+	uint		SplitViewImage2;
+	float		SplitViewFactor;
+	uint		WindowWidth;
+
+	uint		WindowHeight;
+	uint        _RESERVED;
+	uint        _RESERVED2;
+	uint        _RESERVED3;
 } ubo_guibase;
 #endif
 
@@ -188,7 +198,7 @@ layout(set = SET_ACCUCONFIG, binding = BIND_ACCUCONFIG) uniform S_AccuConfig
 /// EnabledFeatureBuffers = How many feature buffers are to be used in computing feature regression
 /// FeatureBufferExponents[] = Exponents assigned to the feature buffers
 
-#define BMFR_MAX_FEATURE_BUFFERS 12
+#define BMFR_MAX_FEATURE_BUFFERS 4
 
 #ifdef __cplusplus
 
@@ -198,13 +208,11 @@ struct S_BMFRConfig
 	float		MaxPosDifference;
 	float		MaxNormalAngleDifference;
 	float		MinNewWeight;
-	int			EnabledFeatureBuffers;
-	int			_RESERVED1;
-	int			_RESERVED2;
-	int			_RESERVED3;
-	float		FeatureBufferExponents[BMFR_MAX_FEATURE_BUFFERS];
+	int			DebugMode;
+	int			Frame;
+	glm::uvec2	ScreenDims;
 
-	S_BMFRConfig() : EnableAccumulation(1), MaxPosDifference(0.0064), MaxNormalAngleDifference(0.06), MinNewWeight(0.15f), EnabledFeatureBuffers(0), _RESERVED1(), _RESERVED2(), _RESERVED3(), FeatureBufferExponents() {}
+	S_BMFRConfig() : EnableAccumulation(1), MaxPosDifference(0.0064), MaxNormalAngleDifference(0.06), MinNewWeight(0.15f), DebugMode(-1), Frame(0), ScreenDims(1280, 720) {}
 };
 
 #endif
@@ -219,12 +227,40 @@ layout(set = SET_BMFRCONFIG, binding = BIND_BMFRCONFIG) uniform S_BMFRConfig
 	float		MaxPosDifference;
 	float		MaxNormalAngleDifference;
 	float		MinNewWeight;
-	int			EnabledFeatureBuffers;
-	int			_RESERVED1;
-	int			_RESERVED2;
-	int			_RESERVED3;
-	float		FeatureBufferExponents[BMFR_MAX_FEATURE_BUFFERS];
+	int			DebugMode;
+	int			Frame;
+	uvec2		ScreenDims;
 } ubo_bmfrconfig;
 #endif
+
+#ifdef __cplusplus
+
+using uint = uint32_t;
+
+struct S_AtrousConfig
+{
+	float	c_phi;
+	float	n_phi;
+	float	p_phi;
+	int		iterations;
+
+	S_AtrousConfig():c_phi(0.01),n_phi(0.01),p_phi(0.1),iterations(5){}
+};
+
+#endif
+#ifdef BIND_ATROUSCONFIG
+#ifndef SET_ATROUSCONFIG
+#define SET_ATROUSCONFIG 0
+#endif 
+
+layout(set = SET_ATROUSCONFIG, binding = BIND_ATROUSCONFIG) uniform S_AtrousConfig
+{
+	float	c_phi;
+	float	n_phi;
+	float	p_phi;
+	int		iterations;
+} ubo_atrousconfig;
+#endif
+
 
 #endif

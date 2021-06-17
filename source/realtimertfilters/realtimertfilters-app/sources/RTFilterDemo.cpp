@@ -1,7 +1,6 @@
 ﻿#include "../headers/RTFilterDemo.hpp"
 #include "../headers/VulkanglTFModel.h"
 #include "../project_defines.hpp"
-#include "../headers/PathTracerManager.hpp"
 #include "../headers/SpirvCompiler.hpp"
 
 #include "../headers/renderpasses/RenderpassManager.hpp"
@@ -165,8 +164,6 @@ namespace rtf
 
 	void RTFilterDemo::prepare()
 	{
-		const size_t SEMAPHORE_COUNT = 5;
-
 		VulkanExampleBase::prepare();
 
 		std::cout << "loading assets.." << std::endl;
@@ -181,7 +178,7 @@ namespace rtf
 		setupUBOs();
 
 		m_renderpassManager = new RenderpassManager();
-		m_renderpassManager->prepare(this, SEMAPHORE_COUNT);
+		m_renderpassManager->prepare(this, m_semaphoreCount);
 
 		//Ray tracing
 		/*m_rtManager.setup(this, physicalDevice, vulkanDevice, device, queue, &swapChain, descriptorPool, &camera);
@@ -237,7 +234,6 @@ namespace rtf
 	{
 		// ui overlay updated, rebuild gui command buffers
 		m_renderpassManager->m_RPG_Active->buildCommandBuffer();
-
 	}
 
 	void RTFilterDemo::render()
@@ -254,6 +250,16 @@ namespace rtf
 
 		//m_rtManager.updateUniformBuffers(timer, &camera);
 		//m_pathTracerManager->updateUniformBuffers(timer, &camera);
+	}
+
+	void RTFilterDemo::windowResized()
+	{
+		// update attachment manager width height
+		m_attachmentManager->resize({width, height});
+		// rebuild command buffer
+		m_renderpassManager->m_RPG_Active->prepare();
+		m_renderpassManager->m_RPG_Active->buildCommandBuffer();
+		m_renderpassManager->prepare(this, m_semaphoreCount);
 	}
 
 	void RTFilterDemo::setupUBOs()
@@ -283,6 +289,12 @@ namespace rtf
 		m_UBO_AccuConfig = std::make_shared<ManagedUBO<S_AccuConfig>>(vulkanDevice);
 		m_UBO_AccuConfig->prepare();
 
+		m_UBO_AtrousConfig = std::make_shared<ManagedUBO<S_AtrousConfig>>(vulkanDevice);
+		m_UBO_AtrousConfig->prepare();
+
+		m_UBO_BMFRConfig = std::make_shared<ManagedUBO<S_BMFRConfig>>(vulkanDevice);
+		m_UBO_BMFRConfig->prepare();
+
 		updateUBOs();
 	}
 
@@ -311,9 +323,14 @@ namespace rtf
 		ubo.ViewMatInverse = glm::inverse(camera.matrices.view);
 		ubo.ProjMatInverse = glm::inverse(camera.matrices.perspective);
 
+		m_UBO_Guibase->UBO().WindowHeight = height;
+		m_UBO_Guibase->UBO().WindowWidth = width;
+
 		m_UBO_SceneInfo->update();
 		m_UBO_Guibase->update();
 		m_UBO_AccuConfig->update();
+		m_UBO_AtrousConfig->update();
+		m_UBO_BMFRConfig->update();
 	}
 
 	void RTFilterDemo::OnUpdateUIOverlay(vks::UIOverlay* overlay)
@@ -321,45 +338,38 @@ namespace rtf
 		S_Guibase& guiubo = m_UBO_Guibase->UBO();
 		if (overlay->header("Display"))
 		{
+			overlay->sliderFloat("Splitview Factor", &guiubo.SplitViewFactor, 0.0f, 1.0f);
+			std::vector<std::string> dropoutoptions = m_renderpassManager->m_RPG_Active->getDropoutOptions();
+			dropoutoptions.insert(dropoutoptions.begin(), {"Composition"});
+			if (overlay->comboBox("Splitview 1", &guiubo.SplitViewImage1, dropoutoptions))
+			{
+			}
+
+			if (overlay->comboBox("Splitview 2", &guiubo.SplitViewImage2, dropoutoptions))
+			{
+			}
+
 			if (overlay->comboBox("Mode", &m_RenderMode, { "Rasterization Only", "Pathtracer Only", "SVGF", "BMFR" }))
 			{
 				m_renderpassManager->setQueueTemplate(static_cast<SupportedQueueTemplates>(m_RenderMode));
-				ResetGUIState();
-			}
-			bool doComposition = guiubo.DoComposition > 0;
-			if (m_renderpassManager->m_RPG_Active->m_allowComposition)
-			{
-				if (overlay->checkBox("Do Composition", &doComposition))
-				{
-					guiubo.DoComposition = (doComposition) ? 1U : 0U;
-				}
-			}
-			else
-			{
-				doComposition = false;
-			}
 
-			int32_t attachmentIndex = static_cast<int32_t>(guiubo.AttachmentIndex);
-			std::vector<std::string>& dropoutoptions = m_renderpassManager->m_RPG_Active->getDropoutOptions();
-			if (attachmentIndex > dropoutoptions.size() - 1)
-			{
-				attachmentIndex = 0;
-			}
-			if (!doComposition && overlay->comboBox("Attachment Index", &attachmentIndex, dropoutoptions))
-			{
-				m_UBO_Guibase->UBO().AttachmentIndex = static_cast<uint>(attachmentIndex);
+				if(m_RenderMode == 1 || m_RenderMode == 2 || m_RenderMode == 3)
+					ResetGUIState(1, 1); // use attachments 1 as intial value for other modes, bcs 0 = composition
+				else
+					ResetGUIState(0, 0); // use composition as default view
 			}
 		}
 		SceneControlUIOverlay(overlay);
 		PathtracerConfigUIOverlay(overlay);
 		AccumulationConfigUIOverlay(overlay);
+		AtrousConfigUIOverlay(overlay);
 	}
 
-	void RTFilterDemo::ResetGUIState()
+	void RTFilterDemo::ResetGUIState(int32_t splitView1InitialValue, int32_t splitView2InitialValue)
 	{
 		S_Guibase& guiubo = m_UBO_Guibase->UBO();
-		guiubo.DoComposition = (m_renderpassManager->m_RPG_Active->m_allowComposition) ? 1 : 0;
-		guiubo.AttachmentIndex = 0;
+		guiubo.SplitViewImage1 = splitView1InitialValue;
+		guiubo.SplitViewImage2 = splitView2InitialValue;
 	}
 
 	void RTFilterDemo::SceneControlUIOverlay(vks::UIOverlay* overlay)
@@ -441,7 +451,7 @@ namespace rtf
 
 	void RTFilterDemo::AccumulationConfigUIOverlay(vks::UIOverlay* overlay)
 	{
-		if (!m_renderpassManager->m_RPG_Active->m_usePathtracing)
+		if (!m_renderpassManager->m_RPG_Active->m_useTempAccu)
 		{
 			return;
 		}
@@ -454,6 +464,25 @@ namespace rtf
 			ubo.MaxPosDifference = maxPosDiff * maxPosDiff;
 			overlay->sliderFloat("Max Normal Deviation", &ubo.MaxNormalAngleDifference, 0.f, 3.141f);
 			overlay->sliderFloat("Min new data weight", &ubo.MinNewWeight, 0.f, 1.f);
+		}
+	}
+
+	void RTFilterDemo::AtrousConfigUIOverlay(vks::UIOverlay* overlay)
+	{
+		if (!m_renderpassManager->m_RPG_Active->m_useAtrous)
+		{
+			return;
+		}
+		S_AtrousConfig& ubo = m_UBO_AtrousConfig->UBO();
+		overlay->sliderInt("Iterations", &ubo.iterations, 0, 9);
+		if (ubo.iterations > 0)
+		{
+			overlay->sliderFloat("Normal Phi", &ubo.n_phi, 0.f, 0.5);
+			ubo.n_phi = ubo.n_phi < 0.0001 ? 0.0001 : ubo.n_phi;
+			overlay->sliderFloat("Depth Phi", &ubo.p_phi, 0.f, 0.5);
+			ubo.p_phi = ubo.p_phi < 0.0001 ? 0.0001 : ubo.p_phi;
+			overlay->sliderFloat("Color Phi", &ubo.c_phi, 0.f, 0.5);
+			ubo.c_phi = ubo.c_phi < 0.0001 ? 0.0001 : ubo.c_phi;
 		}
 	}
 

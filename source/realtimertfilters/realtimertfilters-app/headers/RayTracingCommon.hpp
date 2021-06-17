@@ -5,7 +5,7 @@
 #include <vulkanexamplebase.h>
 #include "VulkanglTFModel.h"
 #include "../data/shaders/glsl/ubo_definitions.glsl"
-#include "../../data/shaders/glsl/pathTracerShader/gltf.glsl"
+#include "../data/shaders/glsl/pathTracerShader/gltf.glsl"
 
 namespace rtf
 {

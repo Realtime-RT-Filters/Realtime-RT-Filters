@@ -2,6 +2,7 @@
 #define Renderpass_h
 
 #include "../disable_warnings.h"
+#include <memory>
 #include <VulkanDevice.h>
 
 //#include "Attachment_Manager.hpp"

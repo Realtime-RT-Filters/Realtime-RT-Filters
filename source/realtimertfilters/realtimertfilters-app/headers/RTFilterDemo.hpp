@@ -17,9 +17,6 @@
 
 #include "Attachment_Manager.hpp"
 
-#include "SpatioTemporalAccumulation.hpp"
-#include "RaytracingManager.hpp"
-
 #include <memory>
 
 #include "ManagedUBO.hpp"
@@ -36,14 +33,11 @@
 
 namespace rtf
 {
-	class PathTracerManager;
 	class RenderpassManager;
 
 	class RenderpassGbuffer;
 	class RenderpassGui;
 	class RenderpassPathTracer;
-
-	using PFN_FilterDemoGui = void (RTFilterDemo::*)(vks::UIOverlay* overlay);
 
 	class RTFilterDemo : public VulkanExampleBase
 	{
@@ -71,6 +65,8 @@ namespace rtf
 		UBO_SceneInfo m_UBO_SceneInfo{};
 		UBO_Guibase m_UBO_Guibase{};
 		UBO_AccuConfig m_UBO_AccuConfig{};
+		UBO_AtrousConfig m_UBO_AtrousConfig{};
+		UBO_BMFRConfig m_UBO_BMFRConfig{};
 		
 		bool m_ShowSceneControls = false;
 		bool m_ShowPathtracerControls = false;
@@ -102,18 +98,22 @@ namespace rtf
 
 		virtual void render() override;
 
+		virtual void windowResized() override;
+
 		virtual void setupUBOs();
 		virtual void updateUBOs();
 
 		virtual void OnUpdateUIOverlay(vks::UIOverlay* overlay) override;
-		virtual void ResetGUIState();
+		virtual void ResetGUIState(int32_t splitView1InitialValue, int32_t splitView2InitialValue);
 		virtual void SceneControlUIOverlay(vks::UIOverlay* overlay);
 		virtual void PathtracerConfigUIOverlay(vks::UIOverlay* overlay);
 		virtual void AccumulationConfigUIOverlay(vks::UIOverlay* overlay);
+		virtual void AtrousConfigUIOverlay(vks::UIOverlay* overlay);
 		
 		std::wstring getShadersPathW();
 
 		bool gui_rp_on = false;
+		const size_t m_semaphoreCount = 5;
 
 		VkPipelineShaderStageCreateInfo LoadShader(std::string shadername, VkShaderStageFlagBits stage);
 

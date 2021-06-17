@@ -13,14 +13,8 @@ layout (location = 0) out vec4 outFragcolor;
 
 void main() 
 {
-	if (ubo_guibase.DoComposition == 0)
-	{
-		// Debug display
-		outFragcolor.xyz = texture(attachments[ubo_guibase.AttachmentIndex], inUV).xyz;
-		outFragcolor.a = 1.0;
-		return;
-	}
-
+    vec4 outColor1 = vec4(1);
+	vec4 outColor2 = vec4(1);
 	// Render-target composition
 
 	// Get G-Buffer values
@@ -72,6 +66,34 @@ void main()
 			fragcolor += diff + spec;	
 		}	
 	}    	
-   
-  outFragcolor = vec4(fragcolor, 1.0);	
+	
+	// determine outputs for split view
+	if(ubo_guibase.SplitViewImage1 == 0)
+	{
+		outColor1 = vec4(fragcolor, 1.0);
+	}
+	else
+	{
+		outColor1 = vec4(texture(attachments[ubo_guibase.SplitViewImage1 - 1], inUV).rgb, 1);
+	}
+
+	if(ubo_guibase.SplitViewImage2 == 0)
+	{
+		outColor2 = vec4(fragcolor, 1.0);
+	}
+	else
+	{
+		outColor2 = vec4(texture(attachments[ubo_guibase.SplitViewImage2 - 1], inUV).rgb, 1);
+	}
+
+	// split view output
+	vec2 coords = vec2(gl_FragCoord.x / ubo_guibase.WindowWidth, gl_FragCoord.y / ubo_guibase.WindowHeight);
+	if(coords.x < ubo_guibase.SplitViewFactor)
+	{
+		outFragcolor = outColor1;
+	}
+	else
+	{
+		outFragcolor = outColor2;
+	}
 }

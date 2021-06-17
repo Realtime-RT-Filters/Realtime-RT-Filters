@@ -34,7 +34,9 @@ namespace rtf
 		// BMFR
 		scratch_buffer,
 		prev_accumulatedregression,
-
+		// SVGF
+		atrous_output,
+		atrous_intermediate,
 		// add your attachment before this one
 		max_attachments,
 	};
@@ -98,6 +100,9 @@ namespace rtf
 			// BMFR
 			AttachmentInitInfo(Attachment::scratch_buffer, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
 			AttachmentInitInfo(Attachment::prev_accumulatedregression, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
+			// SVGF
+			AttachmentInitInfo(Attachment::atrous_output, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::atrous_intermediate, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
 		};
 		std::array<AttachmentInitInfo, (size_t)Attachment::max_attachments> m_attachmentInits{};
 
