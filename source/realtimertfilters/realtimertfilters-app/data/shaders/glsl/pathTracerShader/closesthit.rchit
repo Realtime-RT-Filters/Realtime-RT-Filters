@@ -16,23 +16,15 @@ layout(location = LOCATION_SHADOW) rayPayloadEXT bool isShadowed;
 
 hitAttributeEXT vec3 attribs;
 
-
 #define BIND_SCENEINFO B_UBO
 #define PUSHC_PATHTRACERCONFIG 0
 #include "../ubo_definitions.glsl"
-//layout(binding = B_UBO) uniform UBO
-//{
-//	mat4 viewInverse;
-//	mat4 projInverse;
-//	vec4 lightPos;
-//	int vertexSize;
-//} ubo;
 
 layout(binding = 0) uniform accelerationStructureEXT topLevelAS;
 layout(binding = B_VERTICES) readonly buffer _VertexBuf { vec4 v[]; } vertices;
 layout(binding = B_INDICES) readonly buffer _Indices { uint i[]; }indices;
 layout(binding = B_MATERIALS ) readonly buffer _MaterialBuffer {GltfShadeMaterial m[];} materials;
-// layout( binding = B_TEXTURES) uniform sampler2D texturesMap[]; // all textures
+layout(binding = B_TEXTURES) uniform sampler2D textureMap[]; // all textures
 
 struct S_Vertex 
 {
@@ -83,6 +75,10 @@ S_Vertex getVertex(uint index)
 	return v;
 }
 
+bool hasTexture(int texId){
+	return texId > -1;
+}
+
 S_GeometryHitPoint initGeometryHitPoint()
 {
 	S_GeometryHitPoint hitpoint;
@@ -104,12 +100,19 @@ S_GeometryHitPoint initGeometryHitPoint()
 	hitpoint.normal_world = normalize(vec3(normal * gl_WorldToObjectEXT));
 	hitpoint.normal = normalize(cross(v1.pos - v0.pos, v2.pos - v0.pos));
 
-	// Calculate uv and color
+	// Calculate uv and color/texture
 	hitpoint.uv = v0.uv * barycentrics.x + v1.uv * barycentrics.y + v2.uv * barycentrics.z;
-	// hitpoint.albedo = v0.color.xyz * barycentrics.x + v1.color.xyz * barycentrics.y + v2.color.xyz * barycentrics.z;
 	hitpoint.materialId = v0.materialId;
-	hitpoint.albedo = materials.m[hitpoint.materialId].baseColorFactor.rgb;
-
+	// float texId = (materials.m[hitpoint.materialId].baseColorTextureId.x);
+	int texId = int(materials.m[hitpoint.materialId].baseColorTextureId.x);
+	// hitpoint.albedo = vec3(texId,1,1);
+	if (hasTexture(texId)){
+		hitpoint.albedo = texture(textureMap[texId], hitpoint.uv).rgb;
+	} else {
+		hitpoint.albedo = materials.m[hitpoint.materialId].baseColorFactor.rgb;
+		// Read color from vertices
+		// hitpoint.albedo = v0.color.xyz * barycentrics.x + v1.color.xyz * barycentrics.y + v2.color.xyz * barycentrics.z;
+	}
 	return hitpoint;
 }
 

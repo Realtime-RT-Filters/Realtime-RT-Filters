@@ -31,36 +31,11 @@ namespace rtf
 			VkBuffer buffer;
 		}m_bottomLevelAS, m_topLevelAS;
 
-		//struct StorageImage {
-		//	VkDeviceMemory memory = VK_NULL_HANDLE;
-		//	VkImage image = VK_NULL_HANDLE;
-		//	VkImageView view = VK_NULL_HANDLE;
-		//	VkFormat format;
-		//}m_storageImage;
-
 		struct ShaderBindingTables {
 			ShaderBindingTable raygen;
 			ShaderBindingTable miss;
 			ShaderBindingTable hit;
 		}m_shaderBindingTables;
-
-		//struct UniformData {
-		//	glm::mat4 viewInverse;
-		//	glm::mat4 projInverse;
-		//	glm::vec4 lightPos;
-		//	int32_t vertexSize;
-		//}m_uniformData;
-		//vks::Buffer m_uniformBufferObject{};
-
-		//struct PushConstant{
-		//	glm::vec4	  clearColor = glm::vec4(0.0);
-		//	float         lightIntensity = 15.f;
-		//	int           lightType = 0; // -1: off, 0: point, 1: infinite
-		//	int           frame = 0;
-		//	int           samples = 1;
-		//	int           bounces = 3;
-		//	int           bounceSamples = 1;
-		//}m_pushConstant;
 
 	public:
 		/// <summary>
@@ -80,6 +55,7 @@ namespace rtf
 		vkglTF::Model* m_Scene{};
 		std::vector<GltfShadeMaterial> m_materials;
 		vks::Buffer m_material_buffer;
+		std::vector<VkDescriptorImageInfo> m_textures;
 
 		PFN_vkGetBufferDeviceAddressKHR vkGetBufferDeviceAddressKHR;
 		PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR;
@@ -94,6 +70,5 @@ namespace rtf
 
 	};
 }
-
 
 #endif //__RAY_COMMON

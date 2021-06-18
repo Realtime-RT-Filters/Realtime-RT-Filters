@@ -18,7 +18,6 @@ namespace rtf
 		void prepare() override;
 		void draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount) override;
 		void cleanUp() override;
-		void updateUniformBuffer() override;
 
 	protected:
 		// Init 
@@ -35,6 +34,7 @@ namespace rtf
 		void createShaderBindingTables();
 		void createShaderBindingTable(ShaderBindingTable& table, uint32_t);
 		void createDescriptorSets();
+		void createDescriptorImageInfos();
 		void createMaterialBuffer();
 		ScratchBuffer createScratchBuffer(VkDeviceSize);
 

@@ -2,6 +2,7 @@
 #include "../../headers/RTFilterDemo.hpp"
 #include "../../data/shaders/glsl/pathTracerShader/binding.glsl"
 #include "../../data/shaders/glsl/pathTracerShader/gltf.glsl"
+#include <vector>
 
 namespace rtf
 {
@@ -11,6 +12,7 @@ namespace rtf
 		initData();
 		prepareAttachement();
 		createMaterialBuffer();
+		createDescriptorImageInfos();
 
 		// Get the function pointers required for ray tracing
 		vkGetBufferDeviceAddressKHR = reinterpret_cast<PFN_vkGetBufferDeviceAddressKHR>(vkGetDeviceProcAddr(m_vulkanDevice->logicalDevice, "vkGetBufferDeviceAddressKHR"));
@@ -57,15 +59,6 @@ namespace rtf
 		//m_uniformBufferObject.destroy();
 	};
 
-	void RenderpassPathTracer::updateUniformBuffer() {
-		//m_uniformData.projInverse = glm::inverse(m_camera->matrices.perspective);
-		//m_uniformData.viewInverse = glm::inverse(m_camera->matrices.view);
-		//m_uniformData.lightPos = glm::vec4(cos(glm::radians(m_timer * 360.0f)) * 40.0f, -50.0f + sin(glm::radians(m_timer * 360.0f)) * 20.0f, 25.0f + sin(glm::radians(m_timer * 360.0f)) * 5.0f, 0.0f);
-		//// Pass the vertex size to the shader for unpacking vertices
-		//m_uniformData.vertexSize = sizeof(vkglTF::Vertex);
-		//memcpy(m_uniformBufferObject.mapped, &m_uniformData, sizeof(UniformData));
-	};
-
 	// Define Class Methods ================================================================================================
 
 	void RenderpassPathTracer::deleteAccelerationStructure(AccelerationStructure& accelerationStructure)
@@ -78,13 +71,7 @@ namespace rtf
 	void RenderpassPathTracer::updatePushConstants()
 	{
 		uint32_t frameNumber = m_rtFilterDemo->frameCounter;
-		//m_pushConstant.clearColor;
-		//m_pushConstant.lightIntensity;
-		//m_pushConstant.lightType;
 		m_pathtracerconfig.Frame++;
-		//m_pushConstant.samples;
-		//m_pushConstant.bounces;
-		//m_pushConstant.bounceSamples;
 		m_pathtracerconfig.VertexSize = sizeof(vkglTF::Vertex);
 	}
 
@@ -103,7 +90,7 @@ namespace rtf
 			//  Material
 			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_MATERIALS),
 			//  Textures
-			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_TEXTURES),
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_TEXTURES,m_Scene->textures.size()),
 		};
 
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI = vks::initializers::descriptorSetLayoutCreateInfo(layoutBindingSet);
@@ -211,14 +198,6 @@ namespace rtf
 		VkDescriptorBufferInfo vertexBufferDescriptor{ m_Scene->vertices.buffer, 0, VK_WHOLE_SIZE };
 		VkDescriptorBufferInfo indexBufferDescriptor{ m_Scene->indices.buffer, 0, VK_WHOLE_SIZE };
 		VkDescriptorBufferInfo materialBufferDescriptor{ m_material_buffer.buffer, 0, VK_WHOLE_SIZE };
-		
-		VkSamplerCreateInfo samplerCI = vks::initializers::samplerCreateInfo();
-		VkSampler sampler;
-		vkCreateSampler(m_vulkanDevice->logicalDevice, &samplerCI, VK_NULL_HANDLE, &sampler);
-		VkDescriptorImageInfo textures{ sampler,  m_Rtoutput->view, VK_IMAGE_LAYOUT_GENERAL };
-		if (m_Scene->textures.data() != nullptr) {
-			textures = m_Scene->textures.data()->descriptor;
-		}
 
 		std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
 			// Top level acceleration structure
@@ -234,10 +213,24 @@ namespace rtf
 			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_INDICES, &indexBufferDescriptor),
 			// Material buffer
 			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_MATERIALS, &materialBufferDescriptor),
-			// Textures
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, B_TEXTURES, &textures)
 		};
+
+		// Texture size have to be bigger than 0. But in some models there is no textures. 
+		if (m_textures.size() > 0) {
+			// Textures
+			writeDescriptorSets.push_back(
+				vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, B_TEXTURES, m_textures.data(), m_textures.size())
+			);
+		}
 		vkUpdateDescriptorSets(m_vulkanDevice->logicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, VK_NULL_HANDLE);
+	}
+
+	void RenderpassPathTracer::createDescriptorImageInfos() {
+		if (m_Scene->textures.data() != nullptr) {
+			for (int i = 0; i < m_Scene->textures.size(); i++) {
+				m_textures.push_back(m_Scene->textures[i].descriptor);
+			}
+		}
 	}
 
 	void RenderpassPathTracer::createMaterialBuffer()
@@ -246,7 +239,7 @@ namespace rtf
 		this->m_materials.resize(materials.size());
 		for (int i = 0; i < materials.size(); i++) {
 			m_materials[i].baseColorFactor = materials[i].baseColorFactor;
-			m_materials[i].baseColorTexture = glm::vec4(materials[i].baseColorTextureId);
+			m_materials[i].baseColorTextureId = glm::vec4(materials[i].baseColorTextureId);
 		}
 
 		VK_CHECK_RESULT(m_vulkanDevice->createBuffer(
@@ -596,17 +589,6 @@ namespace rtf
 		accelerationDeviceAddressInfo.accelerationStructure = accelerationStructure.handle;
 		accelerationStructure.deviceAddress = vkGetAccelerationStructureDeviceAddressKHR(m_vulkanDevice->logicalDevice, &accelerationDeviceAddressInfo);
 	}
-
-	//void RenderpassPathTracer::createUniformBuffer()
-	//{
-	//	VK_CHECK_RESULT(m_vulkanDevice->createBuffer(
-	//		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-	//		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-	//		&m_uniformBufferObject,
-	//		sizeof(UniformData),
-	//		&m_uniformData));
-	//	VK_CHECK_RESULT(m_uniformBufferObject.map());
-	//}
 
 	/*
 		If the window has been resized, we need to recreate the storage image and it's descriptor

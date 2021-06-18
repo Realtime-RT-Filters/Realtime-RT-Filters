@@ -4,8 +4,7 @@
 struct GltfShadeMaterial
 {
 	glm::vec4 baseColorFactor;
-	glm::vec4 emissiveFactor;	// origin vec3
-	glm::vec4 baseColorTexture; // origin int
+	glm::vec4 baseColorTextureId; // origin int
 };
 #endif
 
@@ -13,8 +12,7 @@ struct GltfShadeMaterial
 struct GltfShadeMaterial
 {
 	vec4	baseColorFactor;
-	vec4	emissiveFactor;
-	vec4	baseColorTexture;
+	vec4	baseColorTextureId;
 };
 
 vec3 computeDiffuse(GltfShadeMaterial mat, vec3 lightDir, vec3 normal)
