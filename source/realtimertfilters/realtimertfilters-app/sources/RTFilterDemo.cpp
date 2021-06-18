@@ -338,25 +338,32 @@ namespace rtf
 		S_Guibase& guiubo = m_UBO_Guibase->UBO();
 		if (overlay->header("Display"))
 		{
-			overlay->sliderFloat("Splitview Factor", &guiubo.SplitViewFactor, 0.0f, 1.0f);
-			std::vector<std::string> dropoutoptions = m_renderpassManager->m_RPG_Active->getDropoutOptions();
-			dropoutoptions.insert(dropoutoptions.begin(), {"Composition"});
-			if (overlay->comboBox("Splitview 1", &guiubo.SplitViewImage1, dropoutoptions))
-			{
-			}
-
-			if (overlay->comboBox("Splitview 2", &guiubo.SplitViewImage2, dropoutoptions))
-			{
-			}
-
 			if (overlay->comboBox("Mode", &m_RenderMode, { "Rasterization Only", "Pathtracer Only", "SVGF", "BMFR" }))
 			{
 				m_renderpassManager->setQueueTemplate(static_cast<SupportedQueueTemplates>(m_RenderMode));
 
-				if(m_RenderMode == 1 || m_RenderMode == 2 || m_RenderMode == 3)
-					ResetGUIState(1, 1); // use attachments 1 as intial value for other modes, bcs 0 = composition
-				else
-					ResetGUIState(0, 0); // use composition as default view
+				ResetGUIState();
+			}
+			overlay->sliderFloat("Splitview Factor", &guiubo.SplitViewFactor, 0.0f, 1.0f);
+			bool doCompositionLeft = false;
+			bool doCompositionRight = false;
+			if (m_renderpassManager->m_RPG_Active->m_allowComposition)
+			{
+				doCompositionLeft = guiubo.ImageLeft == INT_MAX;
+				overlay->checkBox("Left: Composition", &doCompositionLeft);
+				guiubo.ImageLeft = doCompositionLeft ? INT_MAX : (guiubo.ImageLeft == INT_MAX ? 0 : guiubo.ImageLeft);
+				doCompositionRight = guiubo.ImageRight == INT_MAX;
+				overlay->checkBox("Right: Composition", &doCompositionRight);
+				guiubo.ImageRight = doCompositionRight ? INT_MAX : (guiubo.ImageRight == INT_MAX ? 0 : guiubo.ImageRight);
+			}
+			std::vector<std::string>& dropoutoptions = m_renderpassManager->m_RPG_Active->getDropoutOptions();
+			if (!doCompositionLeft)
+			{
+				overlay->comboBox("Left: Attachment", &guiubo.ImageLeft, dropoutoptions);
+			}
+			if (!doCompositionRight)
+			{
+				overlay->comboBox("Right: Attachment", &guiubo.ImageRight, dropoutoptions);
 			}
 		}
 		SceneControlUIOverlay(overlay);
@@ -365,11 +372,19 @@ namespace rtf
 		AtrousConfigUIOverlay(overlay);
 	}
 
-	void RTFilterDemo::ResetGUIState(int32_t splitView1InitialValue, int32_t splitView2InitialValue)
+	void RTFilterDemo::ResetGUIState()
 	{
 		S_Guibase& guiubo = m_UBO_Guibase->UBO();
-		guiubo.SplitViewImage1 = splitView1InitialValue;
-		guiubo.SplitViewImage2 = splitView2InitialValue;
+		if (m_renderpassManager->m_RPG_Active->m_allowComposition)
+		{
+			guiubo.ImageLeft = INT_MAX;
+			guiubo.ImageRight = INT_MAX;
+		}
+		else
+		{
+			guiubo.ImageLeft = 0;
+			guiubo.ImageRight = 0;
+		}
 	}
 
 	void RTFilterDemo::SceneControlUIOverlay(vks::UIOverlay* overlay)

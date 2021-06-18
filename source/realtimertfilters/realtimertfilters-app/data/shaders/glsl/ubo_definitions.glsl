@@ -121,9 +121,9 @@ layout (push_constant) uniform SPC_PathtracerConfig
 
 struct S_Guibase
 {
-	int32_t     SplitViewImage1;
-	int32_t     SplitViewImage2;
 	float		SplitViewFactor;
+	int			ImageLeft;
+	int			ImageRight;
 	uint		WindowWidth;
 
 	uint		WindowHeight;
@@ -131,7 +131,7 @@ struct S_Guibase
 	uint		_RESERVED2;
 	uint        _RESERVED3;
 
-	S_Guibase() : SplitViewImage1(0), SplitViewImage2(0), SplitViewFactor(0.5f), WindowWidth(800), WindowHeight(600), _RESERVED(0), _RESERVED2(0), _RESERVED3() {}
+	S_Guibase() : SplitViewFactor(1.f), ImageLeft(0), ImageRight(0), WindowWidth(800), WindowHeight(600), _RESERVED(0), _RESERVED2(0), _RESERVED3() {}
 };
 
 #endif
@@ -142,9 +142,9 @@ struct S_Guibase
 
 layout(set = SET_GUIBASE, binding = BIND_GUIBASE) uniform S_Guibase
 {
-	uint		SplitViewImage1;
-	uint		SplitViewImage2;
 	float		SplitViewFactor;
+	int			ImageLeft;
+	int			ImageRight;
 	uint		WindowWidth;
 
 	uint		WindowHeight;

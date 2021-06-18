@@ -6,29 +6,37 @@
 #define BIND_SCENEINFO 3
 #include "../ubo_definitions.glsl"
 
-layout (set = 0, binding = 1) uniform sampler2D attachments[];
+layout(set = 0, binding = 1) uniform sampler2D attachments[];
 
-layout (location = 0) in vec2 inUV;
-layout (location = 0) out vec4 outFragcolor;
+layout(location = 0) in vec2 inUV;
+layout(location = 0) out vec4 outFragcolor;
 
-void main() 
+#define INT_MAX 2147483647
+
+void main()
 {
-    vec4 outColor1 = vec4(1);
-	vec4 outColor2 = vec4(1);
+	int index = (inUV.x > ubo_guibase.SplitViewFactor) ? ubo_guibase.ImageRight : ubo_guibase.ImageLeft;
+	if (index != INT_MAX)
+	{
+		// Debug display
+		outFragcolor.xyz = texture(attachments[index], inUV).xyz;
+		outFragcolor.a = 1.0;
+		return;
+	}
+
 	// Render-target composition
 
-	// Get G-Buffer values
+// Get G-Buffer values
 	vec3 fragPos = texture(attachments[0], inUV).rgb;
 	vec3 normal = texture(attachments[1], inUV).rgb;
 	vec4 albedo = texture(attachments[2], inUV);
 
-	#define lightCount 6
-	#define ambient 0.0
-	
+#define ambient 0.0
+
 	// Ambient part
-	vec3 fragcolor  = albedo.rgb * ambient;
-	
-	for(int i = 0; i < UBO_SCENEINFO_LIGHT_COUNT; ++i)
+	vec3 fragcolor = albedo.rgb * ambient;
+
+	for (int i = 0; i < UBO_SCENEINFO_LIGHT_COUNT; ++i)
 	{
 		if (ubo_sceneinfo.Lights[i].Type < 0)
 		{
@@ -42,7 +50,7 @@ void main()
 		// Viewer to fragment
 		vec3 V = ubo_sceneinfo.ViewPos.xyz - fragPos;
 		V = normalize(V);
-		
+
 		//if(dist < ubo.lights[i].radius)
 		{
 			// Light to fragment
@@ -63,37 +71,9 @@ void main()
 			float NdotR = max(0.0, dot(R, V));
 			vec3 spec = colorNormalized * albedo.a * pow(NdotR, 16.0) * atten;
 
-			fragcolor += diff + spec;	
-		}	
-	}    	
-	
-	// determine outputs for split view
-	if(ubo_guibase.SplitViewImage1 == 0)
-	{
-		outColor1 = vec4(fragcolor, 1.0);
-	}
-	else
-	{
-		outColor1 = vec4(texture(attachments[ubo_guibase.SplitViewImage1 - 1], inUV).rgb, 1);
+			fragcolor += diff + spec;
+		}
 	}
 
-	if(ubo_guibase.SplitViewImage2 == 0)
-	{
-		outColor2 = vec4(fragcolor, 1.0);
-	}
-	else
-	{
-		outColor2 = vec4(texture(attachments[ubo_guibase.SplitViewImage2 - 1], inUV).rgb, 1);
-	}
-
-	// split view output
-	vec2 coords = vec2(gl_FragCoord.x / ubo_guibase.WindowWidth, gl_FragCoord.y / ubo_guibase.WindowHeight);
-	if(coords.x < ubo_guibase.SplitViewFactor)
-	{
-		outFragcolor = outColor1;
-	}
-	else
-	{
-		outFragcolor = outColor2;
-	}
+	outFragcolor = vec4(fragcolor, 1.f);
 }
