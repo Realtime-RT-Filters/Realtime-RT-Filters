@@ -225,27 +225,18 @@ vec3 calculateDirectLight(in S_GeometryHitPoint hitpoint)
 void main()
 {
 	prd.depth++;
-	// Temporary vars
-	vec3 emittance = vec3(0, 0, 0);
 
 	// // Hit point of geometry init
 	S_GeometryHitPoint hitpoint = initGeometryHitPoint();
 
-	if (emittance != vec3(0))
-	{
-		prd.radiance = emittance;
-		prd.normal = hitpoint.normal_world;
-		prd.albedo = hitpoint.albedo;
-		return;
-	}
+	// vec3 attenuation = prd.albedo / M_PI;
+	// vec3 attenuation = vec3(1.0);
 
-	//vec3 attenuation = prd.attenuation * prd.albedo / M_PI;
-	vec3 attenuation = vec3(1.0);
+	vec3 indirectLigthing = calculateIndirectLight(hitpoint);
+	vec3 directLighting  = calculateDirectLight(hitpoint);
 
-	vec3 indirectLight = calculateIndirectLight(hitpoint);
-	vec3 directLight = calculateDirectLight(hitpoint);
-
-	prd.radiance = (indirectLight + directLight) * attenuation;
+	 prd.radiance = (directLighting / M_PI + 2 * indirectLigthing) * hitpoint.albedo;
+	// prd.radiance = (indirectDiffuse + directDiffuse ) * attenuation;
 	prd.normal = hitpoint.normal_world;
 	prd.albedo = hitpoint.albedo;
 }
