@@ -24,3 +24,4 @@ source/realtimertfilters/realtimertfilters-app/project_defines.hpp
 
 # ignore .spv binaries
 *.spv
+source/realtimertfilters/realtimertfilters-app/data/models/san_miguel/san-miguel-low-poly.gltf
