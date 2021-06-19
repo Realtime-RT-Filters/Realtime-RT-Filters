@@ -125,7 +125,7 @@ namespace rtf
 
 		// SVGF Accumulation
 		m_RPF_SVGF_Accumulation = std::make_shared<RenderpassPostProcess>();
-		m_RPF_SVGF_Accumulation->ConfigureShader("svgf/svgf.frag.spv");
+		m_RPF_SVGF_Accumulation->ConfigureShader("svgf/svgf_accumulation.frag.spv");
 		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::position, TextureBinding::Type::Sampler_ReadOnly));
 		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::prev_position, TextureBinding::Type::Sampler_ReadOnly));
 		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::normal, TextureBinding::Type::Sampler_ReadOnly));
