@@ -130,6 +130,7 @@ vec3 calculateIndirectLight(S_GeometryHitPoint hitpoint)
 		{
 			vec3 origin = hitpoint.pos_world;
 			vec3 direction = sampleLambert(prd.seed, createTBN(hitpoint.normal_world));
+			//vec3 direction = sampleGGX(prd.seed, createTBN(hitpoint.normal_world), 1.f);
 			prd.attenuation = attenuation;
 			traceRayEXT(
 				topLevelAS,				// acceleration structure
@@ -147,6 +148,7 @@ vec3 calculateIndirectLight(S_GeometryHitPoint hitpoint)
 			indirect += prd.radiance;
 		}
 		indirect /= config.SecondarySamplesPerBounce;
+		indirect *= attenuation;
 	}
 	return indirect;
 }
@@ -235,8 +237,8 @@ void main()
 	vec3 indirectLigthing = calculateIndirectLight(hitpoint);
 	vec3 directLighting  = calculateDirectLight(hitpoint);
 
-	 prd.radiance = (directLighting / M_PI + 2 * indirectLigthing) * hitpoint.albedo;
-	// prd.radiance = (indirectDiffuse + directDiffuse ) * attenuation;
+	prd.radiance = (directLighting + indirectLigthing) * hitpoint.albedo;
+//	prd.radiance = (indirectLigthing + directLighting ) * attenuation;
 	prd.normal = hitpoint.normal_world;
 	prd.albedo = hitpoint.albedo;
 }
