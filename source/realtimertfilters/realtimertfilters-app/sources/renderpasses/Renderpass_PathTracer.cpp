@@ -91,6 +91,10 @@ namespace rtf
 			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_MATERIALS),
 			//  Textures
 			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, B_TEXTURES,m_Scene->textures.size()),
+			// Storage image (direct)
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR, B_IMAGE_DIRECT),
+			// Storage image (indirect)
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR, B_IMAGE_INDIRECT),
 		};
 
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI = vks::initializers::descriptorSetLayoutCreateInfo(layoutBindingSet);
@@ -170,7 +174,7 @@ namespace rtf
 	{
 		std::vector<VkDescriptorPoolSize> poolSizes = {
 			{ VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1 },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3 },
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3 },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 }
@@ -194,7 +198,9 @@ namespace rtf
 		accelerationStructureWrite.descriptorCount = 1;
 		accelerationStructureWrite.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 
-		VkDescriptorImageInfo storageImageDescriptor{ VK_NULL_HANDLE, m_Rtoutput->view, VK_IMAGE_LAYOUT_GENERAL };
+		VkDescriptorImageInfo storageImageDescriptor_output{ VK_NULL_HANDLE, m_Rtoutput->view, VK_IMAGE_LAYOUT_GENERAL };
+		VkDescriptorImageInfo storageImageDescriptor_direct{ VK_NULL_HANDLE, m_Direct->view, VK_IMAGE_LAYOUT_GENERAL };
+		VkDescriptorImageInfo storageImageDescriptor_indirect{ VK_NULL_HANDLE, m_Indirect->view, VK_IMAGE_LAYOUT_GENERAL };
 		VkDescriptorBufferInfo vertexBufferDescriptor{ m_Scene->vertices.buffer, 0, VK_WHOLE_SIZE };
 		VkDescriptorBufferInfo indexBufferDescriptor{ m_Scene->indices.buffer, 0, VK_WHOLE_SIZE };
 		VkDescriptorBufferInfo materialBufferDescriptor{ m_material_buffer.buffer, 0, VK_WHOLE_SIZE };
@@ -203,7 +209,7 @@ namespace rtf
 			// Top level acceleration structure
 			accelerationStructureWrite,
 			// Ray tracing result image
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, B_IMAGE, &storageImageDescriptor),
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, B_IMAGE, &storageImageDescriptor_output),
 			// Uniform data
 			m_rtFilterDemo->m_UBO_SceneInfo->writeDescriptorSet(m_descriptorSet, B_UBO),
 			//vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, B_UBO, &m_uniformBufferObject.descriptor),
@@ -213,6 +219,12 @@ namespace rtf
 			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_INDICES, &indexBufferDescriptor),
 			// Material buffer
 			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, B_MATERIALS, &materialBufferDescriptor),
+			// Ray tracing direct lighting image
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, B_IMAGE_DIRECT, &storageImageDescriptor_direct),
+			// Ray tracing indirect lighting image
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, B_IMAGE_INDIRECT, &storageImageDescriptor_indirect),
+			//// Textures
+			//vks::initializers::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, B_TEXTURES, &textures)
 		};
 
 		// Texture size have to be bigger than 0. But in some models there is no textures. 
@@ -311,13 +323,9 @@ namespace rtf
 	}
 
 	void RenderpassPathTracer::prepareAttachement() {
-		//m_position, * m_normal, * m_albedo, * m_motionvector, * m_rtoutput, * m_filteroutput;
-		m_PositionAttachment = m_attachmentManager->getAttachment(Attachment::position);
-		m_NormalAttachment = m_attachmentManager->getAttachment(Attachment::normal);
-		m_AlbedoAttachment = m_attachmentManager->getAttachment(Attachment::albedo);
-		m_MotionAttachment = m_attachmentManager->getAttachment(Attachment::motionvector);
 		m_Rtoutput = m_attachmentManager->getAttachment(Attachment::rtoutput);
-		m_Filteroutput = m_attachmentManager->getAttachment(Attachment::filteroutput);
+		m_Direct = m_attachmentManager->getAttachment(Attachment::rtdirect);
+		m_Indirect = m_attachmentManager->getAttachment(Attachment::rtindirect);
 	}
 
 	/*

@@ -56,7 +56,7 @@ namespace rtf
 		uint64_t getBufferDeviceAddress(VkBuffer buffer);
 		
 	private:
-		FrameBufferAttachment* m_PositionAttachment, * m_NormalAttachment, * m_AlbedoAttachment, * m_MotionAttachment, * m_Rtoutput, * m_Filteroutput;
+		FrameBufferAttachment* m_Rtoutput, *m_Direct, *m_Indirect;
 		float m_timer{};
 		VkCommandBuffer m_commandBuffer{};
 	};

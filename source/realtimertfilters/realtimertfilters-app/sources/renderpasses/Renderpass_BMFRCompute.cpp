@@ -20,49 +20,7 @@ namespace bmfr
 
 		CreateDescriptorSetLayoutAndPipeline();
 
-		std::vector<VkDescriptorPoolSize> poolSizes =
-		{
-			vks::initializers::descriptorPoolSize(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2),
-			vks::initializers::descriptorPoolSize(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 5),
-		};
-		VkDescriptorPoolCreateInfo poolCI = vks::initializers::descriptorPoolCreateInfo(poolSizes, 1);
-		VK_CHECK_RESULT(vkCreateDescriptorPool(getLogicalDevice(), &poolCI, nullptr, &m_descriptorPool));
-
-		VkDescriptorSetAllocateInfo allocInfo =
-			vks::initializers::descriptorSetAllocateInfo(m_descriptorPool, &m_descriptorSetLayout, 1);
-		VK_CHECK_RESULT(vkAllocateDescriptorSets(getLogicalDevice(), &allocInfo, &m_descriptorSet));
-
-		VkDescriptorImageInfo rtin_imageInfo = vks::initializers::descriptorImageInfo(m_rtFilterDemo->m_DefaultColorSampler, m_RTInput->view, VkImageLayout::VK_IMAGE_LAYOUT_GENERAL);
-		VkDescriptorImageInfo pos_imageInfo = vks::initializers::descriptorImageInfo(m_rtFilterDemo->m_DefaultColorSampler, m_Positions->view, VkImageLayout::VK_IMAGE_LAYOUT_GENERAL);
-		VkDescriptorImageInfo normals_imageInfo = vks::initializers::descriptorImageInfo(m_rtFilterDemo->m_DefaultColorSampler, m_Normals->view, VkImageLayout::VK_IMAGE_LAYOUT_GENERAL);
-		VkDescriptorImageInfo output_imageInfo = vks::initializers::descriptorImageInfo(m_rtFilterDemo->m_DefaultColorSampler, m_Output->view, VkImageLayout::VK_IMAGE_LAYOUT_GENERAL);
-
-		std::vector<VkWriteDescriptorSet> computeWriteDescriptorSets = 
-		{
-			// Binding 0: BMFR Config UBO
-			m_rtFilterDemo->m_UBO_BMFRConfig->writeDescriptorSet(m_descriptorSet, 0),
-			// Binding 1: Accumulated RT Image
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &rtin_imageInfo),
-			// Binding 2: Positions
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2, &pos_imageInfo),
-			// Binding 3: Normals
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3, &normals_imageInfo),
-			// Binding 4: Output
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 4, &output_imageInfo),
-		};
-		vkUpdateDescriptorSets(getLogicalDevice(), computeWriteDescriptorSets.size(), computeWriteDescriptorSets.data(), 0, NULL);
-
-		// Create compute shader pipelines
-		VkComputePipelineCreateInfo computePipelineCreateInfo =
-			vks::initializers::computePipelineCreateInfo(m_pipelineLayout, 0);
-
-		// Make pipeline cache
-		VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
-		pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-		VK_CHECK_RESULT(vkCreatePipelineCache(getLogicalDevice(), &pipelineCacheCreateInfo, nullptr, &m_pipelineCache));
-
-		computePipelineCreateInfo.stage = m_rtFilterDemo->loadShader("bmfr/bmfrMain.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT);
-		VK_CHECK_RESULT(vkCreateComputePipelines(getLogicalDevice(), m_pipelineCache, 1, &computePipelineCreateInfo, nullptr, &m_pipeline));
+		AllocateAndWriteDescriptorSet();
 
 		// Separate command pool as queue family for compute may be different than graphics
 		VkCommandPoolCreateInfo cmdPoolInfo = {};
@@ -82,6 +40,41 @@ namespace bmfr
 
 		// Build a single command buffer containing the compute dispatch commands
 		buildCommandBuffer();
+	}
+
+	void RenderpassBMFRCompute::AllocateAndWriteDescriptorSet()
+	{
+		std::vector<VkDescriptorPoolSize> poolSizes =
+		{
+			vks::initializers::descriptorPoolSize(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2),
+			vks::initializers::descriptorPoolSize(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 5),
+		};
+		VkDescriptorPoolCreateInfo poolCI = vks::initializers::descriptorPoolCreateInfo(poolSizes, 1);
+		VK_CHECK_RESULT(vkCreateDescriptorPool(getLogicalDevice(), &poolCI, nullptr, &m_descriptorPool));
+
+		VkDescriptorSetAllocateInfo allocInfo =
+			vks::initializers::descriptorSetAllocateInfo(m_descriptorPool, &m_descriptorSetLayout, 1);
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(getLogicalDevice(), &allocInfo, &m_descriptorSet));
+
+		VkDescriptorImageInfo rtin_imageInfo = vks::initializers::descriptorImageInfo(m_rtFilterDemo->m_DefaultColorSampler, m_RTInput->view, VkImageLayout::VK_IMAGE_LAYOUT_GENERAL);
+		VkDescriptorImageInfo pos_imageInfo = vks::initializers::descriptorImageInfo(m_rtFilterDemo->m_DefaultColorSampler, m_Positions->view, VkImageLayout::VK_IMAGE_LAYOUT_GENERAL);
+		VkDescriptorImageInfo normals_imageInfo = vks::initializers::descriptorImageInfo(m_rtFilterDemo->m_DefaultColorSampler, m_Normals->view, VkImageLayout::VK_IMAGE_LAYOUT_GENERAL);
+		VkDescriptorImageInfo output_imageInfo = vks::initializers::descriptorImageInfo(m_rtFilterDemo->m_DefaultColorSampler, m_Output->view, VkImageLayout::VK_IMAGE_LAYOUT_GENERAL);
+
+		std::vector<VkWriteDescriptorSet> computeWriteDescriptorSets =
+		{
+			// Binding 0: BMFR Config UBO
+			m_rtFilterDemo->m_UBO_BMFRConfig->writeDescriptorSet(m_descriptorSet, 0),
+			// Binding 1: Accumulated RT Image
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &rtin_imageInfo),
+			// Binding 2: Positions
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2, &pos_imageInfo),
+			// Binding 3: Normals
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3, &normals_imageInfo),
+			// Binding 4: Output
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 4, &output_imageInfo),
+		};
+		vkUpdateDescriptorSets(getLogicalDevice(), computeWriteDescriptorSets.size(), computeWriteDescriptorSets.data(), 0, NULL);
 	}
 
 	void RenderpassBMFRCompute::CreateDescriptorSetLayoutAndPipeline()
@@ -109,6 +102,18 @@ namespace bmfr
 			vks::initializers::pipelineLayoutCreateInfo(&m_descriptorSetLayout, 1);
 
 		VK_CHECK_RESULT(vkCreatePipelineLayout(getLogicalDevice(), &pPipelineLayoutCreateInfo, nullptr, &m_pipelineLayout));
+
+		// Create compute shader pipelines
+		VkComputePipelineCreateInfo computePipelineCreateInfo =
+			vks::initializers::computePipelineCreateInfo(m_pipelineLayout, 0);
+
+		// Make pipeline cache
+		VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
+		pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+		VK_CHECK_RESULT(vkCreatePipelineCache(getLogicalDevice(), &pipelineCacheCreateInfo, nullptr, &m_pipelineCache));
+
+		computePipelineCreateInfo.stage = m_rtFilterDemo->loadShader("bmfr/bmfrMain.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT);
+		VK_CHECK_RESULT(vkCreateComputePipelines(getLogicalDevice(), m_pipelineCache, 1, &computePipelineCreateInfo, nullptr, &m_pipeline));
 	}
 
 	void RenderpassBMFRCompute::buildCommandBuffer()

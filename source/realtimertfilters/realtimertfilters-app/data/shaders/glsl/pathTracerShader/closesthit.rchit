@@ -239,6 +239,12 @@ void main()
 
 	prd.radiance = (directLighting + indirectLigthing) * hitpoint.albedo;
 //	prd.radiance = (indirectLigthing + directLighting ) * attenuation;
+	if (prd.depth == 1)
+	{
+		prd.radianceIndirect = indirectLigthing;
+		prd.radianceDirect = directLighting;
+	}
+
 	prd.normal = hitpoint.normal_world;
 	prd.albedo = hitpoint.albedo;
 }

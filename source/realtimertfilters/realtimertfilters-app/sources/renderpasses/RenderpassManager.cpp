@@ -155,6 +155,8 @@ namespace rtf
 		m_RPG_PathtracerOnly->setAttachmentBindings({
 			GuiAttachmentBinding(Attachment::intermediate, std::string("Temporal Accumulation")),
 			GuiAttachmentBinding(Attachment::rtoutput, std::string("Raw RT")),
+			GuiAttachmentBinding(Attachment::rtdirect, std::string("Direct RT")),
+			GuiAttachmentBinding(Attachment::rtindirect, std::string("Indirect RT")),
 			GuiAttachmentBinding(Attachment::albedo, std::string("GBuffer::Albedo"))
 			});
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_PathtracerOnly));

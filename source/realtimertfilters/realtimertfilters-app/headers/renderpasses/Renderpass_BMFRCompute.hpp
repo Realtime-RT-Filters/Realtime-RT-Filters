@@ -31,6 +31,7 @@ namespace bmfr
 		//void PushFeatureBuffer(FeatureBuffer& featurebuffer);
 
 		virtual void prepare() override; // Setup pipelines, passes, descriptorsets, etc.
+		void AllocateAndWriteDescriptorSet();
 		void CreateDescriptorSetLayoutAndPipeline();
 		virtual void draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount) override;
 		virtual void cleanUp () override; // Cleanup any mess you made (is called from the destructor)

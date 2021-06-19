@@ -22,6 +22,8 @@ namespace rtf
 		motionvector,
 		// PATHTRACER
 		rtoutput,
+		rtdirect,
+		rtindirect,
 		// TEMPORAL ACCUMULATION
 		prev_position,
 		prev_normal,
@@ -88,6 +90,8 @@ namespace rtf
 			AttachmentInitInfo(Attachment::motionvector,  VK_FORMAT_R32G32_SFLOAT, DEFAULTFLAGS),
 			// Pathtracer
 			AttachmentInitInfo(Attachment::rtoutput,  DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::rtdirect,  DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::rtindirect,  DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
 			// Temporal Accumulation
 			AttachmentInitInfo(Attachment::prev_position, DEFAULT_GEOMETRY_FORMAT, DEFAULTFLAGS),
 			AttachmentInitInfo(Attachment::prev_normal, DEFAULT_GEOMETRY_FORMAT, DEFAULTFLAGS),
@@ -103,6 +107,7 @@ namespace rtf
 			// SVGF
 			AttachmentInitInfo(Attachment::atrous_output, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
 			AttachmentInitInfo(Attachment::atrous_intermediate, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
+			
 		};
 		std::array<AttachmentInitInfo, (size_t)Attachment::max_attachments> m_attachmentInits{};
 
