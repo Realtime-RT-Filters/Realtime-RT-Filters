@@ -218,8 +218,8 @@ namespace rtf
 		m_QT_PathtracerOnly->push_back(m_RP_GBuffer);
 
 		m_QT_PathtracerOnly->push_back(m_RP_PT);
-		m_QT_PathtracerOnly->push_back(m_RPG_PathtracerOnly);
 		m_QT_PathtracerOnly->push_back(m_RPF_TempAccu);
+		m_QT_PathtracerOnly->push_back(m_RPG_PathtracerOnly);
 
 		// SVGF
 		m_QT_SVGF = std::make_shared<QueueTemplate>();

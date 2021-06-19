@@ -11,8 +11,9 @@
 
 hitAttributeEXT vec2 intersectionPoint;
 
-layout(location = LOCATION_PBR) rayPayloadInEXT S_HitPayload prd;
-layout(location = LOCATION_SHADOW) rayPayloadEXT bool isShadowed;
+layout(location = 0) rayPayloadInEXT S_HitPayload prdParent;
+layout(location = 1) rayPayloadEXT S_HitPayload prdChild;
+layout(location = 2) rayPayloadEXT bool isShadowed;
 
 hitAttributeEXT vec3 attribs;
 
@@ -118,20 +119,22 @@ S_GeometryHitPoint initGeometryHitPoint()
 
 vec3 calculateIndirectLight(S_GeometryHitPoint hitpoint)
 {
-	if (prd.depth >= config.MaxBounceDepth)
+	prdChild = InitHitpayload(prdParent.seed + 1);
+	prdChild.depth = prdParent.depth + 1;
+	if (prdChild.depth >= config.MaxBounceDepth)
 	{
 		return vec3(0.0);
 	}
 
-	vec3 attenuation = prd.attenuation * hitpoint.albedo / M_PI;
+	vec3 attenuation = prdParent.attenuation * hitpoint.albedo / M_PI;
 	vec3 indirect = vec3(0);
 	{
 		for (int i = 0; i < config.SecondarySamplesPerBounce; i++)
 		{
 			vec3 origin = hitpoint.pos_world;
-			vec3 direction = sampleLambert(prd.seed, createTBN(hitpoint.normal_world));
+			vec3 direction = sampleLambert(prdChild.seed, createTBN(hitpoint.normal_world));
 			//vec3 direction = sampleGGX(prd.seed, createTBN(hitpoint.normal_world), 1.f);
-			prd.attenuation = attenuation;
+			prdChild.attenuation = attenuation;
 			traceRayEXT(
 				topLevelAS,				// acceleration structure
 				gl_RayFlagsOpaqueEXT,	// rayFlags
@@ -143,9 +146,9 @@ vec3 calculateIndirectLight(S_GeometryHitPoint hitpoint)
 				0.001,					// ray min range
 				direction,				// ray direction
 				10000.0,				// ray max range
-				LOCATION_PBR			// payload (location = 0) prd
+				1			// payload (location = 0) prd
 			);
-			indirect += prd.radiance;
+			indirect += prdChild.radiance;
 		}
 		indirect /= config.SecondarySamplesPerBounce;
 		indirect *= attenuation;
@@ -212,7 +215,7 @@ vec3 calculateDirectLight(in S_GeometryHitPoint hitpoint)
 				tmin,
 				lightDir,				// The direction of the ray.
 				tmax,
-				LOCATION_SHADOW			// Layout location index the rayPayloadEXT has been assigned to in this shader.
+				2			// Layout location index the rayPayloadEXT has been assigned to in this shader.
 			);
 		}
 		// In case of shadow we reduce the color level and don't generate a fake specular highlight
@@ -226,7 +229,6 @@ vec3 calculateDirectLight(in S_GeometryHitPoint hitpoint)
 
 void main()
 {
-	prd.depth++;
 
 	// // Hit point of geometry init
 	S_GeometryHitPoint hitpoint = initGeometryHitPoint();
@@ -237,14 +239,14 @@ void main()
 	vec3 indirectLigthing = calculateIndirectLight(hitpoint);
 	vec3 directLighting  = calculateDirectLight(hitpoint);
 
-	prd.radiance = (directLighting + indirectLigthing) * hitpoint.albedo;
+	prdParent.radiance = (directLighting + indirectLigthing) * hitpoint.albedo;
 //	prd.radiance = (indirectLigthing + directLighting ) * attenuation;
-	if (prd.depth == 1)
+	if (prdParent.depth == 0)
 	{
-		prd.radianceIndirect = indirectLigthing;
-		prd.radianceDirect = directLighting;
+		// prd.radianceIndirect = indirectLigthing;
+		// prd.radianceDirect = directLighting;
 	}
 
-	prd.normal = hitpoint.normal_world;
-	prd.albedo = hitpoint.albedo;
+	prdParent.normal = hitpoint.normal_world;
+	prdParent.albedo = hitpoint.albedo;
 }
