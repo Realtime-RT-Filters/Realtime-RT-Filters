@@ -28,8 +28,18 @@ namespace rtf
 		prev_position,
 		prev_normal,
 		prev_accumulatedcolor,
+		direct_color_history,
+		indirect_color_history,
+		moments_history,
+		new_moments,
 		prev_historylength,
 		new_historylength,
+		atrous_integratedDirectColor_A,
+		atrous_integratedDirectColor_B,
+		atrous_integratedIndirectColor_A,
+		atrous_integratedIndirectColor_B,
+		svgf_output,
+
 		// MISC
 		intermediate,
 		filteroutput,
@@ -39,6 +49,7 @@ namespace rtf
 		// SVGF
 		atrous_output,
 		atrous_intermediate,
+
 		// add your attachment before this one
 		max_attachments,
 	};
@@ -96,8 +107,17 @@ namespace rtf
 			AttachmentInitInfo(Attachment::prev_position, DEFAULT_GEOMETRY_FORMAT, DEFAULTFLAGS),
 			AttachmentInitInfo(Attachment::prev_normal, DEFAULT_GEOMETRY_FORMAT, DEFAULTFLAGS),
 			AttachmentInitInfo(Attachment::prev_accumulatedcolor, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::direct_color_history, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::indirect_color_history, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::moments_history, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::new_moments, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
 			AttachmentInitInfo(Attachment::prev_historylength, VK_FORMAT_R16_SINT, DEFAULTFLAGS),
 			AttachmentInitInfo(Attachment::new_historylength, VK_FORMAT_R16_SINT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::atrous_integratedDirectColor_A, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::atrous_integratedDirectColor_B, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::atrous_integratedIndirectColor_A, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::atrous_integratedIndirectColor_B, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::svgf_output,  DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
 			// Misc
 			AttachmentInitInfo(Attachment::filteroutput,  DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
 			AttachmentInitInfo(Attachment::intermediate,  DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),

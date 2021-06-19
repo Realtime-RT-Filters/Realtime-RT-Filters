@@ -123,8 +123,34 @@ namespace rtf
 		m_RPF_TempAccu->Push_PastRenderpass_BufferCopy(Attachment::intermediate, Attachment::atrous_output);
 		registerRenderpass(m_RPF_TempAccu);
 
+		// SVGF Accumulation
+		m_RPF_SVGF_Accumulation = std::make_shared<RenderpassPostProcess>();
+		m_RPF_SVGF_Accumulation->ConfigureShader("svgf/svgf.frag.spv");
+		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::position, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::prev_position, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::normal, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::prev_normal, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::motionvector, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::albedo, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::rtdirect, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::rtindirect, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::direct_color_history, TextureBinding::Type::StorageImage_ReadWrite));
+		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::indirect_color_history, TextureBinding::Type::StorageImage_ReadWrite));
+		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::moments_history, TextureBinding::Type::StorageImage_ReadWrite));
+		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::prev_historylength, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::atrous_integratedDirectColor_A, TextureBinding::Type::Subpass_Output));
+		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::atrous_integratedDirectColor_B, TextureBinding::Type::Subpass_Output));
+		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::new_historylength, TextureBinding::Type::Subpass_Output));
+		m_RPF_SVGF_Accumulation->PushTextureAttachment(TextureBinding(Attachment::new_moments, TextureBinding::Type::Subpass_Output));
+		m_RPF_SVGF_Accumulation->PushUBO(std::dynamic_pointer_cast<UBOInterface, ManagedUBO<S_AccuConfig>>(rtFilterDemo->m_UBO_AccuConfig));
+		m_RPF_SVGF_Accumulation->Push_PastRenderpass_BufferCopy(Attachment::position, Attachment::prev_position);
+		m_RPF_SVGF_Accumulation->Push_PastRenderpass_BufferCopy(Attachment::normal, Attachment::prev_normal);
+		m_RPF_SVGF_Accumulation->Push_PastRenderpass_BufferCopy(Attachment::new_historylength, Attachment::prev_historylength);
+		m_RPF_SVGF_Accumulation->Push_PastRenderpass_BufferCopy(Attachment::intermediate, Attachment::direct_color_history);
+		m_RPF_SVGF_Accumulation->Push_PastRenderpass_BufferCopy(Attachment::intermediate, Attachment::atrous_output);
+		registerRenderpass(m_RPF_SVGF_Accumulation);
+
 		// Atrous Postprocess
-		
 		m_RPF_Atrous = std::make_shared<RenderpassPostProcess>();
 		m_RPF_Atrous->ConfigureShader("filter/postprocess_atrous_membarrier.frag.spv");
 		m_RPF_Atrous->PushTextureAttachment(TextureBinding(Attachment::atrous_output, TextureBinding::Type::StorageImage_ReadWrite));
@@ -170,7 +196,10 @@ namespace rtf
 		m_RPG_SVGF->setAttachmentBindings({
 			GuiAttachmentBinding(Attachment::atrous_output, std::string("A-Trous")),
 			GuiAttachmentBinding(Attachment::intermediate, std::string("Temporal Accumulation")),
-			GuiAttachmentBinding(Attachment::rtoutput, std::string("Raw RT"))
+			GuiAttachmentBinding(Attachment::rtoutput, std::string("Raw RT")),
+			GuiAttachmentBinding(Attachment::atrous_integratedIndirectColor_A, std::string("Integrated Indirect Color")),
+			GuiAttachmentBinding(Attachment::atrous_integratedDirectColor_A, std::string("Integrated Direct Color")),
+			GuiAttachmentBinding(Attachment::moments_history, std::string("Moments")),
 			});
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_SVGF));
 
@@ -225,9 +254,8 @@ namespace rtf
 		// SVGF
 		m_QT_SVGF = std::make_shared<QueueTemplate>();
 		m_QT_SVGF->push_back(m_RP_GBuffer);
-
 		m_QT_SVGF->push_back(m_RP_PT);
-		m_QT_SVGF->push_back(m_RPF_TempAccu);
+		m_QT_SVGF->push_back(m_RPF_SVGF_Accumulation);
 		m_QT_SVGF->push_back(m_RPF_Atrous);
 		// TODO Add SVGF Renderpasses
 
