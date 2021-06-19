@@ -126,7 +126,7 @@ vec3 calculateIndirectLight(S_GeometryHitPoint hitpoint)
 		return vec3(0.0);
 	}
 
-	vec3 attenuation = prdParent.attenuation * hitpoint.albedo / M_PI;
+	vec3 attenuation = prdParent.attenuation / M_PI;
 	vec3 indirect = vec3(0);
 	{
 		for (int i = 0; i < config.SecondarySamplesPerBounce; i++)
@@ -243,8 +243,8 @@ void main()
 //	prd.radiance = (indirectLigthing + directLighting ) * attenuation;
 	if (prdParent.depth == 0)
 	{
-		// prd.radianceIndirect = indirectLigthing;
-		// prd.radianceDirect = directLighting;
+		prdParent.radianceIndirect = indirectLigthing;
+		prdParent.radianceDirect = directLighting;
 	}
 
 	prdParent.normal = hitpoint.normal_world;
