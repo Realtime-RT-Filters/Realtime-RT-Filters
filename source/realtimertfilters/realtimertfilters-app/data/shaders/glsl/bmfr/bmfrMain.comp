@@ -44,9 +44,9 @@ layout (set = 0, binding = 2, rgba32f) uniform readonly image2D Tex_Input;
 //#define INBLOCK_ID sub_vector * LOCAL_SIZE + gl_GlobalInvocationID
 //#define BLOCK_OFFSET groupId.x * BUFFER_COUNT
 
-layout (set = 0, binding = 3, r32f) uniform image3D Tex_QR;    // 
+layout (set = 0, binding = 3, r32f) uniform image3D Tex_QR;			// 
 layout (set = 0, binding = 5, r32f) uniform image3D Tex_MatA;
-layout (set = 0, binding = 4, rgba32f) uniform image2D Tex_Output; // where we perform QR decomposition
+layout (set = 0, binding = 4, rgba32f) uniform image2D Tex_Output;	// where we perform QR decomposition
 shared float sum_vec[gl_WorkGroupSize.x];
 shared float uVec[1024];
 shared float gchannel[1024];

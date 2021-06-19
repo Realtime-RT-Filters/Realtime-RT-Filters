@@ -62,6 +62,9 @@ namespace rtf
 
 		friend bmfr::RenderPasses;
 
+		// BMFR specialized stuff
+		bmfr::RenderPasses m_BMFR_Renderpasses{};
+
 	protected:
 
 		void prepareRenderpasses(RTFilterDemo* rtFilterDemo);

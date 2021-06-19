@@ -13,7 +13,7 @@ namespace bmfr
 		RenderpassManager* renderpassManager = rtfilterdemo->m_renderpassManager;
 
 		Prepass = std::make_shared<RenderpassPostProcess>();
-		Prepass->ConfigureShader("filter/postprocess_tempAccu.frag.spv");
+		Prepass->ConfigureShader("bmfr/bmfrPreProcess.frag.spv");
 		Prepass->PushTextureAttachment(TextureBinding(Attachment::position, TextureBinding::Type::Sampler_ReadOnly));
 		Prepass->PushTextureAttachment(TextureBinding(Attachment::normal, TextureBinding::Type::Sampler_ReadOnly));
 		Prepass->PushTextureAttachment(TextureBinding(Attachment::motionvector, TextureBinding::Type::Sampler_ReadOnly));
@@ -33,10 +33,10 @@ namespace bmfr
 		renderpassManager->registerRenderpass(Prepass);
 
 		Computepass = std::make_shared<RenderpassBMFRCompute>();
-		renderpassManager->registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassBMFRCompute>(Computepass));
+		//renderpassManager->registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassBMFRCompute>(Computepass));
 
 		Postpass = std::make_shared<RenderpassPostProcess>();
-		Postpass->ConfigureShader("filter/postprocess_tempAccu.frag.spv");
+		Postpass->ConfigureShader("bmfr/bmfrPostProcess.frag.spv");
 		Postpass->PushTextureAttachment(TextureBinding(Attachment::motionvector, TextureBinding::Type::Sampler_ReadOnly));
 		Postpass->PushTextureAttachment(TextureBinding(Attachment::intermediate, TextureBinding::Type::Sampler_ReadOnly));
 		Postpass->PushTextureAttachment(TextureBinding(Attachment::prev_accumulatedregression, TextureBinding::Type::Sampler_ReadOnly));
@@ -46,6 +46,11 @@ namespace bmfr
 		Postpass->Push_PastRenderpass_BufferCopy(Attachment::filteroutput, Attachment::prev_accumulatedregression);
 		Postpass->PushUBO(std::dynamic_pointer_cast<UBOInterface, ManagedUBO<S_AccuConfig>>(rtfilterdemo->m_UBO_AccuConfig));
 		renderpassManager->registerRenderpass(Postpass);
+	}
+
+	void RenderPasses::addToQueue(rtf::QueueTemplatePtr& queueTemplate)
+	{
+		queueTemplate->push_back(Prepass);
 	}
 
 }
