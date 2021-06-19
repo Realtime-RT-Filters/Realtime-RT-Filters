@@ -1,5 +1,4 @@
 #version 420
-#extension GL_KHR_vulkan_glsl : enable
 
 /*
 	This filter pass removes albedo from RT data and calculates temporal accumulation
@@ -33,8 +32,14 @@ layout (set = 0, binding = 8) uniform sampler2D Tex_Albedo;				// Albedo color
 
 void main()
 {
-	vec3 rawColor = texelFetch(Tex_RawColor, Texel, 0).xyz - 
-	texelFetch(Tex_Albedo, Texel, 0).xyz; // Albedo is removed from RT component, so that all filtering be done on the raw light data, rather than first hit albedo mixed in
+	// Albedo is removed from RT component, so that all filtering be done on the raw light data, rather than first hit albedo mixed in
+	vec3 albedo = texelFetch(Tex_Albedo, Texel, 0).xyz;
+	vec3 rawColor = texelFetch(Tex_RawColor, Texel, 0).xyz;
+	// Albedo color of 0 means that no light is coming via that channel. Division by zero (-> infinity) would be ok, however it is a bad idea for normalizing the values lateron in the compute shader, therefor we set it to zero instead
+	rawColor.x = (albedo.x > 0.005f) ? rawColor.x / albedo.x : 0.f;
+	rawColor.y = (albedo.y > 0.005f) ? rawColor.y / albedo.y : 0.f;
+	rawColor.z = (albedo.z > 0.005f) ? rawColor.z / albedo.z : 0.f;
+
 
 	// Set the RT Output values and a 1 to new history length by default
 	Out_NewAccuColor = vec4(rawColor, 1.0);

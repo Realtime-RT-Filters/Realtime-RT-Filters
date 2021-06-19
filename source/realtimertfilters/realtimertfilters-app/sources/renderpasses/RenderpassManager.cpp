@@ -175,7 +175,7 @@ namespace rtf
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_SVGF));
 
 		// BMFR shit
-		//m_BMFR_Renderpasses.prepareBMFRPasses(rtFilterDemo);
+		m_BMFR_Renderpasses.prepareBMFRPasses(rtFilterDemo);
 
 		// GUI Pass (BMFR)
 		m_RPG_BMFR = std::make_shared<RenderpassGui>();
@@ -183,6 +183,7 @@ namespace rtf
 		m_RPG_BMFR->m_usePathtracing = true;
 		m_RPG_BMFR->setAttachmentBindings({
 			GuiAttachmentBinding(Attachment::intermediate, std::string("Accumulated w/o albedo")),
+			GuiAttachmentBinding(Attachment::filteroutput, std::string("Second accumulation")),
 			GuiAttachmentBinding(Attachment::rtoutput, std::string("Raw RT")),
 			GuiAttachmentBinding(Attachment::albedo, std::string("GBuffer::Albedo"))
 			});
@@ -237,7 +238,7 @@ namespace rtf
 		m_QT_BMFR->push_back(m_RP_GBuffer);
 
 		m_QT_BMFR->push_back(m_RP_PT);
-		//m_BMFR_Renderpasses.addToQueue(m_QT_BMFR);
+		m_BMFR_Renderpasses.addToQueue(m_QT_BMFR);
 
 		m_QT_BMFR->push_back(m_RPG_BMFR);
 	}

@@ -51,6 +51,7 @@ namespace bmfr
 	void RenderPasses::addToQueue(rtf::QueueTemplatePtr& queueTemplate)
 	{
 		queueTemplate->push_back(Prepass);
+		queueTemplate->push_back(Postpass);
 	}
 
 }
