@@ -230,7 +230,7 @@ void main()
 
 	// // Hit point of geometry init
 	S_GeometryHitPoint hitpoint = initGeometryHitPoint();
-
+	
 	// vec3 attenuation = prd.albedo / M_PI;
 	// vec3 attenuation = vec3(1.0);
 
@@ -241,8 +241,8 @@ void main()
 //	prd.radiance = (indirectLigthing + directLighting ) * attenuation;
 	if (prd.depth == 1)
 	{
-		prd.radianceIndirect = indirectLigthing;
-		prd.radianceDirect = directLighting;
+		//prd.radianceIndirect = indirectLigthing;
+		//prd.radianceDirect = directLighting;
 	}
 
 	prd.normal = hitpoint.normal_world;
