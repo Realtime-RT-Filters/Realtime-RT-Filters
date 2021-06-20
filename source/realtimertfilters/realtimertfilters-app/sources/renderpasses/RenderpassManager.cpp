@@ -164,15 +164,11 @@ namespace rtf
 		m_RPF_SVGF_Atrous->PushTextureAttachment(TextureBinding(Attachment::atrous_integratedIndirectColor_A, TextureBinding::Type::StorageImage_ReadWrite));
 		m_RPF_SVGF_Atrous->PushTextureAttachment(TextureBinding(Attachment::atrous_integratedIndirectColor_B, TextureBinding::Type::StorageImage_ReadWrite));
 
-		m_RPF_SVGF_Atrous->PushTextureAttachment(TextureBinding(Attachment::direct_color_history, TextureBinding::Type::StorageImage_WriteOnly));
-		m_RPF_SVGF_Atrous->PushTextureAttachment(TextureBinding(Attachment::indirect_color_history, TextureBinding::Type::StorageImage_WriteOnly));
+		m_RPF_SVGF_Atrous->PushTextureAttachment(TextureBinding(Attachment::direct_color_history, TextureBinding::Type::StorageImage_ReadWrite));
+		m_RPF_SVGF_Atrous->PushTextureAttachment(TextureBinding(Attachment::indirect_color_history, TextureBinding::Type::StorageImage_ReadWrite));
 
 		m_RPF_SVGF_Atrous->PushTextureAttachment(TextureBinding(Attachment::svgf_output, TextureBinding::Type::Subpass_Output));
 		m_RPF_SVGF_Atrous->PushUBO(std::dynamic_pointer_cast<UBOInterface, ManagedUBO<S_AccuConfig>>(rtFilterDemo->m_UBO_AccuConfig));
-
-		m_RPF_SVGF_Atrous->Push_PastRenderpass_BufferCopy(Attachment::position, Attachment::prev_position);
-		m_RPF_SVGF_Atrous->Push_PastRenderpass_BufferCopy(Attachment::normal, Attachment::prev_normal);
-		m_RPF_SVGF_Atrous->Push_PastRenderpass_BufferCopy(Attachment::new_historylength, Attachment::prev_historylength);
 		registerRenderpass(m_RPF_SVGF_Atrous);
 
 		// Atrous Postprocess
@@ -282,9 +278,7 @@ namespace rtf
 		m_QT_SVGF->push_back(m_RP_GBuffer);
 		m_QT_SVGF->push_back(m_RP_PT);
 		m_QT_SVGF->push_back(m_RPF_SVGF_Accumulation);
-		m_QT_SVGF->push_back(m_RPF_Atrous);
-		// TODO Add SVGF Renderpasses
-
+		m_QT_SVGF->push_back(m_RPF_SVGF_Atrous);
 		m_QT_SVGF->push_back(m_RPG_SVGF);
 
 		// BMFR

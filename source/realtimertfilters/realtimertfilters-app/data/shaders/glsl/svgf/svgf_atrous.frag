@@ -102,7 +102,7 @@ void main()
 					continue;
 
 				vec4 colortemp_direct = loadColorDirect(iteration, uv);
-				vec4 colortemp_indirect = loadColorDirect(iteration, uv);
+				vec4 colortemp_indirect = loadColorIndirect(iteration, uv);
 
 				vec3 ct_direct = colorval_direct.rgb - colortemp_direct.rgb;
 				vec3 ct_indirect = colorval_indirect.rgb - colortemp_indirect.rgb;
