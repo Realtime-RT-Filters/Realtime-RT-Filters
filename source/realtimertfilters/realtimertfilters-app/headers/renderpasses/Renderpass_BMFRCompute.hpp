@@ -21,10 +21,10 @@ namespace bmfr
 	{
 	public:
 
-		rtf::FrameBufferAttachment* m_RTInput;
-		rtf::FrameBufferAttachment* m_Positions;
-		rtf::FrameBufferAttachment* m_Normals;
-		rtf::FrameBufferAttachment* m_Output;
+		rtf::FrameBufferAttachment* m_RTInput = nullptr;
+		rtf::FrameBufferAttachment* m_Positions = nullptr;
+		rtf::FrameBufferAttachment* m_Normals = nullptr;
+		rtf::FrameBufferAttachment* m_Output = nullptr;
 
 		RenderpassBMFRCompute() = default;
 

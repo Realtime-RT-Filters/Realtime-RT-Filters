@@ -204,15 +204,11 @@ layout(set = SET_ACCUCONFIG, binding = BIND_ACCUCONFIG) uniform S_AccuConfig
 
 struct S_BMFRConfig
 {
-	int			EnableAccumulation;
-	float		MaxPosDifference;
-	float		MaxNormalAngleDifference;
-	float		MinNewWeight;
 	int			DebugMode;
 	int			Frame;
 	glm::uvec2	ScreenDims;
 
-	S_BMFRConfig() : EnableAccumulation(1), MaxPosDifference(0.0064), MaxNormalAngleDifference(0.06), MinNewWeight(0.15f), DebugMode(-1), Frame(0), ScreenDims(1280, 720) {}
+	S_BMFRConfig() : DebugMode(-1), Frame(0), ScreenDims(1280, 720) {}
 };
 
 #endif
@@ -223,10 +219,6 @@ struct S_BMFRConfig
 
 layout(set = SET_BMFRCONFIG, binding = BIND_BMFRCONFIG) uniform S_BMFRConfig
 {
-	int			EnableAccumulation;
-	float		MaxPosDifference;
-	float		MaxNormalAngleDifference;
-	float		MinNewWeight;
 	int			DebugMode;
 	int			Frame;
 	uvec2		ScreenDims;

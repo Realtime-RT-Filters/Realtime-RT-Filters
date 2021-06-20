@@ -46,6 +46,7 @@ namespace rtf
 		// BMFR
 		scratch_buffer,
 		prev_accumulatedregression,
+		compute_output,
 		// SVGF
 		atrous_output,
 		atrous_intermediate,
@@ -124,6 +125,7 @@ namespace rtf
 			// BMFR
 			AttachmentInitInfo(Attachment::scratch_buffer, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
 			AttachmentInitInfo(Attachment::prev_accumulatedregression, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
+			AttachmentInitInfo(Attachment::compute_output, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
 			// SVGF
 			AttachmentInitInfo(Attachment::atrous_output, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),
 			AttachmentInitInfo(Attachment::atrous_intermediate, DEFAULT_COLOR_FORMAT, DEFAULTFLAGS),

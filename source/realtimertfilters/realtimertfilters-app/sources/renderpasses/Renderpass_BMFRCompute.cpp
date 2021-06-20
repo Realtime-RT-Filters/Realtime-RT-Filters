@@ -14,7 +14,12 @@ namespace bmfr
 	{
 		m_Blocks = {(m_rtFilterDemo->width + BLOCK_SIZE_X - 1) / BLOCK_SIZE_X, (m_rtFilterDemo->height + BLOCK_SIZE_Y - 1) / BLOCK_SIZE_Y};
 
-		m_compute_QueueFamilyIndex = m_vulkanDevice->queueFamilyIndices.compute;
+		m_RTInput = m_attachmentManager->getAttachment(Attachment::intermediate);
+		m_Positions = m_attachmentManager->getAttachment(Attachment::position);
+		m_Normals = m_attachmentManager->getAttachment(Attachment::normal);
+		m_Output = m_attachmentManager->getAttachment(Attachment::compute_output);
+
+		m_compute_QueueFamilyIndex = m_vulkanDevice->queueFamilyIndices.graphics;
 		// Get a compute queue from the device
 		vkGetDeviceQueue(getLogicalDevice(), m_compute_QueueFamilyIndex, 0, &m_computeQueue);
 
@@ -65,12 +70,12 @@ namespace bmfr
 		{
 			// Binding 0: BMFR Config UBO
 			m_rtFilterDemo->m_UBO_BMFRConfig->writeDescriptorSet(m_descriptorSet, 0),
-			// Binding 1: Accumulated RT Image
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &rtin_imageInfo),
-			// Binding 2: Positions
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2, &pos_imageInfo),
-			// Binding 3: Normals
-			vks::initializers::writeDescriptorSet(m_descriptorSet, VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3, &normals_imageInfo),
+			// Binding 1: Positions
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &pos_imageInfo),
+			// Binding 2: Normals
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2, &normals_imageInfo),
+			// Binding 3: Accumulated RT Image
+			vks::initializers::writeDescriptorSet(m_descriptorSet, VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3, &rtin_imageInfo),
 			// Binding 4: Output
 			vks::initializers::writeDescriptorSet(m_descriptorSet, VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 4, &output_imageInfo),
 		};
@@ -85,11 +90,11 @@ namespace bmfr
 		std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
 			// Binding 0: BMFR Config UBO
 			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT, 0),
-			// Binding 1: Accumulated RT Image
+			// Binding 1: Positions
 			vks::initializers::descriptorSetLayoutBinding(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT, 1),
-			// Binding 2: Positions
+			// Binding 2: Normals
 			vks::initializers::descriptorSetLayoutBinding(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT, 2),
-			// Binding 3: Normals
+			// Binding 3: Accumulated RT Image
 			vks::initializers::descriptorSetLayoutBinding(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT, 3),
 			// Binding 4: Output
 			vks::initializers::descriptorSetLayoutBinding(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT, 4),
@@ -112,7 +117,7 @@ namespace bmfr
 		pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
 		VK_CHECK_RESULT(vkCreatePipelineCache(getLogicalDevice(), &pipelineCacheCreateInfo, nullptr, &m_pipelineCache));
 
-		computePipelineCreateInfo.stage = m_rtFilterDemo->loadShader("bmfr/bmfrMain.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT);
+		computePipelineCreateInfo.stage = m_rtFilterDemo->LoadShader("bmfr/bmfrMain.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT);
 		VK_CHECK_RESULT(vkCreateComputePipelines(getLogicalDevice(), m_pipelineCache, 1, &computePipelineCreateInfo, nullptr, &m_pipeline));
 	}
 

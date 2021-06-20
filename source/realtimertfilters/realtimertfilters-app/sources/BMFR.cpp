@@ -33,7 +33,7 @@ namespace bmfr
 		renderpassManager->registerRenderpass(Prepass);
 
 		Computepass = std::make_shared<RenderpassBMFRCompute>();
-		//renderpassManager->registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassBMFRCompute>(Computepass));
+		renderpassManager->registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassBMFRCompute>(Computepass));
 
 		Postpass = std::make_shared<RenderpassPostProcess>();
 		Postpass->ConfigureShader("bmfr/bmfrPostProcess.frag.spv");
@@ -45,13 +45,14 @@ namespace bmfr
 		Postpass->PushTextureAttachment(TextureBinding(Attachment::albedo, TextureBinding::Type::Sampler_ReadOnly));
 		Postpass->Push_PastRenderpass_BufferCopy(Attachment::filteroutput, Attachment::prev_accumulatedregression);
 		Postpass->PushUBO(std::dynamic_pointer_cast<UBOInterface, ManagedUBO<S_AccuConfig>>(rtfilterdemo->m_UBO_AccuConfig));
-		renderpassManager->registerRenderpass(Postpass);
+		//renderpassManager->registerRenderpass(Postpass);
 	}
 
 	void RenderPasses::addToQueue(rtf::QueueTemplatePtr& queueTemplate)
 	{
 		queueTemplate->push_back(Prepass);
-		queueTemplate->push_back(Postpass);
+		//queueTemplate->push_back(Computepass);
+		//queueTemplate->push_back(Postpass);
 	}
 
 }

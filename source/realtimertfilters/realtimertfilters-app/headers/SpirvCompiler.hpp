@@ -124,12 +124,14 @@ namespace rtf
 				L".rchit",
 				L".rmiss",
 				L".rgen",
+				L".comp",
 	#else
 				".frag",
 				".vert",
 				".rchit",
 				".rmiss",
 				".rgen",
+				".comp",
 	#endif
 		};
 

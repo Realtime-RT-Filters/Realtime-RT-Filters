@@ -1,5 +1,4 @@
 #version 420
-#extension GL_KHR_vulkan_glsl : enable
 
 /*
 	This filter pass temporally accumulates the regression output, reuising the history length information from the previous temporal accumulation. Albedo is also added back to the output
@@ -21,8 +20,8 @@ layout (set = 0, binding = 4) uniform sampler2D Tex_Albedo;				// Albedo color
 
 #include "../filter/filtercommon.glsl"
 
-#define BIND_BMFRCONFIG 0
-#define SET_BMFRCONFIG 1
+#define BIND_ACCUCONFIG 0
+#define SET_ACCUCONFIG 1
 #include "../ubo_definitions.glsl"
 
 void main()
@@ -37,14 +36,14 @@ void main()
 	ivec2 texel_prevFrame = TexelizeCoords(uv_prevFrame);
 	int historylength = texelFetch(Tex_HistoryLength, texel_prevFrame, 0).x;	// HistoryLength = number of previous frames that we didn't yet discard
 
-	if (ubo_bmfrconfig.EnableAccumulation == 0 || 
+	if (ubo_accuconfig.EnableAccumulation == 0 || 
 		historylength <= 1)							// A history length of 1 means the texel was discarded in the preprocess pass
 	{
 		return;
 	}
 
 
-	float mixFactor = max(ubo_bmfrconfig.MinNewWeight, 1.f / historylength);
+	float mixFactor = max(ubo_accuconfig.MinNewWeight, 1.f / historylength);
 	vec3 oldColor = texelFetch(Tex_PrevAccuRegression, texel_prevFrame, 0).xyz;
 	vec3 mixedColor = mix(oldColor, rawColor,  mixFactor);
 	Out_NewAccuRegression =vec4(mixedColor, 1.0);

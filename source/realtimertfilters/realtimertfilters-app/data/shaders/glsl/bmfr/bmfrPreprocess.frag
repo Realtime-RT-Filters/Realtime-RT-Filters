@@ -26,8 +26,8 @@ layout (set = 0, binding = 8) uniform sampler2D Tex_Albedo;				// Albedo color
 
 #include "../filter/filtercommon.glsl"
 
-#define BIND_BMFRCONFIG 0
-#define SET_BMFRCONFIG 1
+#define BIND_ACCUCONFIG 0
+#define SET_ACCUCONFIG 1
 #include "../ubo_definitions.glsl"
 
 void main()
@@ -35,7 +35,8 @@ void main()
 	// Albedo is removed from RT component, so that all filtering be done on the raw light data, rather than first hit albedo mixed in
 	vec3 albedo = texelFetch(Tex_Albedo, Texel, 0).xyz;
 	vec3 rawColor = texelFetch(Tex_RawColor, Texel, 0).xyz;
-	// Albedo color of 0 means that no light is coming via that channel. Division by zero (-> infinity) would be ok, however it is a bad idea for normalizing the values lateron in the compute shader, therefor we set it to zero instead
+	// Albedo color of 0 means that no light is coming via that channel. Division by zero (-> infinity) would be ok, however it is a bad idea 
+	// for normalizing the values lateron in the compute shader, therefor we set it to zero instead.
 	rawColor.x = (albedo.x > 0.005f) ? rawColor.x / albedo.x : 0.f;
 	rawColor.y = (albedo.y > 0.005f) ? rawColor.y / albedo.y : 0.f;
 	rawColor.z = (albedo.z > 0.005f) ? rawColor.z / albedo.z : 0.f;
@@ -45,7 +46,7 @@ void main()
 	Out_NewAccuColor = vec4(rawColor, 1.0);
 	Out_NewHistoryLength = 1;
 
-	if (ubo_bmfrconfig.EnableAccumulation == 0)
+	if (ubo_accuconfig.EnableAccumulation == 0)
 	{
 		return;
 	}
@@ -72,8 +73,8 @@ void main()
 	vec3 prevNormal = texelFetch(Tex_PrevNormal, texel_prevFrame, 0).xyz;	// Previous worldspace normal of the fragment
 	float angleDiff = acos(dot(curNormal, prevNormal));						// Difference between previous and current normals in radians
 
-	bool keep = (distanceSquared < ubo_bmfrconfig.MaxPosDifference) &&		// If worldspace position difference is too great, we discard
-		(angleDiff < ubo_bmfrconfig.MaxNormalAngleDifference);				// If worldspace normal angle deviation is too great, we discard
+	bool keep = (distanceSquared < ubo_accuconfig.MaxPosDifference) &&		// If worldspace position difference is too great, we discard
+		(angleDiff < ubo_accuconfig.MaxNormalAngleDifference);				// If worldspace normal angle deviation is too great, we discard
 
 	if (keep)
 	{
@@ -82,7 +83,7 @@ void main()
 		// History = 0: Previous pixel didn't exist (could only happen in very rare circumstances in the very first frame) => We mix raw 1, accu 0
 		// History = 1: History was discarded previously => We mix raw 0.5, accu 0.5
 		// History > 1: History is pretty old and useful => We mix up to raw MinNewWeight, accu 1 - MinNewWeight
-		float mixFactor = max(ubo_bmfrconfig.MinNewWeight, 1.f / (historylength + 1));
+		float mixFactor = max(ubo_accuconfig.MinNewWeight, 1.f / (historylength + 1));
 		vec3 oldColor = texelFetch(Tex_PrevAccuColor, texel_prevFrame, 0).xyz;
 		vec3 mixedColor = mix(oldColor, rawColor,  mixFactor);
 		Out_NewAccuColor =vec4(mixedColor, 1.0);

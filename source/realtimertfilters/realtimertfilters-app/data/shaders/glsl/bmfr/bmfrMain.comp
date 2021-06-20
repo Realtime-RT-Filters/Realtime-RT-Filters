@@ -1,5 +1,4 @@
 #version 450
-#extension GL_KHR_vulkan_glsl : enable
 
 layout (local_size_x = 256) in;
 
@@ -7,8 +6,8 @@ layout (local_size_x = 256) in;
 #include "../ubo_definitions.glsl"
 
 layout (set = 0, binding = 1, rgba32f) uniform readonly image2D Tex_Positions;
-layout (set = 0, binding = 1, rgba32f) uniform readonly image2D Tex_Normals;
-layout (set = 0, binding = 2, rgba32f) uniform readonly image2D Tex_Input;  
+layout (set = 0, binding = 2, rgba32f) uniform readonly image2D Tex_Normals;
+layout (set = 0, binding = 3, rgba32f) uniform readonly image2D Tex_Input;  
 
 //layout( push_constant ) uniform constants
 //{
@@ -44,9 +43,9 @@ layout (set = 0, binding = 2, rgba32f) uniform readonly image2D Tex_Input;
 //#define INBLOCK_ID sub_vector * LOCAL_SIZE + gl_GlobalInvocationID
 //#define BLOCK_OFFSET groupId.x * BUFFER_COUNT
 
-layout (set = 0, binding = 3, r32f) uniform image3D Tex_QR;			// 
-layout (set = 0, binding = 5, r32f) uniform image3D Tex_MatA;
-layout (set = 0, binding = 4, rgba32f) uniform image2D Tex_Output;	// where we perform QR decomposition
+//layout (set = 0, binding = 4, r32f) uniform image3D Tex_QR;			// 
+//layout (set = 0, binding = 5, r32f) uniform image3D Tex_MatA;
+layout (set = 0, binding = 4, rgba32f) uniform image2D Tex_Output;
 shared float sum_vec[gl_WorkGroupSize.x];
 shared float uVec[1024];
 shared float gchannel[1024];
@@ -265,54 +264,54 @@ void main()
 	
 	// Householder QR
 
-	for (uint col = 0; col < FEATURES_COUNT; col++) 
-	{
- 		float tmp_sum_value = 0;
- 		for (uint sub_vector = 0; sub_vector < BLOCK_PIXELS / gl_WorkGroupSize.x; ++sub_vector) 
-		{
- 			int index = INBLOCK_ID;
- 			float tmp = out_data[uvec2(index, col + BLOCK_OFFSET)];
- 			uVec[index] = tmp;
- 			if (index >= col + 1) {
- 				tmp_sum_value += tmp * tmp;
- 		}
- 	}
- 	sum_vec[localId] = tmp_sum_value;
- 	groupMemoryBarrier();
-
- 	// parallel reduction sum
- 	if (localId < 128) sum_vec[localId] += sum_vec[localId + 128];
- 	groupMemoryBarrier();
- 	if (localId < 64) sum_vec[localId] += sum_vec[localId + 64];
- 	groupMemoryBarrier();
- 	if (localId < 32) sum_vec[localId] += sum_vec[localId + 32];
- 	groupMemoryBarrier();
- 	if (localId < 16) sum_vec[localId] += sum_vec[localId + 16];
- 	groupMemoryBarrier();
- 	if (localId < 8) sum_vec[localId] += sum_vec[localId + 8];
- 	groupMemoryBarrier();
- 	if (localId < 4) sum_vec[localId] += sum_vec[localId + 4];
- 	groupMemoryBarrier();
- 	if (localId < 2) sum_vec[localId] += sum_vec[localId + 2];
- 	groupMemoryBarrier();
- 	if (localId == 0) vec_length = sum_vec[0] + sum_vec[1];
- 	groupMemoryBarrier();
-
- 	float r_value;
- 	if (localId < col) {
- 		r_value = uVec[localId];
- 	}
- 	else if (localId == col) {
- 		u_length_squared = vec_length;
- 		vec_length = sqrt(vec_length + uVec[col] * uVec[col]);
- 		uVec[col] -= vec_length;
- 		u_length_squared += uVec[col] * uVec[col];
- 		r_value = vec_length;
- 	}
- 	else if (localId > col) {
- 		r_value = 0;
- 	}
-
+//	for (uint col = 0; col < FEATURES_COUNT; col++) 
+//	{
+// 		float tmp_sum_value = 0;
+// 		for (uint sub_vector = 0; sub_vector < BLOCK_PIXELS / gl_WorkGroupSize.x; ++sub_vector) 
+//		{
+// 			int index = INBLOCK_ID;
+// 			float tmp = out_data[uvec2(index, col + BLOCK_OFFSET)];
+// 			uVec[index] = tmp;
+// 			if (index >= col + 1) {
+// 				tmp_sum_value += tmp * tmp;
+// 		}
+// 	}
+// 	sum_vec[localId] = tmp_sum_value;
+// 	groupMemoryBarrier();
+//
+// 	// parallel reduction sum
+// 	if (localId < 128) sum_vec[localId] += sum_vec[localId + 128];
+// 	groupMemoryBarrier();
+// 	if (localId < 64) sum_vec[localId] += sum_vec[localId + 64];
+// 	groupMemoryBarrier();
+// 	if (localId < 32) sum_vec[localId] += sum_vec[localId + 32];
+// 	groupMemoryBarrier();
+// 	if (localId < 16) sum_vec[localId] += sum_vec[localId + 16];
+// 	groupMemoryBarrier();
+// 	if (localId < 8) sum_vec[localId] += sum_vec[localId + 8];
+// 	groupMemoryBarrier();
+// 	if (localId < 4) sum_vec[localId] += sum_vec[localId + 4];
+// 	groupMemoryBarrier();
+// 	if (localId < 2) sum_vec[localId] += sum_vec[localId + 2];
+// 	groupMemoryBarrier();
+// 	if (localId == 0) vec_length = sum_vec[0] + sum_vec[1];
+// 	groupMemoryBarrier();
+//
+// 	float r_value;
+// 	if (localId < col) {
+// 		r_value = uVec[localId];
+// 	}
+// 	else if (localId == col) {
+// 		u_length_squared = vec_length;
+// 		vec_length = sqrt(vec_length + uVec[col] * uVec[col]);
+// 		uVec[col] -= vec_length;
+// 		u_length_squared += uVec[col] * uVec[col];
+// 		r_value = vec_length;
+// 	}
+// 	else if (localId > col) {
+// 		r_value = 0;
+// 	}
+//
 
 
 // 		// normalize feature
