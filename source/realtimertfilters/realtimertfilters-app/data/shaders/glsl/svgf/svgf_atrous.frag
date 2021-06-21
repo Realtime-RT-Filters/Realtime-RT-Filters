@@ -156,5 +156,5 @@ void main()
 
 	// construct svgf output image1D
 	vec4 albedoColor = texelFetch(Tex_albedoMap, Texel, 0);
-	Out_SVGFOutput = directOutputColor * albedoColor * indirectOutputColor;
+	Out_SVGFOutput = directOutputColor * albedoColor + indirectOutputColor;
 }
