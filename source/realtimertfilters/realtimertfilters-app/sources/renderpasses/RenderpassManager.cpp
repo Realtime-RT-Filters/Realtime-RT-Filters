@@ -151,13 +151,15 @@ namespace rtf
 		m_RPF_SVGF_Accumulation->Push_PastRenderpass_BufferCopy(Attachment::position, Attachment::prev_position);
 		m_RPF_SVGF_Accumulation->Push_PastRenderpass_BufferCopy(Attachment::normal, Attachment::prev_normal);
 		m_RPF_SVGF_Accumulation->Push_PastRenderpass_BufferCopy(Attachment::new_historylength, Attachment::prev_historylength);
+		m_RPF_SVGF_Accumulation->Push_PastRenderpass_BufferCopy(Attachment::new_moments, Attachment::moments_history);
 		registerRenderpass(m_RPF_SVGF_Accumulation);
 
 		// SVGF Atrous
 		m_RPF_SVGF_Atrous = std::make_shared<RenderpassPostProcess>();
 		m_RPF_SVGF_Atrous->ConfigureShader("svgf/svgf_atrous.frag.spv");
 		m_RPF_SVGF_Atrous->PushTextureAttachment(TextureBinding(Attachment::albedo, TextureBinding::Type::Sampler_ReadOnly));
-		m_RPF_SVGF_Atrous->PushTextureAttachment(TextureBinding(Attachment::depth, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_SVGF_Atrous->PushTextureAttachment(TextureBinding(Attachment::normal, TextureBinding::Type::Sampler_ReadOnly));
+		m_RPF_SVGF_Atrous->PushTextureAttachment(depth);
 
 		m_RPF_SVGF_Atrous->PushTextureAttachment(TextureBinding(Attachment::atrous_integratedDirectColor_A, TextureBinding::Type::StorageImage_ReadWrite));
 		m_RPF_SVGF_Atrous->PushTextureAttachment(TextureBinding(Attachment::atrous_integratedDirectColor_B, TextureBinding::Type::StorageImage_ReadWrite));
@@ -168,7 +170,7 @@ namespace rtf
 		m_RPF_SVGF_Atrous->PushTextureAttachment(TextureBinding(Attachment::indirect_color_history, TextureBinding::Type::StorageImage_ReadWrite));
 
 		m_RPF_SVGF_Atrous->PushTextureAttachment(TextureBinding(Attachment::svgf_output, TextureBinding::Type::Subpass_Output));
-		m_RPF_SVGF_Atrous->PushUBO(std::dynamic_pointer_cast<UBOInterface, ManagedUBO<S_AccuConfig>>(rtFilterDemo->m_UBO_AccuConfig));
+		m_RPF_SVGF_Atrous->PushUBO(std::dynamic_pointer_cast<UBOInterface, ManagedUBO<S_AtrousConfig>>(rtFilterDemo->m_UBO_AtrousConfig));
 		registerRenderpass(m_RPF_SVGF_Atrous);
 
 		// Atrous Postprocess
@@ -213,15 +215,16 @@ namespace rtf
 		m_RPG_SVGF = std::make_shared<RenderpassGui>();
 		m_RPG_SVGF->m_allowComposition = false;
 		m_RPG_SVGF->m_usePathtracing = true;
-		m_RPG_SVGF->m_useTempAccu = true;
+		m_RPG_SVGF->m_useTempAccu = false;
 		m_RPG_SVGF->m_useAtrous = true;
 		m_RPG_SVGF->setAttachmentBindings({
-			GuiAttachmentBinding(Attachment::atrous_output, std::string("A-Trous")),
-			GuiAttachmentBinding(Attachment::intermediate, std::string("Temporal Accumulation")),
 			GuiAttachmentBinding(Attachment::rtoutput, std::string("Raw RT")),
 			GuiAttachmentBinding(Attachment::atrous_integratedIndirectColor_A, std::string("Integrated Indirect Color")),
 			GuiAttachmentBinding(Attachment::atrous_integratedDirectColor_A, std::string("Integrated Direct Color")),
-			GuiAttachmentBinding(Attachment::moments_history, std::string("Moments")),
+			GuiAttachmentBinding(Attachment::direct_color_history, std::string("Direct color history")),
+			GuiAttachmentBinding(Attachment::indirect_color_history, std::string("Indirect color history")),
+			GuiAttachmentBinding(Attachment::moments_history, std::string("Moments history")),
+			GuiAttachmentBinding(Attachment::svgf_output, std::string("SVGF Output")),
 			});
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_SVGF));
 

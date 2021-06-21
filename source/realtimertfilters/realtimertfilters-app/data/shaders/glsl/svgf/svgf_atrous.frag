@@ -5,17 +5,18 @@
 #define SET_ATROUSCONFIG 1
 #include "../ubo_definitions.glsl"
 
-layout (binding = 0) uniform sampler2D Tex_normalMap;	//normals from G-Buffer
-layout (binding = 1) uniform sampler2D Tex_depthMap;	//depth from G-Buffer
+layout (binding = 0) uniform sampler2D Tex_albedoMap;	//normals from G-Buffer
+layout (binding = 1) uniform sampler2D Tex_normalMap;
+layout (binding = 2) uniform sampler2D Tex_depthMap;	//depth from G-Buffer
 
-layout (binding = 2, rgba32f) uniform coherent image2D Tex_DirectIntegratedColor_A;
-layout (binding = 3, rgba32f) uniform coherent image2D Tex_DirectIntegratedColor_B;
+layout (binding = 3, rgba32f) uniform coherent image2D Tex_DirectIntegratedColor_A;
+layout (binding = 4, rgba32f) uniform coherent image2D Tex_DirectIntegratedColor_B;
 
-layout (binding = 4, rgba32f) uniform coherent image2D Tex_IndirectIntegratedColor_A;
-layout (binding = 5, rgba32f) uniform coherent image2D Tex_IndirectIntegratedColor_B;
+layout (binding = 5, rgba32f) uniform coherent image2D Tex_IndirectIntegratedColor_A;
+layout (binding = 6, rgba32f) uniform coherent image2D Tex_IndirectIntegratedColor_B;
 
-layout (binding = 6, rgba32f) uniform coherent image2D Tex_DirectColorHistory;
-layout (binding = 7, rgba32f) uniform coherent image2D Tex_IndirectColorHistory;
+layout (binding = 7, rgba32f) uniform coherent image2D Tex_DirectColorHistory;
+layout (binding = 8, rgba32f) uniform coherent image2D Tex_IndirectColorHistory;
 
 layout (location = 0) out vec4 Out_SVGFOutput;	
 
@@ -66,10 +67,11 @@ void storeColorIndirect(in int iteration, in ivec2 UV, in vec4 color)
 }
 
 
-
 void main()
 {
-	
+	vec4 directOutputColor;
+	vec4 indirectOutputColor;
+
 	for (int iteration = 0; iteration < ubo_atrousconfig.iterations; iteration++)
 	{
 		float c_phi = 1.f / float(iteration+1) * ubo_atrousconfig.c_phi;
@@ -96,6 +98,7 @@ void main()
 				float depthtemp = texelFetch(Tex_depthMap, uv, 0).r;
 				if (depthtemp == 1.f)
 					continue;
+
 				vec3 normaltemp = texelFetch(Tex_normalMap, uv, 0).xyz;
 				float n_w = dot(normalvalue, normaltemp);
 				if (n_w < 0.001)
@@ -134,9 +137,24 @@ void main()
 		storeColorDirect(iteration, Texel, vec4(sum_direct / cum_w_direct, 1.0));
 		storeColorIndirect(iteration, Texel, vec4(sum_indirect / cum_w_indirect, 1.0));
 
+		if(iteration == 0)
+		{
+			imageStore(Tex_DirectColorHistory, Texel, vec4(sum_direct / cum_w_direct, 1.0));
+			imageStore(Tex_IndirectColorHistory, Texel, vec4(sum_indirect / cum_w_indirect, 1.0));
+		}
+
 		if (iteration < ubo_atrousconfig.iterations - 1)
 		{
 			memoryBarrierImage();
 		}
+		else
+		{
+			directOutputColor = vec4(sum_direct / cum_w_direct, 1.0);
+			indirectOutputColor = vec4(sum_indirect / cum_w_indirect, 1.0);
+		}
 	}
+
+	// construct svgf output image1D
+	vec4 albedoColor = texelFetch(Tex_albedoMap, Texel, 0);
+	Out_SVGFOutput = directOutputColor * albedoColor;
 }

@@ -37,31 +37,6 @@ float luminance(vec3 color)
 
 void main()
 {
-	vec2 motionVec = texelFetch(Tex_Motion, Texel, 0).xy;
-	vec2 uv_prevFrame = UV + motionVec;
-	ivec2 texel_prevFrame = TexelizeCoords(uv_prevFrame);
-
-	// Check if prev frame UV is outside of view frustrum
-	bool discard_viewFrustrum = uv_prevFrame.x < 0.f || uv_prevFrame.y < 0.f || uv_prevFrame.x > 1.f || uv_prevFrame.y > 1.f;
-
-	if (discard_viewFrustrum)
-	{
-		// The new pixel was outside the view frustrum in previous frame, therefor we cannot accumulate.
-		return;
-	}
-
-	vec3 curPos = texelFetch(Tex_CurPos, Texel, 0).xyz;						// Current worldspace position of the fragment
-	vec3 prevPos = texelFetch(Tex_PrevPos, texel_prevFrame, 0).xyz;			// Previous worldspace position of the fragment
-	vec3 positionDiffVector = prevPos - curPos;								// Difference between previous and current worldspace positions
-	float distanceSquared = dot(positionDiffVector, positionDiffVector);	// Squared distance between previous and current worlspace positions
-
-	vec3 curNormal = texelFetch(Tex_CurNormal, Texel, 0).xyz;				// Current worldspace normal of the fragment
-	vec3 prevNormal = texelFetch(Tex_PrevNormal, texel_prevFrame, 0).xyz;	// Previous worldspace normal of the fragment
-	float angleDiff = acos(dot(curNormal, prevNormal));						// Difference between previous and current normals in radians
-
-	bool keepHistoryValues = (distanceSquared < ubo_accuconfig.MaxPosDifference) &&		// If worldspace position difference is too great, we discard
-		(angleDiff < ubo_accuconfig.MaxNormalAngleDifference);				// If worldspace normal angle deviation is too great, we discard
-
 	// get color values
 	vec3 directColor = texelFetch(Tex_RtDirect, Texel, 0).rgb;
 	vec3 indirectColor = texelFetch(Tex_RtIndirect, Texel, 0).rgb;
@@ -73,34 +48,55 @@ void main()
     moments.g = moments.r * moments.r; // 2nd moment dir color
     moments.a = moments.b * moments.b; // 2nd moment indir color
 
-	vec3 integratedDirectColor;
-	vec3 integratedIndirectColor;
-	vec4 integratedMoments;
+	// use motion vector to determine previous texel location
+	vec2 motionVec = texelFetch(Tex_Motion, Texel, 0).xy;
+	vec2 uv_prevFrame = UV + motionVec;
+	ivec2 texel_prevFrame = TexelizeCoords(uv_prevFrame);
 
-	if (keepHistoryValues)
+	// Check if prev frame UV is outside of view frustrum
+	bool discard_viewFrustrum = uv_prevFrame.x < 0.f || uv_prevFrame.y < 0.f || uv_prevFrame.x > 1.f || uv_prevFrame.y > 1.f;
+	bool keepHistoryValues = false;
+
+	if (!discard_viewFrustrum)
 	{
-		int historylength = texelFetch(Tex_OldHistoryLength, texel_prevFrame, 0).x;	// HistoryLength = number of previous frames that we didn't yet discard
+		vec3 curPos = texelFetch(Tex_CurPos, Texel, 0).xyz;						// Current worldspace position of the fragment
+		vec3 prevPos = texelFetch(Tex_PrevPos, texel_prevFrame, 0).xyz;			// Previous worldspace position of the fragment
+		vec3 positionDiffVector = prevPos - curPos;								// Difference between previous and current worldspace positions
+		float distanceSquared = dot(positionDiffVector, positionDiffVector);	// Squared distance between previous and current worlspace positions
 
-		// History = 0: Previous pixel didn't exist (could only happen in very rare circumstances in the very first frame) => We mix raw 1, accu 0
-		// History = 1: History was discarded previously => We mix raw 0.5, accu 0.5
-		// History > 1: History is pretty old and useful => We mix up to raw MinNewWeight, accu 1 - MinNewWeight
-		float mixFactor = max(ubo_accuconfig.MinNewWeight, 1.f / (historylength + 1));
+		vec3 curNormal = texelFetch(Tex_CurNormal, Texel, 0).xyz;				// Current worldspace normal of the fragment
+		vec3 prevNormal = texelFetch(Tex_PrevNormal, texel_prevFrame, 0).xyz;	// Previous worldspace normal of the fragment
+		float angleDiff = acos(dot(curNormal, prevNormal));						// Difference between previous and current normals in radians
 
-		// TODO: Missing: SVGF uses a 2x2 tap to better resample the previous color. See loadPrevData in SVGFReproject.ps.hlsl
-		// This can be done to improve quality later on
-		vec3 directColorHistory = imageLoad(Tex_Direct_Color_History, texel_prevFrame).rgb;
-		Out_IntegratedDirectColor = vec4(mix(directColorHistory, directColor,  mixFactor), 1.0f);
+		keepHistoryValues = (distanceSquared < ubo_accuconfig.MaxPosDifference) &&		// If worldspace position difference is too great, we discard
+			(angleDiff < ubo_accuconfig.MaxNormalAngleDifference);				// If worldspace normal angle deviation is too great, we discard
 
-		vec3 indirectColorHistory = imageLoad(Tex_Indirect_Color_History, texel_prevFrame).rgb;
-		Out_IntegratedIndirectColor = vec4(mix(indirectColorHistory, indirectColor,  mixFactor), 1.0f);
+		if (keepHistoryValues)
+		{
+			int historylength = texelFetch(Tex_OldHistoryLength, texel_prevFrame, 0).x;	// HistoryLength = number of previous frames that we didn't yet discard
 
-		vec4 momentsHistory = imageLoad(Tex_Moments_History, texel_prevFrame).rgba;
-		Out_NewMoments = mix(momentsHistory, moments, mixFactor);
+			// History = 0: Previous pixel didn't exist (could only happen in very rare circumstances in the very first frame) => We mix raw 1, accu 0
+			// History = 1: History was discarded previously => We mix raw 0.5, accu 0.5
+			// History > 1: History is pretty old and useful => We mix up to raw MinNewWeight, accu 1 - MinNewWeight
+			float mixFactor = max(ubo_accuconfig.MinNewWeight, 1.f / (historylength + 1));
 
-		// update history length
-		Out_NewHistoryLength = historylength + 1;
+			// TODO: Missing: SVGF uses a 2x2 tap to better resample the previous color. See loadPrevData in SVGFReproject.ps.hlsl
+			// This can be done to improve quality later on
+			vec3 directColorHistory = imageLoad(Tex_Direct_Color_History, texel_prevFrame).rgb;
+			Out_IntegratedDirectColor = vec4(mix(directColorHistory, directColor,  mixFactor), 1.0f);
+
+			vec3 indirectColorHistory = imageLoad(Tex_Indirect_Color_History, texel_prevFrame).rgb;
+			Out_IntegratedIndirectColor = vec4(mix(indirectColorHistory, indirectColor,  mixFactor), 1.0f);
+
+			vec4 momentsHistory = imageLoad(Tex_Moments_History, texel_prevFrame).rgba;
+			Out_NewMoments = mix(momentsHistory, moments, mixFactor);
+
+			// update history length
+			Out_NewHistoryLength = historylength + 1;
+		}
 	}
-	else
+
+	if(discard_viewFrustrum || !keepHistoryValues)
 	{
 		// no history
 		Out_IntegratedDirectColor = vec4(directColor, 1.0f);
@@ -111,7 +107,7 @@ void main()
 		Out_NewHistoryLength = 1;
 	}
 
-	vec2 variance = max(vec2(0,0), integratedMoments.ga - integratedMoments.rb * integratedMoments.rb);
+	vec2 variance = max(vec2(0,0), Out_NewMoments.ga - Out_NewMoments.rb * Out_NewMoments.rb);
 
 	Out_IntegratedDirectColor.a = variance.x;
 	Out_IntegratedIndirectColor.a = variance.y;
