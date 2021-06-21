@@ -9,7 +9,6 @@
 #include "../headers/renderpasses/Renderpass_Gui.hpp"
 
 //All Filter render passes here
-#include "../headers/renderpasses/Renderpass_Filter.hpp" //Example Renderpass
 #include "../headers/renderpasses/Renderpass_PostProcess.hpp"
 #include "../headers/renderpasses/Renderpass_PathTracer.hpp"
 
