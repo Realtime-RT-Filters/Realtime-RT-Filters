@@ -13,7 +13,7 @@ namespace bmfr
 		RenderpassManager* renderpassManager = rtfilterdemo->m_renderpassManager;
 
 		Prepass = std::make_shared<RenderpassPostProcess>();
-		Prepass->ConfigureShader("bmfr/bmfrPreProcess.frag.spv");
+		Prepass->ConfigureShader("bmfr/bmfrPreprocess.frag.spv");
 		Prepass->PushTextureAttachment(TextureBinding(Attachment::position, TextureBinding::Type::Sampler_ReadOnly));
 		Prepass->PushTextureAttachment(TextureBinding(Attachment::normal, TextureBinding::Type::Sampler_ReadOnly));
 		Prepass->PushTextureAttachment(TextureBinding(Attachment::motionvector, TextureBinding::Type::Sampler_ReadOnly));
