@@ -1,4 +1,6 @@
-﻿#include "../headers/RTFilterDemo.hpp"
+﻿#include <filesystem>
+
+#include "../headers/RTFilterDemo.hpp"
 #include "../headers/VulkanglTFModel.h"
 #include "../project_defines.hpp"
 #include "../headers/SpirvCompiler.hpp"
@@ -47,7 +49,7 @@ namespace rtf
 		compiler.CompileAll();
 
 		// create the screenshots directory
-		CreateDirectory("../screenshots", NULL);
+		std::filesystem::create_directories("../screenshots");
 
 	}
 
