@@ -473,12 +473,16 @@ namespace rtf
 			char buffer[80];
 			strftime(buffer, 80, "../screenshots/screenshot%H-%M_%d-%m-%Y.ppm", now);
 
-			std::cout << buffer << std::endl;
+			std::string launchCommand = "start ../../../mlimagedenoiser/MLImageDenoiser.exe ";
+			launchCommand.append(buffer);
+
+			std::cout << launchCommand << std::endl;
 
 			if (saveScreenshot(buffer))
 			{
-				// TODO: Launch the ML Image Denoising Application and input the screenshot as the first parameter.
-				//system("start C:/dev/MLImageDenoiser/x64/Debug/MLImageDenoiser.exe C:/dev/Master/ProjektVulkanRTFilter/test.ppm");
+				system(launchCommand.c_str());
+
+				std::cout << "Remember to clean up the screenshots folder." << std::endl;
 			}
 		}
 	}
