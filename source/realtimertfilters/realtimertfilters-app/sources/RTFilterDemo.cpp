@@ -475,7 +475,7 @@ namespace rtf
 			char buffer[80];
 			strftime(buffer, 80, "../screenshots/screenshot%H-%M_%d-%m-%Y.ppm", now);
 
-			std::string launchCommand = "start ../../../mlimagedenoiser/MLImageDenoiser.exe ";
+			std::string launchCommand = "start ../../../mlimagedenoiser/build/Release/MLImageDenoiser.exe ";
 			launchCommand.append(buffer);
 
 			std::cout << launchCommand << std::endl;
