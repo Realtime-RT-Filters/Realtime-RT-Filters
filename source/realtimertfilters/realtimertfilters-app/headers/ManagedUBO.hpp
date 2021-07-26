@@ -73,7 +73,9 @@ namespace rtf
 
 	template<typename T_UBO>
 	inline ManagedUBO<T_UBO>::~ManagedUBO()
-	{}
+	{
+		destroy();
+	}
 
 	template<typename T_UBO>
 	void ManagedUBO<T_UBO>::prepare()

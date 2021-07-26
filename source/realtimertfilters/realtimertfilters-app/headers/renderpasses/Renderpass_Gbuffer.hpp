@@ -30,6 +30,7 @@ namespace rtf
 		vkglTF::Model* m_Scene = nullptr;
 
 		RenderpassGbuffer();
+		virtual ~RenderpassGbuffer() { cleanUp(); }
 
 		// Inherited via Renderpass
 		virtual void prepare() override;

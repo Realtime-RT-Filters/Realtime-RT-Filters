@@ -52,10 +52,13 @@ namespace rtf
 		m_shaderBindingTables.raygen.destroy();
 		m_shaderBindingTables.miss.destroy();
 		m_shaderBindingTables.hit.destroy();
+		m_material_buffer.destroy();
 
+		vkDestroyDescriptorPool(m_vulkanDevice->logicalDevice, m_descriptorPool, nullptr);
 		vkDestroyPipeline(m_vulkanDevice->logicalDevice, m_pipeline, nullptr);
 		vkDestroyPipelineLayout(m_vulkanDevice->logicalDevice, m_pipelineLayout, nullptr);
 		vkDestroyDescriptorSetLayout(m_vulkanDevice->logicalDevice, m_descriptorSetLayout, nullptr);
+		vkFreeCommandBuffers(m_vulkanDevice->logicalDevice, m_vulkanDevice->commandPool, 1, &m_commandBuffer);
 		//m_uniformBufferObject.destroy();
 	};
 
@@ -711,9 +714,9 @@ namespace rtf
 
 	void RenderpassPathTracer::deleteStorageImage()
 	{
-		vkDestroyImageView(m_vulkanDevice->logicalDevice, m_Rtoutput->view, nullptr);
+		/*vkDestroyImageView(m_vulkanDevice->logicalDevice, m_Rtoutput->view, nullptr);
 		vkDestroyImage(m_vulkanDevice->logicalDevice, m_Rtoutput->image, nullptr);
-		vkFreeMemory(m_vulkanDevice->logicalDevice, m_Rtoutput->mem, nullptr);
+		vkFreeMemory(m_vulkanDevice->logicalDevice, m_Rtoutput->mem, nullptr);*/
 	}
 
 }

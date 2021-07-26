@@ -135,6 +135,8 @@ namespace rtf
 
 	void RenderpassGbuffer::cleanUp()
 	{
+		vkDestroyDescriptorPool(m_vulkanDevice->logicalDevice, m_descriptorPool, nullptr);
+		vkFreeCommandBuffers(m_vulkanDevice->logicalDevice, m_vulkanDevice->commandPool, 1, &m_CmdBuffer);
 		vkDestroyFramebuffer(m_vulkanDevice->logicalDevice, m_FrameBuffer, nullptr);
 		vkDestroyPipeline(m_vulkanDevice->logicalDevice, m_pipeline, nullptr);
 		vkDestroyPipelineLayout(m_vulkanDevice->logicalDevice, m_pipelineLayout, nullptr);

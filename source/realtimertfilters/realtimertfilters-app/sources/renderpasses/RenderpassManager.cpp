@@ -228,8 +228,8 @@ namespace rtf
 			});
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_SVGF));
 
-		// BMFR shit
-		m_BMFR_Renderpasses.prepareBMFRPasses(rtFilterDemo);
+		//// BMFR (not running atm)
+		//m_BMFR_Renderpasses.prepareBMFRPasses(rtFilterDemo);
 
 		// GUI Pass (BMFR)
 		m_RPG_BMFR = std::make_shared<RenderpassGui>();
@@ -243,7 +243,7 @@ namespace rtf
 			});
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassGui>(m_RPG_BMFR));
 
-		// Path Tracer Pass
+		//// Path Tracer Pass
 		m_RP_PT = std::make_shared<RenderpassPathTracer>();
 		registerRenderpass(std::dynamic_pointer_cast<Renderpass, RenderpassPathTracer>(m_RP_PT));
 		

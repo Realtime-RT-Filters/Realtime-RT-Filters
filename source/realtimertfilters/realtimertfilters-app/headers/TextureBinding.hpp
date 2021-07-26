@@ -37,6 +37,7 @@ namespace rtf
 		VkImageLayout			m_PostLayout;
 		VkImageAspectFlags		m_AspectMask;
 		VkImageView				m_ImageView;
+		bool					m_hasImageView{ false };
 
 		TextureBinding() = default;
 		

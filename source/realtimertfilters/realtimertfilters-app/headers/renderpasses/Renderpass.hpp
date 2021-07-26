@@ -20,7 +20,7 @@ namespace rtf
 	public:
 		
 		Renderpass() = default;
-		virtual ~Renderpass();
+		virtual ~Renderpass() {};
 
 		// Member level copy of a renderpass object makes no sense, so we delete auto-generated constructors and operators associated with it
 		Renderpass(Renderpass& other) = delete;
@@ -31,7 +31,7 @@ namespace rtf
 		
 		virtual void prepare() = 0; // Setup pipelines, passes, descriptorsets, etc.
 		virtual void draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount) = 0;
-		virtual void cleanUp() {}; // Cleanup any mess you made (is called from the destructor)
+		virtual void cleanUp() = 0; // Cleanup any mess you made (is called from the destructor)
 		virtual void updateUniformBuffer() {};
 
 	protected:

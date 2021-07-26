@@ -14,6 +14,7 @@ namespace rtf
 	public:
 
 		RenderpassPostProcess();
+		virtual ~RenderpassPostProcess() { cleanUp(); }
 
 		void ConfigureShader(const std::string& shadername);
 		void PushTextureAttachment(const TextureBinding& attachmentbinding);

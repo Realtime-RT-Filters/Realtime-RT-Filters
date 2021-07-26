@@ -19,6 +19,7 @@ namespace rtf
 		m_Attachment = manager->getAttachment(m_AttachmentId);
 		if (m_AspectMask != 0)
 		{
+			m_hasImageView = true;
 			createImageview(vulkanDevice);
 		}
 		else
@@ -44,9 +45,10 @@ namespace rtf
 
 	void TextureBinding::destroyImageview(vks::VulkanDevice* vulkanDevice)
 	{
-		if (m_ImageView != nullptr)
+		if (m_ImageView != nullptr && m_hasImageView)
 		{
 			vkDestroyImageView(vulkanDevice->logicalDevice, m_ImageView, nullptr);
+			m_ImageView = nullptr;
 		}
 	}
 

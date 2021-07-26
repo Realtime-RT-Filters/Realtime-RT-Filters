@@ -61,7 +61,7 @@ namespace rtf
 
 	public:
 		RenderpassGui();
-		~RenderpassGui();
+		virtual ~RenderpassGui();
 
 		void setAttachmentBindings(std::vector<GuiAttachmentBinding> attachmentBindings);
 		inline std::vector<std::string>& getDropoutOptions() { return m_dropoutOptions; }
@@ -69,6 +69,7 @@ namespace rtf
 		void buildCommandBuffer();
 		virtual void prepare() override;
 		virtual void draw(const VkCommandBuffer*& out_commandBuffers, uint32_t& out_commandBufferCount) override;
+		virtual void cleanUp() override;
 	};
 }
 

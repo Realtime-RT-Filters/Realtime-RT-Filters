@@ -13,6 +13,7 @@ namespace rtf
 	{
 	public:
 		RenderpassPathTracer() {}
+		virtual ~RenderpassPathTracer() { cleanUp(); }
 
 		// Parent methods override
 		void prepare() override;

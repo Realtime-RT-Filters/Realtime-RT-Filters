@@ -27,7 +27,7 @@ namespace bmfr
 		rtf::FrameBufferAttachment* m_Output = nullptr;
 
 		RenderpassBMFRCompute() = default;
-
+		virtual ~RenderpassBMFRCompute() { cleanUp(); }
 		//void PushFeatureBuffer(FeatureBuffer& featurebuffer);
 
 		virtual void prepare() override; // Setup pipelines, passes, descriptorsets, etc.

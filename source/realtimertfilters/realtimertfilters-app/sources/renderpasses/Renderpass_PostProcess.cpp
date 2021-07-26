@@ -405,7 +405,11 @@ namespace rtf
 		vkDestroyRenderPass(m_vulkanDevice->logicalDevice, m_renderpass, nullptr);
 		vkDestroyPipeline(m_vulkanDevice->logicalDevice, m_pipeline, nullptr);
 		vkDestroyPipelineLayout(m_vulkanDevice->logicalDevice, m_pipelineLayout, nullptr);
-		vkDestroyDescriptorSetLayout(m_vulkanDevice->logicalDevice, m_descriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(m_vulkanDevice->logicalDevice, m_descriptorSetLayouts[0], nullptr);
+		if (getUboCount() > 0)
+		{
+			vkDestroyDescriptorSetLayout(m_vulkanDevice->logicalDevice, m_descriptorSetLayouts[1], nullptr);
+		}
 		vkDestroyDescriptorPool(m_vulkanDevice->logicalDevice, m_descriptorPool, nullptr);
 		vkDestroyFramebuffer(m_vulkanDevice->logicalDevice, m_Framebuffer, nullptr);
 

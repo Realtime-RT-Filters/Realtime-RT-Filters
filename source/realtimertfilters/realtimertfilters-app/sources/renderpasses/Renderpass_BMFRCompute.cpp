@@ -143,6 +143,7 @@ namespace bmfr
 
 	void RenderpassBMFRCompute::cleanUp()
 	{
+		vkFreeCommandBuffers(m_vulkanDevice->logicalDevice, m_vulkanDevice->commandPool, 1, &m_cmdBuffer);
 		vkDestroyPipeline(getLogicalDevice(), m_pipeline, nullptr);
 		vkDestroyPipelineLayout(getLogicalDevice(), m_pipelineLayout, nullptr);
 		vkDestroyPipelineCache(getLogicalDevice(), m_pipelineCache, nullptr);

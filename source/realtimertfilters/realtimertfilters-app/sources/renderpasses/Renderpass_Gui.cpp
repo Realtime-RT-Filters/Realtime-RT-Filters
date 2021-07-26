@@ -8,9 +8,15 @@ namespace rtf
 
 	RenderpassGui::~RenderpassGui()
 	{
+		cleanUp();
+	}
+
+	void RenderpassGui::cleanUp()
+	{
 		vkDestroyPipeline(m_vulkanDevice->logicalDevice, m_pipeline, nullptr);
 		vkDestroyPipelineLayout(m_vulkanDevice->logicalDevice, m_pipelineLayout, nullptr);
 		vkDestroyDescriptorSetLayout(m_vulkanDevice->logicalDevice, m_descriptorSetLayout, nullptr);
+		vkDestroyDescriptorPool(m_vulkanDevice->logicalDevice, m_descriptorPool, nullptr);
 	}
 
 	void RenderpassGui::prepare()

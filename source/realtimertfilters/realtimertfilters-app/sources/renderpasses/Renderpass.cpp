@@ -3,11 +3,6 @@
 
 namespace rtf
 {
-	Renderpass::~Renderpass()
-	{
-		cleanUp();
-	}
-
 	void Renderpass::setRtFilterDemo(RTFilterDemo* rtFilterDemo)
 	{
 		m_rtFilterDemo = rtFilterDemo;
