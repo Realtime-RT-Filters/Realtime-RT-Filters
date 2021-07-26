@@ -112,6 +112,8 @@ namespace rtf
 		
 		std::wstring getShadersPathW();
 
+		bool saveScreenshot(const char* filename);
+
 		bool gui_rp_on = false;
 		const size_t m_semaphoreCount = 5;
 

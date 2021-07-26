@@ -4,3 +4,6 @@
 [submodule "Khronos GLTF Samples"]
 	path = source/realtimertfilters/realtimertfilters-app/data/glTF-Sample-Models
 	url = https://github.com/KhronosGroup/glTF-Sample-Models
+[submodule "source/mlimagedenoiser"]
+	path = source/mlimagedenoiser
+	url = https://github.com/Realtime-RT-Filters/MLImageDenoiser
