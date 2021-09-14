@@ -1,5 +1,7 @@
 #version 450
 
+// Based on https://github.com/gztong/BMFR-DXR-Denoiser/blob/master/BMFR_Denoiser/Data/regressionCP.hlsl 
+
 layout (local_size_x = 256) in;
 
 #define BIND_BMFRCONFIG 0
